@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: ksc-omr-backend
+    restart: always
+    environment:
+      - PORT=8000
+      - SECRET_KEY=${SECRET_KEY:-ksc_production_secret_key_change_me_in_env_file_99}
+      - DATABASE_URL=${DATABASE_URL:-}
+      - ENVIRONMENT=production
+    volumes:
+      - omr_data:/app/data
+    networks:
+      - ksc-network
+    expose:
+      - "8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: ksc-omr-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - ksc-network
+
+volumes:
+  omr_data:
+    driver: local
+
+networks:
+  ksc-network:
+    driver: bridge
