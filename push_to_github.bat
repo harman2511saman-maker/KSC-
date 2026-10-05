@@ -5,42 +5,43 @@ set "PATH=C:\Users\Harma\AppData\Local\Programs\Git\cmd;%PATH%"
 cd /d "%~dp0"
 
 echo ======================================================
-echo   ناردنی نوێکارییەکان بۆ سەر GitHub و سێرڤەر
+echo   ناردنی نوێکارییەکان بۆ سەر GitHub
 echo ======================================================
 echo.
 
-echo 1. پشکنینی گۆڕانکارییەکان (Adding files)...
+echo 1. کۆکردنەوەی فایلەکان...
 git add .
 
-echo 2. پاشەکەوتکردنی گۆڕانکارییەکان (Commit)...
-git commit -m "Update project: latest changes and improvements" 2>nul
-if %errorlevel% equ 0 (
-    echo گۆڕانکاری نوێ تۆمارکرا.
-) else (
-    echo هیچ گۆڕانکارییەکی نوێ نەبوو بۆ پاشەکەوتکردن، ڕاستەوخۆ دەنێردرێت...
-)
+echo 2. پاشەکەوتکردنی گۆڕانکارییەکان...
+git commit -m "Update project: latest changes and improvements"
+
+echo.
+echo 3. ناردن بۆ سەر GitHub...
 echo.
 
-echo 3. ناردن بۆ GitHub (Push to main)...
 git push -u origin main
 
-if %errorlevel% neq 0 (
-    echo.
-    echo ======================================================
-    echo [تێبینیی گرنگ بۆ داخڵبوون بە ئەکاونت]:
-    echo ئەگەر پەنجەرەی پێناسەکردن یان هەڵە دروست بوو:
-    echo 1. پەنجەرەی وێبگەڕ (Sign in with browser) دەکرێتەوە، کرتەی لەسەر بکە بۆ ئەوەی ڕێگەپێدان بدەیت.
-    echo 2. ئەگەر داوای Personal Access Token کرد، دەبێت تۆکنی گیتهەب دابنێیت.
-    echo ======================================================
-) else (
-    echo.
-    echo ======================================================
-    echo   پیرۆزە! هەموو نوێکارییەکان گەیشتنە سەر GitHub!
-    echo   ئێستا سێرڤەر (Render/Vercel) بە شێوەی ئۆتۆماتیکی
-    echo   دەست دەکات بە Deploy کردن و نوێبوونەوە.
-    echo ======================================================
-)
+if errorlevel 1 goto ON_ERROR
+goto ON_SUCCESS
 
+:ON_ERROR
+echo.
+echo ======================================================
+echo هەڵە ڕوویدا لە کاتی ناردن.
+echo تکایە ئەگەر پەنجەرەی Browser کرایەوە کلیکی لێ بکە بۆ Sign in.
+echo ======================================================
+goto FINISH
+
+:ON_SUCCESS
+echo.
+echo ======================================================
+echo   پیرۆزە! هەموو نوێکارییەکان گەیشتنە سەر GitHub!
+echo   ئێستا سێرڤەرەکەت خۆکارانە دەست دەکات بە Deploy بوون.
+echo ======================================================
+goto FINISH
+
+:FINISH
 echo.
 pause
+
 
