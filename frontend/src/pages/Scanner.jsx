@@ -157,6 +157,7 @@ export default function Scanner({ defaultExamId, onShowToast, onNavigateToReview
           console.warn('Video play deferred', playErr);
         }
         setCameraActive(true);
+        setCameraFeedback('پەڕەکە لە ناو چوارچێوەکە ڕێکبخە');
 
         // Apply continuous autofocus, auto exposure and white balance for sharp document capture
         const track = stream.getVideoTracks()[0];
@@ -191,7 +192,6 @@ export default function Scanner({ defaultExamId, onShowToast, onNavigateToReview
       videoRef.current.srcObject = null;
     }
     setCameraActive(false);
-    setAutoScanEnabled(false);
   };
 
   useEffect(() => {
@@ -259,7 +259,7 @@ export default function Scanner({ defaultExamId, onShowToast, onNavigateToReview
           resolve(blob);
         },
         'image/jpeg',
-        isQuickAuto ? 0.80 : 0.86
+        isQuickAuto ? 0.82 : 0.88
       );
     });
   }, []);
@@ -369,8 +369,11 @@ export default function Scanner({ defaultExamId, onShowToast, onNavigateToReview
         }
       }
     } catch (err) {
-      if (!isAutoScan) {
-        onShowToast({ type: 'error', message: err.message });
+      console.warn('Scan request error:', err);
+      if (isAutoScan) {
+        setCameraFeedback('پەیوەندی لەگەڵ سێرڤەر سەرکەوتوو نەبوو یان وێنەکە ڕوون نییە');
+      } else {
+        onShowToast({ type: 'error', message: err.message || 'هەڵە لە ناردنی وێنە بۆ سێرڤەر' });
       }
     } finally {
       if (isAutoScan) {
@@ -441,12 +444,12 @@ export default function Scanner({ defaultExamId, onShowToast, onNavigateToReview
         }
       }
       if (!isCancelled && activeMode === 'camera' && cameraActive && autoScanEnabled && !pendingAcceptanceResult) {
-        timerId = setTimeout(tick, 500);
+        timerId = setTimeout(tick, 700);
       }
     };
 
     if (activeMode === 'camera' && cameraActive && autoScanEnabled && !pendingAcceptanceResult) {
-      timerId = setTimeout(tick, 600);
+      timerId = setTimeout(tick, 700);
     }
 
     return () => {
