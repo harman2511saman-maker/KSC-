@@ -106,15 +106,21 @@ def generate_omr_sheet_image(
             except Exception:
                 continue
 
+    watermark_bw = None
     if watermark_img:
         try:
-            # Large prominent background watermark centered in sheet
+            # Convert logo to pure grayscale / monochrome black & white
+            logo_gray = watermark_img.convert("L")
+            logo_alpha = watermark_img.split()[-1] if watermark_img.mode == "RGBA" else Image.new("L", watermark_img.size, 255)
+            watermark_bw = Image.merge("RGBA", (logo_gray, logo_gray, logo_gray, logo_alpha))
+
+            # Large prominent background watermark centered in sheet (Monochrome Grayscale)
             wm_w = 760
-            wm_h = int(wm_w * (watermark_img.height / max(1, watermark_img.width)))
-            wm_resized = watermark_img.resize((wm_w, wm_h), Image.Resampling.LANCZOS)
+            wm_h = int(wm_w * (watermark_bw.height / max(1, watermark_bw.width)))
+            wm_resized = watermark_bw.resize((wm_w, wm_h), Image.Resampling.LANCZOS)
             r, g, b, a = wm_resized.split()
-            # Opacity at ~18% for crisp legibility and clear, beautiful watermark visibility
-            a_faded = a.point(lambda p: int(p * 0.18))
+            # Faded opacity at ~14% for crisp legibility and clean black & white watermark
+            a_faded = a.point(lambda p: int(p * 0.14))
             wm_faded = Image.merge("RGBA", (r, g, b, a_faded))
 
             wm_x = (CANONICAL_WIDTH - wm_w) // 2
@@ -142,25 +148,25 @@ def generate_omr_sheet_image(
     for pos_key, (bx, by, bw, bh) in template_spec["marker_boxes"].items():
         draw.rectangle([bx, by, bx + bw, by + bh], fill=(0, 0, 0))
 
-    # 2. Header Information Card
+    # 2. Header Information Card (Crisp Black & White)
     header_x1, header_y1 = 120, 60
     header_x2, header_y2 = 910, 245
     
     # Header card outer border and background
-    draw.rectangle([header_x1, header_y1, header_x2, header_y2], fill=(255, 255, 255), outline=(30, 41, 59), width=2)
+    draw.rectangle([header_x1, header_y1, header_x2, header_y2], fill=(255, 255, 255), outline=(0, 0, 0), width=2)
     
-    # Top banner bar inside header card
+    # Top banner bar inside header card (Light Grayscale)
     banner_h = 58
-    draw.rectangle([header_x1 + 1, header_y1 + 1, header_x2 - 1, header_y1 + banner_h], fill=(241, 245, 249))
-    draw.line([(header_x1, header_y1 + banner_h), (header_x2, header_y1 + banner_h)], fill=(203, 213, 225), width=2)
+    draw.rectangle([header_x1 + 1, header_y1 + 1, header_x2 - 1, header_y1 + banner_h], fill=(240, 240, 240))
+    draw.line([(header_x1, header_y1 + banner_h), (header_x2, header_y1 + banner_h)], fill=(180, 180, 180), width=2)
 
-    # Header Crisp Logo
+    # Header Crisp Black & White Logo
     brand_text_x = header_x1 + 20
-    if watermark_img:
+    if watermark_bw:
         try:
             h_logo_size = 46
-            h_logo_w = int(h_logo_size * (watermark_img.width / max(1, watermark_img.height)))
-            h_logo = watermark_img.resize((h_logo_w, h_logo_size), Image.Resampling.LANCZOS)
+            h_logo_w = int(h_logo_size * (watermark_bw.width / max(1, watermark_bw.height)))
+            h_logo = watermark_bw.resize((h_logo_w, h_logo_size), Image.Resampling.LANCZOS)
             h_logo_x = header_x1 + 14
             h_logo_y = header_y1 + 6
             img.paste(h_logo, (h_logo_x, h_logo_y), mask=h_logo)
@@ -179,16 +185,16 @@ def generate_omr_sheet_image(
     if not school_name:
         school_name = "____________________"
 
-    draw_text_left(draw, brand_text_x, header_y1 + 14, "KSC OMR EXAMINATION", f_brand, (15, 23, 42))
-    draw_text_right(draw, header_x2 - 20, header_y1 + 14, str(exam_title).upper(), f_exam_title, (30, 58, 138))
+    draw_text_left(draw, brand_text_x, header_y1 + 14, "KSC OMR EXAMINATION", f_brand, (0, 0, 0))
+    draw_text_right(draw, header_x2 - 20, header_y1 + 14, str(exam_title).upper(), f_exam_title, (0, 0, 0))
 
-    # Metadata Row: Subject on Left, School on Right
+    # Metadata Row: Subject on Left, School on Right (Black text)
     meta_y = header_y1 + 72
-    draw_text_left(draw, header_x1 + 20, meta_y, f"Subject: {subject}", f_label_bold, (30, 41, 59))
-    draw_text_right(draw, header_x2 - 20, meta_y, f"Center / School: {school_name}", f_label_bold, (30, 41, 59))
+    draw_text_left(draw, header_x1 + 20, meta_y, f"Subject: {subject}", f_label_bold, (0, 0, 0))
+    draw_text_right(draw, header_x2 - 20, meta_y, f"Center / School: {school_name}", f_label_bold, (0, 0, 0))
 
     # Divider between metadata and student details
-    draw.line([(header_x1, header_y1 + 118), (header_x2, header_y1 + 118)], fill=(226, 232, 240), width=1)
+    draw.line([(header_x1, header_y1 + 118), (header_x2, header_y1 + 118)], fill=(200, 200, 200), width=1)
 
     # Student Info Row: Candidate Name on Left, Student ID on Right
     std_y = header_y1 + 134
@@ -199,17 +205,17 @@ def generate_omr_sheet_image(
         student_code = student_data.get("student_id_number") or student_data.get("student_id") or ""
 
     if student_name:
-        draw_text_left(draw, header_x1 + 20, std_y, f"Student Name: {student_name}", f_label_bold, (15, 23, 42))
+        draw_text_left(draw, header_x1 + 20, std_y, f"Student Name: {student_name}", f_label_bold, (0, 0, 0))
     else:
-        draw_text_left(draw, header_x1 + 20, std_y, "Student Name: ____________________________", f_label_bold, (15, 23, 42))
+        draw_text_left(draw, header_x1 + 20, std_y, "Student Name: ____________________________", f_label_bold, (0, 0, 0))
 
     if student_code:
         std_right_text = f"Student ID: {student_code}"
     else:
         std_right_text = "Student ID: ________________"
-    draw_text_right(draw, header_x2 - 20, std_y, std_right_text, f_label_bold, (15, 23, 42))
+    draw_text_right(draw, header_x2 - 20, std_y, std_right_text, f_label_bold, (0, 0, 0))
 
-    # 3. QR Code Card
+    # 3. QR Code Card (Black & White)
     qr_payload = {
         "v": template_version,
         "e": exam_data.get("id", 1),
@@ -220,26 +226,26 @@ def generate_omr_sheet_image(
     qr_w, qr_h = template_spec["qr_region"]["w"], template_spec["qr_region"]["h"]
     
     # Frame for QR Box
-    draw.rectangle([qr_x, qr_y, qr_x + qr_w, qr_y + qr_h], fill=(255, 255, 255), outline=(30, 41, 59), width=2)
+    draw.rectangle([qr_x, qr_y, qr_x + qr_w, qr_y + qr_h], fill=(255, 255, 255), outline=(0, 0, 0), width=2)
     qr_img = generate_qr_image(qr_payload, size=qr_w - 14)
     img.paste(qr_img, (qr_x + 7, qr_y + 7))
-    draw_text_center(draw, qr_x + (qr_w // 2), qr_y + qr_h + 10, "SHEET QR CODE", f_footer, (71, 85, 105))
+    draw_text_center(draw, qr_x + (qr_w // 2), qr_y + qr_h + 10, "SHEET QR CODE", f_footer, (60, 60, 60))
 
-    # 4. Instructions Box
+    # 4. Instructions Box (Clean Grayscale)
     inst_y1 = 260
     inst_y2 = 345
-    draw.rectangle([120, inst_y1, 1080, inst_y2], fill=(248, 250, 252), outline=(203, 213, 225), width=2)
+    draw.rectangle([120, inst_y1, 1080, inst_y2], fill=(245, 245, 245), outline=(180, 180, 180), width=2)
     
-    # Clean Full-Width Instructions
-    draw_text_left(draw, 145, inst_y1 + 14, "IMPORTANT EXAMINATION INSTRUCTIONS:", f_inst_title, (15, 23, 42))
-    draw_text_left(draw, 145, inst_y1 + 40, "• Use a dark HB pencil or blue/black pen only to completely fill the appropriate circles.", f_inst_text, (30, 41, 59))
-    draw_text_left(draw, 145, inst_y1 + 64, "• Fill each chosen circle completely and cleanly. Do not make stray marks, cross-outs, or fold this sheet.", f_inst_text, (30, 41, 59))
+    # Clean Full-Width Instructions (Pure Black)
+    draw_text_left(draw, 145, inst_y1 + 14, "IMPORTANT EXAMINATION INSTRUCTIONS:", f_inst_title, (0, 0, 0))
+    draw_text_left(draw, 145, inst_y1 + 40, "• Use a dark HB pencil or blue/black pen only to completely fill the appropriate circles.", f_inst_text, (20, 20, 20))
+    draw_text_left(draw, 145, inst_y1 + 64, "• Fill each chosen circle completely and cleanly. Do not make stray marks, cross-outs, or fold this sheet.", f_inst_text, (20, 20, 20))
 
-    # 5. Timing Marks
+    # 5. Timing Marks (Solid Black)
     for (tx, ty, tw, th) in template_spec["timing_marks"]:
         draw.rectangle([tx, ty, tx + tw, ty + th], fill=(0, 0, 0))
 
-    # 6. Column Cards & Bubble Grids
+    # 6. Column Cards & Bubble Grids (Crisp Black & White)
     questions = template_spec["questions"]
     col_layout = template_spec.get("col_layout", {})
     num_cols = col_layout.get("num_columns", max(q["column_idx"] for q in questions.values()) + 1)
@@ -260,10 +266,10 @@ def generate_omr_sheet_image(
             continue
         
         # Column Card Outer Frame
-        draw.rectangle([col_x, card_top_y, col_x + col_width, card_bottom_y], fill=None, outline=(203, 213, 225), width=2)
+        draw.rectangle([col_x, card_top_y, col_x + col_width, card_bottom_y], fill=None, outline=(180, 180, 180), width=2)
         
-        # Dark Navy Column Header Bar
-        draw.rectangle([col_x, card_top_y, col_x + col_width, card_top_y + header_bar_h], fill=(15, 23, 42))
+        # Pure Solid Black Column Header Bar
+        draw.rectangle([col_x, card_top_y, col_x + col_width, card_top_y + header_bar_h], fill=(0, 0, 0))
         
         first_q = col_qs[0]
         # "Q#" Title centered above question number
@@ -277,30 +283,30 @@ def generate_omr_sheet_image(
         for r_idx in range(len(col_qs)):
             row_y = grid_start_y + (r_idx * row_height)
             half_r = row_height // 2
-            draw.line([(col_x + 6, row_y + half_r), (col_x + col_width - 6, row_y + half_r)], fill=(226, 232, 240), width=1)
+            draw.line([(col_x + 6, row_y + half_r), (col_x + col_width - 6, row_y + half_r)], fill=(220, 220, 220), width=1)
 
-    # Draw Question Numbers and Bubbles
+    # Draw Question Numbers and Bubbles (High-contrast B&W)
     for q_num, q_info in questions.items():
         q_label_x, q_label_y = q_info["label_pos"]
         
         # Question Number badge / text
-        draw_text_center(draw, q_label_x, q_label_y - 12, f"{q_num:02d}", f_q_num, (15, 23, 42))
+        draw_text_center(draw, q_label_x, q_label_y - 12, f"{q_num:02d}", f_q_num, (0, 0, 0))
         
-        # Draw Each Bubble (Pure white fill inside circle for flawless OMR scanner precision)
+        # Draw Each Bubble (Pure white fill with sharp black outline)
         for choice_key, b_info in q_info["bubbles"].items():
             bcx, bcy = b_info["cx"], b_info["cy"]
             r = b_info["radius"]
             
             # Crisp circular outline with clean white background
-            draw.ellipse([bcx - r, bcy - r, bcx + r, bcy + r], fill=(255, 255, 255), outline=(30, 41, 59), width=2)
-            # Watermark choice letter centered inside the bubble
-            draw_text_center(draw, bcx, bcy - 10, choice_key, f_choice, (212, 220, 228))
+            draw.ellipse([bcx - r, bcy - r, bcx + r, bcy + r], fill=(255, 255, 255), outline=(0, 0, 0), width=2)
+            # Watermark choice letter centered inside the bubble (light gray)
+            draw_text_center(draw, bcx, bcy - 10, choice_key, f_choice, (200, 200, 200))
 
-    # 7. Clean Footer Bar
+    # 7. Clean Monochrome Footer Bar
     footer_y = 1555
     footer_left = f"Template: {template_version} | Sheet ID: {sheet_id}"
-    draw_text_left(draw, 120, footer_y, footer_left, f_footer, (100, 116, 139))
-    draw_text_right(draw, 1080, footer_y, "KSC OMR Examination Platform", f_footer, (100, 116, 139))
+    draw_text_left(draw, 120, footer_y, footer_left, f_footer, (80, 80, 80))
+    draw_text_right(draw, 1080, footer_y, "KSC OMR Examination Platform", f_footer, (80, 80, 80))
 
     return img
 
