@@ -203,7 +203,7 @@ export default function SheetGenerator({ defaultExamId, onShowToast }) {
       a.download = `omr_sheet_${selectedExamId}${selectedStudentId ? `_${selectedStudentId}` : ''}.pdf`;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      if (a.parentNode) a.parentNode.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
     } catch (err) {
       if (onShowToast) {
@@ -234,7 +234,7 @@ export default function SheetGenerator({ defaultExamId, onShowToast }) {
       a.download = `omr_batch_exam_${selectedExamId}.pdf`;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      if (a.parentNode) a.parentNode.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
     } catch (err) {
       if (onShowToast) onShowToast({ type: 'error', message: 'نەتوانرا فایلی دەستەیی دابگیرێت' });

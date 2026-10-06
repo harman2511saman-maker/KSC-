@@ -123,7 +123,7 @@ export default function Results({ onShowToast, onOpenReviewForPage }) {
       a.download = `results_${selectedExamId || 'all'}.xlsx`;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      if (a.parentNode) a.parentNode.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
     } catch (err) {
       onShowToast({ type: 'error', message: 'نەتوانرا فایلی Excel دابگیرێت: ' + err.message });
@@ -140,7 +140,7 @@ export default function Results({ onShowToast, onOpenReviewForPage }) {
       a.download = `results_${selectedExamId || 'all'}.csv`;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      if (a.parentNode) a.parentNode.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
     } catch (err) {
       onShowToast({ type: 'error', message: 'نەتوانرا فایلی CSV دابگیرێت: ' + err.message });
