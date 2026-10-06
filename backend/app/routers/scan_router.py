@@ -257,7 +257,7 @@ def run_batch_pdf_worker(job_id: str, pdf_bytes: bytes, exam_id: Optional[int]):
         calibration_params = get_active_calibration(db)
         exam_ctx = build_exam_context(exam_id, db) if exam_id else None
 
-        for page_idx, page_bgr in extract_images_from_pdf(pdf_bytes, target_dpi=150):
+        for page_idx, page_bgr in extract_images_from_pdf(pdf_bytes, target_dpi=200):
             try:
                 pipeline_res = process_omr_sheet(
                     image_input=page_bgr,
@@ -283,9 +283,23 @@ def run_batch_pdf_worker(job_id: str, pdf_bytes: bytes, exam_id: Optional[int]):
                     resolved_exam_id = exam_id or pipeline_res.get("detected_exam_id")
                     resolved_student_id = pipeline_res.get("detected_student_id")
 
+                    # If detected exam differs from default, regrade properly
+                    if resolved_exam_id and (not exam_ctx or exam_ctx["exam"].id != resolved_exam_id):
+                        cur_exam_ctx = build_exam_context(resolved_exam_id, db)
+                        if cur_exam_ctx:
+                            pipeline_res = regrade_pipeline_results(
+                                pipeline_res=pipeline_res,
+                                exam_data=cur_exam_ctx["exam_data"],
+                                answer_key_dict=cur_exam_ctx["answer_key_dict"],
+                                question_marks_dict=cur_exam_ctx["question_marks_dict"],
+                                ungraded_questions=cur_exam_ctx["ungraded_questions"]
+                            )
+
                     student_obj = None
                     if resolved_student_id:
                         student_obj = db.query(Student).filter(Student.id == resolved_student_id).first()
+                        if not student_obj:
+                            student_obj = db.query(Student).filter(Student.student_id == str(resolved_student_id)).first()
 
                     scan_page = ScanPage(
                         job_id=job.id,
@@ -295,7 +309,7 @@ def run_batch_pdf_worker(job_id: str, pdf_bytes: bytes, exam_id: Optional[int]):
                         debug_file=pipeline_res["debug_image_path"],
                         status=pipeline_res["overall_status"],
                         confidence_score=pipeline_res["summary"]["average_confidence"],
-                        qr_data_json=json.dumps({"sheet_id": pipeline_res["sheet_id"], "exam_id": resolved_exam_id})
+                        qr_data_json=json.dumps({"sheet_id": pipeline_res["sheet_id"], "exam_id": resolved_exam_id, "student_id": resolved_student_id})
                     )
                     db.add(scan_page)
                     db.commit()

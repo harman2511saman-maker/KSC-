@@ -231,8 +231,8 @@ export default function Scanner({ defaultExamId, onShowToast, onNavigateToReview
       const rawWidth = video.videoWidth;
       const rawHeight = video.videoHeight;
 
-      // Smart downscaling for ultra-fast upload & processing (<100ms) with zero accuracy loss
-      const maxDim = isQuickAuto ? 1280 : 1920;
+      // Keep ultra-high resolution for razor sharp QR & marker detection
+      const maxDim = 1920;
       let targetWidth = rawWidth;
       let targetHeight = rawHeight;
       if (rawWidth > maxDim || rawHeight > maxDim) {
@@ -259,7 +259,7 @@ export default function Scanner({ defaultExamId, onShowToast, onNavigateToReview
           resolve(blob);
         },
         'image/jpeg',
-        isQuickAuto ? 0.82 : 0.88
+        0.90
       );
     });
   }, []);
