@@ -43,8 +43,8 @@ def order_quadrilateral_points(pts: np.ndarray) -> np.ndarray:
 
 def validate_quadrilateral_geometry(corners: np.ndarray, img_w: int, img_h: int) -> Tuple[bool, str]:
     """
-    Validates that the 4 corner points form a plausible convex quadrilateral.
-    Forgiving bounds tailored for real-world smartphone camera tilts and PDF documents.
+    Validates that the 4 corner points form a plausible convex A4-like quadrilateral.
+    Strictly checks aspect ratio and trapezoid symmetry to reject cropped half-sheets.
     """
     if len(corners) != 4:
         return False, "تەواوی ٤ نیشانەکە نەدۆزرایەوە"
@@ -67,18 +67,18 @@ def validate_quadrilateral_geometry(corners: np.ndarray, img_w: int, img_h: int)
     min_side = min(avg_width, avg_height)
     max_side = max(avg_width, avg_height)
 
-    if min_side < 60 or max_side < 90:
+    if min_side < 100 or max_side < 140:
         return False, "پەڕەکە زۆر دوورە، تکایە کامێراکە نزیکتر بکەوە"
 
-    # Symmetry check with forgiving mobile tilt tolerance
+    # Symmetry check (top width vs bottom width, left height vs right height)
     width_ratio = min(width_top, width_bottom) / max(width_top, width_bottom, 1.0)
     height_ratio = min(height_left, height_right) / max(height_left, height_right, 1.0)
-    if width_ratio < 0.45 or height_ratio < 0.45:
+    if width_ratio < 0.65 or height_ratio < 0.65:
         return False, "تەواوی پەڕەکە بە هاوسەنگی لە ناو وێنەکەدا نییە"
 
     norm_aspect = max_side / max(min_side, 1.0)
-    # A4 standard aspect ratio is 1.414. Allow range [0.85, 2.25] for diverse phone orientations & angles
-    if norm_aspect < 0.85 or norm_aspect > 2.25:
+    # A4 standard aspect ratio is 1.414. Allow range [1.15, 1.75] for normal camera angles
+    if norm_aspect < 1.15 or norm_aspect > 1.75:
         return False, "تکایە هەموو پەڕەکە لە ناو چوارچێوەکە ڕێکبخە (بەشی سەرەوە و خوارەوە دیار نییە)"
 
     return True, "نیشانەکان بە دروستی دۆزرانەوە"
@@ -88,7 +88,7 @@ def detect_registration_markers(
     expected_marker_size_ratio: float = 0.035
 ) -> Dict[str, Any]:
     """
-    Detects the 4 corner registration markers using multi-strategy contour, quadrant, and corner zone analysis.
+    Detects the 4 corner registration markers using multi-strategy contour and feature analysis.
     Returns ordered corners: [TL, TR, BR, BL] and diagnostic metrics.
     """
     if image is None or image.size == 0:
@@ -113,7 +113,7 @@ def detect_registration_markers(
     # Apply slight Gaussian blur to suppress fine noise
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
-    # Strategy: Multi-threshold contour search (Multi-scale Adaptive + Otsu + Morphological)
+    # Strategy: Multi-threshold contour search (Multi-scale Adaptive + Otsu)
     threshold_methods = [
         ("adaptive_15_5", cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5)),
         ("adaptive_25_7", cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 7)),
@@ -129,31 +129,32 @@ def detect_registration_markers(
         
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            # Filter area: true corner marker should be 0.003% to 4.0% of image area
-            if area < img_area * 0.00003 or area > img_area * 0.04:
+            # Filter area: true corner marker should be 0.008% to 2.5% of image area
+            if area < img_area * 0.00008 or area > img_area * 0.025:
                 continue
 
             peri = cv2.arcLength(cnt, True)
-            approx = cv2.approxPolyDP(cnt, 0.05 * peri, True)
+            approx = cv2.approxPolyDP(cnt, 0.04 * peri, True)
 
-            # Square aspect ratio check (allow perspective distortion: 0.45 to 2.20)
+            # Square aspect ratio check (allow perspective distortion: 0.62 to 1.60)
             x, y, bw, bh = cv2.boundingRect(cnt)
             aspect = float(bw) / float(bh) if bh > 0 else 0
-            if aspect < 0.45 or aspect > 2.20:
+            if aspect < 0.62 or aspect > 1.60:
                 continue
 
             # Solidity / fill check (solid square marker)
             hull = cv2.convexHull(cnt)
             hull_area = cv2.contourArea(hull)
             solidity = float(area) / hull_area if hull_area > 0 else 0
-            if solidity < 0.58:
+            if solidity < 0.70:
                 continue
 
             # Check inside bounding box to reject light or empty contours
             roi_gray = gray[max(0, y):min(h, y + bh), max(0, x):min(w, x + bw)]
             if roi_gray.size > 0:
                 mean_val = float(np.mean(roi_gray))
-                if mean_val > 195:
+                # Reject if region is too bright
+                if mean_val > 170:
                     continue
 
             # Calculate center of mass
