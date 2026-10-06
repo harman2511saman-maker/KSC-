@@ -90,18 +90,20 @@ def generate_omr_sheet_image(
     # Base white canvas
     img = Image.new("RGB", (CANONICAL_WIDTH, CANONICAL_HEIGHT), color=(255, 255, 255))
     
-    # 0. Render Large Official Background Security Watermark (Anti-Forgery Emblem)
+    # 0. Render Clean Monochrome Background Security Watermark (100% Pure Black & White)
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     logo_candidates = [
         os.path.join(base_dir, "assets", "ksc_watermark.png"),
         os.path.join(base_dir, "assets", "ksc_watermark_clean.png"),
+        os.path.join(os.path.dirname(base_dir), "frontend", "public", "ksc-watermark.png"),
         os.path.join(os.path.dirname(base_dir), "frontend", "public", "logo.png"),
+        os.path.join(os.path.dirname(base_dir), "frontend", "public", "ksc-logo.png"),
     ]
     watermark_img = None
     for l_path in logo_candidates:
         if os.path.exists(l_path):
             try:
-                watermark_img = Image.open(l_path).convert("RGBA")
+                watermark_img = Image.open(l_path)
                 break
             except Exception:
                 continue
@@ -109,23 +111,32 @@ def generate_omr_sheet_image(
     watermark_bw = None
     if watermark_img:
         try:
-            # Convert logo to pure grayscale / monochrome black & white
+            # 1. Convert to pure 8-bit Grayscale (L) - guarantees zero color tint or RGB bias
             logo_gray = watermark_img.convert("L")
-            logo_alpha = watermark_img.split()[-1] if watermark_img.mode == "RGBA" else Image.new("L", watermark_img.size, 255)
+            
+            # Extract alpha mask if present, otherwise extract from brightness
+            if watermark_img.mode == "RGBA":
+                logo_alpha = watermark_img.split()[-1]
+            else:
+                # Invert grayscale for clean alpha mask if background is white
+                logo_alpha = Image.eval(logo_gray, lambda p: 255 if p < 250 else 0)
+
+            # Build pure neutral monochrome RGBA (R=G=B strictly equal)
             watermark_bw = Image.merge("RGBA", (logo_gray, logo_gray, logo_gray, logo_alpha))
 
-            # Large prominent background watermark centered in sheet (Monochrome Grayscale)
-            wm_w = 760
+            # 2. Large background watermark (subtle, clean, neutral monochrome)
+            wm_w = 700
             wm_h = int(wm_w * (watermark_bw.height / max(1, watermark_bw.width)))
             wm_resized = watermark_bw.resize((wm_w, wm_h), Image.Resampling.LANCZOS)
-            r, g, b, a = wm_resized.split()
-            # Faded opacity at ~14% for crisp legibility and clean black & white watermark
-            a_faded = a.point(lambda p: int(p * 0.14))
-            wm_faded = Image.merge("RGBA", (r, g, b, a_faded))
+            
+            gray_ch, _, _, a_ch = wm_resized.split()
+            # Super light opacity (7%) to prevent any text overlay discoloration on physical printers
+            a_subtle = a_ch.point(lambda p: int(p * 0.07))
+            wm_subtle = Image.merge("RGBA", (gray_ch, gray_ch, gray_ch, a_subtle))
 
             wm_x = (CANONICAL_WIDTH - wm_w) // 2
-            wm_y = 660
-            img.paste(wm_faded, (wm_x, wm_y), mask=wm_faded)
+            wm_y = 680
+            img.paste(wm_subtle, (wm_x, wm_y), mask=wm_subtle)
         except Exception as e:
             print("Watermark paste error:", e)
 
