@@ -129,32 +129,32 @@ def detect_registration_markers(
         
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            # Filter area: true corner marker should be 0.01% to 1.8% of image area
-            if area < img_area * 0.0001 or area > img_area * 0.018:
+            # Filter area: true corner marker should be 0.008% to 2.5% of image area
+            if area < img_area * 0.00008 or area > img_area * 0.025:
                 continue
 
             peri = cv2.arcLength(cnt, True)
             approx = cv2.approxPolyDP(cnt, 0.04 * peri, True)
 
-            # Square aspect ratio check (must be roughly square: 0.75 to 1.33)
+            # Square aspect ratio check (allow perspective distortion: 0.62 to 1.60)
             x, y, bw, bh = cv2.boundingRect(cnt)
             aspect = float(bw) / float(bh) if bh > 0 else 0
-            if aspect < 0.75 or aspect > 1.33:
+            if aspect < 0.62 or aspect > 1.60:
                 continue
 
             # Solidity / fill check (solid square marker)
             hull = cv2.convexHull(cnt)
             hull_area = cv2.contourArea(hull)
             solidity = float(area) / hull_area if hull_area > 0 else 0
-            if solidity < 0.82:
+            if solidity < 0.70:
                 continue
 
             # Check inside bounding box to reject light or empty contours
             roi_gray = gray[max(0, y):min(h, y + bh), max(0, x):min(w, x + bw)]
             if roi_gray.size > 0:
                 mean_val = float(np.mean(roi_gray))
-                # Reject if region is too bright (must be significantly darker than typical white paper)
-                if mean_val > 140:
+                # Reject if region is too bright
+                if mean_val > 170:
                     continue
 
             # Calculate center of mass

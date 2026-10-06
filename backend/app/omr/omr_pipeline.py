@@ -80,9 +80,9 @@ def process_omr_sheet(
     # 2. Quality Check
     quality_result = evaluate_image_quality(
         img_bgr,
-        min_laplacian=calibration_params.get("blur_laplacian_threshold", 60.0),
-        min_brightness=calibration_params.get("min_brightness", 35.0),
-        max_brightness=calibration_params.get("max_brightness", 245.0)
+        min_laplacian=calibration_params.get("blur_laplacian_threshold", 30.0),
+        min_brightness=calibration_params.get("min_brightness", 25.0),
+        max_brightness=calibration_params.get("max_brightness", 250.0)
     )
 
     # 3. Detect 4 Registration Markers

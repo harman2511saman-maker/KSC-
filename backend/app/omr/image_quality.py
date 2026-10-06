@@ -10,9 +10,9 @@ from typing import Dict, Any, Tuple
 
 def evaluate_image_quality(
     image: np.ndarray,
-    min_laplacian: float = 60.0,
-    min_brightness: float = 35.0,
-    max_brightness: float = 245.0
+    min_laplacian: float = 30.0,
+    min_brightness: float = 25.0,
+    max_brightness: float = 250.0
 ) -> Dict[str, Any]:
     """
     Evaluates raw camera or uploaded image quality.
