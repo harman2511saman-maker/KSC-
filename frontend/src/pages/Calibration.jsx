@@ -301,6 +301,87 @@ export default function Calibration({ onShowToast }) {
 
         <AdminPasswordChangeForm onShowToast={onShowToast} />
       </div>
+
+      {/* Danger Zone: Database Reset */}
+      <DatabaseResetCard onShowToast={onShowToast} />
+    </div>
+  );
+}
+
+function DatabaseResetCard({ onShowToast }) {
+  const [resetting, setResetting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const handleReset = async () => {
+    try {
+      setResetting(true);
+      const res = await api.post('/calibration/reset-database');
+      onShowToast({ type: 'success', message: res.data.message_ku || 'گشت داتاکان بە سەرکەوتوویی سڕانەوە' });
+      setConfirmOpen(false);
+    } catch (err) {
+      onShowToast({ type: 'error', message: err.message || 'هەڵە لە سڕینەوەی داتاکان' });
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-rose-200 p-6 shadow-xs space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-rose-900">سڕینەوە و خاوێنکردنەوەی گشت داتاکانی سێرڤەر (Reset)</h3>
+            <p className="text-xs text-slate-500">
+              سڕینەوەی هەموو تاقیکردنەوەکان، قوتابخانەکان، قوتابیان و ئەنجامەکان بۆ دەستپێکردنەوە لە سفرەوە.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setConfirmOpen(true)}
+          className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0"
+        >
+          <RotateCcw className="w-4 h-4" />
+          <span>سڕینەوەی هەموو داتاکان</span>
+        </button>
+      </div>
+
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 border border-slate-100 shadow-2xl">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-black text-slate-900">ئایا تەواو دڵنیایت لە سڕینەوە؟</h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                ئەم کردارە گشت فۆڕمەکان، قوتابخانەکان، قوتابییان و ئەنجامەکانی سەر سێرڤەر دەسڕێتەوە و ناگەڕێتەوە.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold"
+              >
+                پاشگەزبوونەوە
+              </button>
+              <button
+                type="button"
+                disabled={resetting}
+                onClick={handleReset}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/30 flex items-center justify-center gap-2"
+              >
+                {resetting ? 'لە سڕینەوەدایە...' : 'بەڵێ، گشتی بسڕەوە'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

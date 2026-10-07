@@ -95,3 +95,31 @@ async def test_calibration_sheet(
         "summary": result.get("summary"),
         "answers": result.get("answers", [])
     }
+
+@router.post("/reset-database")
+def reset_entire_database(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(["ADMIN"]))
+):
+    """
+    Wipes all examination, school, student, results, sheets, and scan job records.
+    Keeps users and calibration.
+    """
+    from app.models import (
+        SchoolClass, Student, Exam, ExamQuestion, Result,
+        ScanJob, ScanPage, DetectedAnswer, GeneratedSheet, ManualReview, AuditLog
+    )
+    db.query(ManualReview).delete()
+    db.query(DetectedAnswer).delete()
+    db.query(Result).delete()
+    db.query(ScanPage).delete()
+    db.query(ScanJob).delete()
+    db.query(GeneratedSheet).delete()
+    db.query(ExamQuestion).delete()
+    db.query(Exam).delete()
+    db.query(Student).delete()
+    db.query(SchoolClass).delete()
+    db.commit()
+    log_audit(db, "DATABASE_RESET", "System", "ALL", current_user, {"details": "Complete database wiped by administrator"})
+    return {"success": True, "message_ku": "گشت داتاکانی سیستم و داتابەیس بە سەرکەوتوویی سڕانەوە"}
+
