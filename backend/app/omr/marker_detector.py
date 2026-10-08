@@ -89,6 +89,7 @@ def detect_registration_markers(
 ) -> Dict[str, Any]:
     """
     Detects the 4 corner registration markers using multi-strategy contour and feature analysis.
+    Uses ultra-fast scaled detection with full-resolution sub-pixel refinement.
     Returns ordered corners: [TL, TR, BR, BL] and diagnostic metrics.
     """
     if image is None or image.size == 0:
@@ -110,15 +111,25 @@ def detect_registration_markers(
     else:
         gray = image.copy()
 
-    # Apply slight Gaussian blur to suppress fine noise
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    # Determine scaling factor for lightning fast processing while maintaining accuracy
+    max_dim = max(w, h)
+    scale = 1000.0 / max_dim if max_dim > 1000 else 1.0
+
+    if scale < 1.0:
+        proc_w, proc_h = int(w * scale), int(h * scale)
+        proc_gray = cv2.resize(gray, (proc_w, proc_h), interpolation=cv2.INTER_AREA)
+    else:
+        proc_w, proc_h = w, h
+        proc_gray = gray
+
+    proc_area = float(proc_w * proc_h)
+    blurred = cv2.GaussianBlur(proc_gray, (5, 5), 0)
 
     # Strategy: Multi-threshold contour search (Multi-scale Adaptive + Otsu)
     threshold_methods = [
         ("adaptive_15_5", cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5)),
         ("adaptive_25_7", cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 7)),
         ("adaptive_35_10", cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 35, 10)),
-        ("adaptive_55_10", cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 55, 10)),
         ("otsu", cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]),
     ]
 
@@ -130,16 +141,16 @@ def detect_registration_markers(
         for cnt in contours:
             area = cv2.contourArea(cnt)
             # Filter area: true corner marker should be 0.008% to 2.5% of image area
-            if area < img_area * 0.00008 or area > img_area * 0.025:
+            if area < proc_area * 0.00008 or area > proc_area * 0.025:
                 continue
 
             peri = cv2.arcLength(cnt, True)
             approx = cv2.approxPolyDP(cnt, 0.04 * peri, True)
 
-            # Square aspect ratio check (allow perspective distortion: 0.62 to 1.60)
+            # Square aspect ratio check (allow perspective distortion: 0.60 to 1.65)
             x, y, bw, bh = cv2.boundingRect(cnt)
             aspect = float(bw) / float(bh) if bh > 0 else 0
-            if aspect < 0.62 or aspect > 1.60:
+            if aspect < 0.60 or aspect > 1.65:
                 continue
 
             # Solidity / fill check (solid square marker)
@@ -150,14 +161,13 @@ def detect_registration_markers(
                 continue
 
             # Check inside bounding box to reject light or empty contours
-            roi_gray = gray[max(0, y):min(h, y + bh), max(0, x):min(w, x + bw)]
+            roi_gray = proc_gray[max(0, y):min(proc_h, y + bh), max(0, x):min(proc_w, x + bw)]
             if roi_gray.size > 0:
                 mean_val = float(np.mean(roi_gray))
-                # Reject if region is too bright
                 if mean_val > 170:
                     continue
 
-            # Calculate center of mass
+            # Calculate center of mass in processed coordinates
             M = cv2.moments(cnt)
             if M["m00"] != 0:
                 cx = float(M["m10"] / M["m00"])
@@ -166,20 +176,44 @@ def detect_registration_markers(
                 cx = float(x + bw / 2.0)
                 cy = float(y + bh / 2.0)
 
+            # Scale back to original coordinates
+            orig_cx = cx / scale if scale < 1.0 else cx
+            orig_cy = cy / scale if scale < 1.0 else cy
+            orig_bw = bw / scale if scale < 1.0 else bw
+            orig_bh = bh / scale if scale < 1.0 else bh
+
+            # Optional: Refine center on original high-resolution image
+            if scale < 1.0:
+                pad = int(max(orig_bw, orig_bh) * 0.8)
+                rx1 = max(0, int(orig_cx - pad))
+                ry1 = max(0, int(orig_cy - pad))
+                rx2 = min(w, int(orig_cx + pad))
+                ry2 = min(h, int(orig_cy + pad))
+                orig_roi = gray[ry1:ry2, rx1:rx2]
+                if orig_roi.size > 0:
+                    _, roi_thresh = cv2.threshold(orig_roi, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+                    roi_cnts, _ = cv2.findContours(roi_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    if roi_cnts:
+                        best_rcnt = max(roi_cnts, key=cv2.contourArea)
+                        rM = cv2.moments(best_rcnt)
+                        if rM["m00"] != 0:
+                            orig_cx = rx1 + float(rM["m10"] / rM["m00"])
+                            orig_cy = ry1 + float(rM["m01"] / rM["m00"])
+
             # Avoid duplicates
             is_dup = False
             for cand in candidate_markers:
-                if np.hypot(cx - cand["cx"], cy - cand["cy"]) < (bw * 0.8):
+                if np.hypot(orig_cx - cand["cx"], orig_cy - cand["cy"]) < (orig_bw * 0.8):
                     is_dup = True
                     break
             
             if not is_dup:
                 candidate_markers.append({
-                    "cx": cx,
-                    "cy": cy,
-                    "w": bw,
-                    "h": bh,
-                    "area": area,
+                    "cx": orig_cx,
+                    "cy": orig_cy,
+                    "w": orig_bw,
+                    "h": orig_bh,
+                    "area": area / (scale * scale),
                     "solidity": solidity,
                     "approx_len": len(approx)
                 })
@@ -196,13 +230,9 @@ def detect_registration_markers(
 
         # Select the most extreme outer corner marker in each quadrant
         if quad_tl and quad_tr and quad_bl and quad_br:
-            # TL: smallest distance to (0, 0)
             best_tl = min(quad_tl, key=lambda c: np.hypot(c["cx"] - 0, c["cy"] - 0))
-            # TR: smallest distance to (w, 0)
             best_tr = min(quad_tr, key=lambda c: np.hypot(c["cx"] - w, c["cy"] - 0))
-            # BR: smallest distance to (w, h)
             best_br = min(quad_br, key=lambda c: np.hypot(c["cx"] - w, c["cy"] - h))
-            # BL: smallest distance to (0, h)
             best_bl = min(quad_bl, key=lambda c: np.hypot(c["cx"] - 0, c["cy"] - h))
 
             raw_pts = np.array([
@@ -274,7 +304,7 @@ def detect_registration_markers(
                     "raw_candidates_count": len(candidate_markers)
                 }
 
-    # Fallback Strategy: Page Contour Detection mapped to full page boundary
+    # Fallback Strategy: Page Contour Detection mapped to full page boundary on processed image
     edges = cv2.Canny(blurred, 30, 150)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
     edges = cv2.dilate(edges, kernel, iterations=1)
@@ -283,12 +313,14 @@ def detect_registration_markers(
 
     for c in page_contours:
         area = cv2.contourArea(c)
-        if area < img_area * 0.25:  # Page must cover at least 25% of image
+        if area < proc_area * 0.25:  # Page must cover at least 25% of image
             continue
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.03 * peri, True)
         if len(approx) == 4:
-            pts = approx.reshape(4, 2)
+            pts = approx.reshape(4, 2).astype(np.float32)
+            if scale < 1.0:
+                pts = pts / scale
             ordered_corners = order_quadrilateral_points(pts)
             is_valid, reason_ku = validate_quadrilateral_geometry(ordered_corners, w, h)
             if is_valid:

@@ -30,49 +30,75 @@ def decode_qr_code(
 
     qr_detector = cv2.QRCodeDetector()
 
-    # 1. Inspect the deterministic QR ROI from the normalized sheet
+    # 1. Inspect the designated deterministic QR ROI (Top-Right)
+    can_h, can_w = canonical_gray.shape[:2]
     qx = max(0, QR_REGION["x"] - 30)
     qy = max(0, QR_REGION["y"] - 30)
-    qw = min(canonical_gray.shape[1] - qx, QR_REGION["w"] + 60)
-    qh = min(canonical_gray.shape[0] - qy, QR_REGION["h"] + 60)
+    qw = min(can_w - qx, QR_REGION["w"] + 60)
+    qh = min(can_h - qy, QR_REGION["h"] + 60)
 
-    qr_roi = canonical_gray[qy:qy + qh, qx:qx + qw]
+    qr_roi_tr = canonical_gray[qy:qy + qh, qx:qx + qw]
 
-    # Preprocess QR ROI (multiple contrast enhancements)
-    roi_variations = [
-        qr_roi,
-        cv2.equalizeHist(qr_roi),
-        cv2.threshold(qr_roi, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1],
+    # Preprocess QR ROI variations
+    roi_variations_tr = [
+        qr_roi_tr,
+        cv2.equalizeHist(qr_roi_tr),
+        cv2.threshold(qr_roi_tr, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1],
     ]
 
     decoded_text = ""
     orientation_deg = 0
-    for var_img in roi_variations:
+    for var_img in roi_variations_tr:
         data, points, _ = qr_detector.detectAndDecode(var_img)
         if data:
             decoded_text = data
             orientation_deg = 0
             break
 
-    # 2. Fallback: Search full canonical image
+    # 2. If not found, inspect 180-degree upside down corner ROI (Bottom-Left)
     if not decoded_text:
-        data, points, _ = qr_detector.detectAndDecode(canonical_gray)
+        qx_bl = max(0, can_w - (QR_REGION["x"] + QR_REGION["w"] + 30))
+        qy_bl = max(0, can_h - (QR_REGION["y"] + QR_REGION["h"] + 30))
+        qw_bl = min(can_w - qx_bl, QR_REGION["w"] + 60)
+        qh_bl = min(can_h - qy_bl, QR_REGION["h"] + 60)
+        qr_roi_bl = canonical_gray[qy_bl:qy_bl + qh_bl, qx_bl:qx_bl + qw_bl]
+
+        roi_variations_bl = [
+            qr_roi_bl,
+            cv2.equalizeHist(qr_roi_bl),
+            cv2.threshold(qr_roi_bl, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1],
+        ]
+        for var_img in roi_variations_bl:
+            data, points, _ = qr_detector.detectAndDecode(var_img)
+            if data:
+                decoded_text = data
+                orientation_deg = 180
+                break
+
+    # 3. Fast scaled search on canonical image (prevents multi-second OpenCV freeze on large frames)
+    if not decoded_text:
+        scale = 800.0 / max(can_w, can_h)
+        small_can = cv2.resize(canonical_gray, (int(can_w * scale), int(can_h * scale)), interpolation=cv2.INTER_AREA)
+        data, points, _ = qr_detector.detectAndDecode(small_can)
         if data:
             decoded_text = data
             if points is not None and len(points) > 0:
                 mean_y = float(np.mean(points[..., 1]))
-                if mean_y > (canonical_gray.shape[0] / 2.0):
+                if mean_y > (small_can.shape[0] / 2.0):
                     orientation_deg = 180
                 else:
                     orientation_deg = 0
 
-    # 3. Fallback: Search raw input image if provided
+    # 4. Fallback: Fast scaled search on raw input image if provided
     if not decoded_text and full_image_fallback is not None:
         if len(full_image_fallback.shape) == 3:
             raw_gray = cv2.cvtColor(full_image_fallback, cv2.COLOR_BGR2GRAY)
         else:
             raw_gray = full_image_fallback
-        data, points, _ = qr_detector.detectAndDecode(raw_gray)
+        raw_h, raw_w = raw_gray.shape[:2]
+        raw_scale = 800.0 / max(raw_w, raw_h)
+        small_raw = cv2.resize(raw_gray, (int(raw_w * raw_scale), int(raw_h * raw_scale)), interpolation=cv2.INTER_AREA)
+        data, points, _ = qr_detector.detectAndDecode(small_raw)
         if data:
             decoded_text = data
 
