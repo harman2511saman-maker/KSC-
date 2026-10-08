@@ -151,11 +151,24 @@ def detect_registration_markers(
 
             # Check inside bounding box to reject light or empty contours
             roi_gray = gray[max(0, y):min(h, y + bh), max(0, x):min(w, x + bw)]
-            if roi_gray.size > 0:
-                mean_val = float(np.mean(roi_gray))
-                # Reject if region is too bright
-                if mean_val > 170:
-                    continue
+            if roi_gray.size == 0:
+                continue
+            mean_val = float(np.mean(roi_gray))
+            if mean_val > 155:
+                continue
+
+            # Quiet Zone Check: true marker on sheet must be surrounded by light paper
+            pad_x = max(6, int(bw * 0.45))
+            pad_y = max(6, int(bh * 0.45))
+            qy1, qy2 = max(0, y - pad_y), min(h, y + bh + pad_y)
+            qx1, qx2 = max(0, x - pad_x), min(w, x + bw + pad_x)
+            surrounding_roi = gray[qy1:qy2, qx1:qx2]
+            surrounding_mean = float(np.mean(surrounding_roi))
+            contrast_val = surrounding_mean - mean_val
+
+            # Reject objects on dark background (e.g. keyboard keys, dark blanket spots)
+            if surrounding_mean < 80 or contrast_val < 30:
+                continue
 
             # Calculate center of mass
             M = cv2.moments(cnt)
@@ -181,6 +194,8 @@ def detect_registration_markers(
                     "h": bh,
                     "area": area,
                     "solidity": solidity,
+                    "contrast": contrast_val,
+                    "paper_brightness": surrounding_mean,
                     "approx_len": len(approx)
                 })
 
@@ -194,33 +209,71 @@ def detect_registration_markers(
         quad_bl = [c for c in candidate_markers if c["cx"] < center_x and c["cy"] >= center_y]
         quad_br = [c for c in candidate_markers if c["cx"] >= center_x and c["cy"] >= center_y]
 
-        # Select the most extreme outer corner marker in each quadrant
+        # Evaluate candidate 4-combinations to find the optimal A4 sheet quad
         if quad_tl and quad_tr and quad_bl and quad_br:
-            # TL: smallest distance to (0, 0)
-            best_tl = min(quad_tl, key=lambda c: np.hypot(c["cx"] - 0, c["cy"] - 0))
-            # TR: smallest distance to (w, 0)
-            best_tr = min(quad_tr, key=lambda c: np.hypot(c["cx"] - w, c["cy"] - 0))
-            # BR: smallest distance to (w, h)
-            best_br = min(quad_br, key=lambda c: np.hypot(c["cx"] - w, c["cy"] - h))
-            # BL: smallest distance to (0, h)
-            best_bl = min(quad_bl, key=lambda c: np.hypot(c["cx"] - 0, c["cy"] - h))
+            best_combo = None
+            best_score = -1e9
 
-            raw_pts = np.array([
-                [best_tl["cx"], best_tl["cy"]],
-                [best_tr["cx"], best_tr["cy"]],
-                [best_br["cx"], best_br["cy"]],
-                [best_bl["cx"], best_bl["cy"]]
-            ], dtype=np.float32)
+            # Sort candidates by contrast and size plausibility
+            tl_cands = sorted(quad_tl, key=lambda c: c["contrast"], reverse=True)[:6]
+            tr_cands = sorted(quad_tr, key=lambda c: c["contrast"], reverse=True)[:6]
+            br_cands = sorted(quad_br, key=lambda c: c["contrast"], reverse=True)[:6]
+            bl_cands = sorted(quad_bl, key=lambda c: c["contrast"], reverse=True)[:6]
 
-            ordered_corners = order_quadrilateral_points(raw_pts)
-            is_valid, reason_ku = validate_quadrilateral_geometry(ordered_corners, w, h)
+            for c_tl in tl_cands:
+                for c_tr in tr_cands:
+                    for c_br in br_cands:
+                        for c_bl in bl_cands:
+                            pts = np.array([
+                                [c_tl["cx"], c_tl["cy"]],
+                                [c_tr["cx"], c_tr["cy"]],
+                                [c_br["cx"], c_br["cy"]],
+                                [c_bl["cx"], c_bl["cy"]]
+                            ], dtype=np.float32)
 
-            if is_valid:
+                            ordered = order_quadrilateral_points(pts)
+                            is_valid, _ = validate_quadrilateral_geometry(ordered, w, h)
+                            if not is_valid:
+                                continue
+
+                            # Geometric Scoring:
+                            tl_p, tr_p, br_p, bl_p = ordered
+                            w_top = np.linalg.norm(tr_p - tl_p)
+                            w_bot = np.linalg.norm(br_p - bl_p)
+                            h_left = np.linalg.norm(bl_p - tl_p)
+                            h_right = np.linalg.norm(br_p - tr_p)
+
+                            avg_w = (w_top + w_bot) / 2.0
+                            avg_h = (h_left + h_right) / 2.0
+                            if avg_w <= 0 or avg_h <= 0:
+                                continue
+
+                            aspect = max(avg_w, avg_h) / min(avg_w, avg_h)
+                            sym_w = min(w_top, w_bot) / max(w_top, w_bot)
+                            sym_h = min(h_left, h_right) / max(h_left, h_right)
+
+                            areas = [c_tl["area"], c_tr["area"], c_br["area"], c_bl["area"]]
+                            size_ratio = min(areas) / max(max(areas), 1.0)
+
+                            # Perfect A4 aspect is 1.414, symmetry near 1.0, marker sizes matched
+                            combo_score = (
+                                (sym_w * 3.0) +
+                                (sym_h * 3.0) +
+                                (size_ratio * 2.0) -
+                                (abs(aspect - 1.414) * 4.0) +
+                                (min(c_tl["contrast"], c_tr["contrast"], c_br["contrast"], c_bl["contrast"]) / 50.0)
+                            )
+
+                            if combo_score > best_score:
+                                best_score = combo_score
+                                best_combo = ordered
+
+            if best_combo is not None:
                 return {
                     "success": True,
                     "status_code": "MARKERS_DETECTED",
-                    "message_ku": reason_ku,
-                    "corners": ordered_corners.tolist(),
+                    "message_ku": "نیشانەکان بە دروستی دۆزرانەوە",
+                    "corners": best_combo.tolist(),
                     "is_page_contour": False,
                     "markers_count": 4,
                     "raw_candidates_count": len(candidate_markers)
@@ -238,10 +291,10 @@ def detect_registration_markers(
         quad_br = [c for c in candidate_markers if c["cx"] >= center_x and c["cy"] >= center_y]
 
         found_quads = {
-            "TL": min(quad_tl, key=lambda c: np.hypot(c["cx"] - 0, c["cy"] - 0)) if quad_tl else None,
-            "TR": min(quad_tr, key=lambda c: np.hypot(c["cx"] - w, c["cy"] - 0)) if quad_tr else None,
-            "BR": min(quad_br, key=lambda c: np.hypot(c["cx"] - w, c["cy"] - h)) if quad_br else None,
-            "BL": min(quad_bl, key=lambda c: np.hypot(c["cx"] - 0, c["cy"] - h)) if quad_bl else None,
+            "TL": max(quad_tl, key=lambda c: c["contrast"]) if quad_tl else None,
+            "TR": max(quad_tr, key=lambda c: c["contrast"]) if quad_tr else None,
+            "BR": max(quad_br, key=lambda c: c["contrast"]) if quad_br else None,
+            "BL": max(quad_bl, key=lambda c: c["contrast"]) if quad_bl else None,
         }
 
         present_count = sum(1 for v in found_quads.values() if v is not None)
