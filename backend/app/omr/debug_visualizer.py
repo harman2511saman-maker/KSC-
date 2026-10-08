@@ -65,12 +65,16 @@ def generate_debug_overlay(
                 elif status == "UNCERTAIN":
                     cv2.circle(overlay, (bcx, bcy), r + 2, (0, 140, 255), 2)
             elif status == "MULTIPLE":
-                # Check if this choice is one of the marked choices
-                is_marked = (
-                    feat.get("rel_contrast", 0) >= 14.0 or
-                    feat.get("fill_ratio", 0) >= 0.18 or
-                    feat.get("combined_score", 0) >= 0.20
-                )
+                # Highlight only the actual multiple filled choices (top_choice and second_choice)
+                top_c = q_res.get("top_choice")
+                sec_c = q_res.get("second_choice")
+                is_marked = False
+                if choice_key in [top_c, sec_c]:
+                    is_marked = (
+                        feat.get("rel_contrast", 0) >= 12.0 or
+                        feat.get("fill_ratio", 0) >= 0.18 or
+                        feat.get("combined_score", 0) >= 0.22
+                    )
                 if is_marked:
                     # Mark in bright RED to show student chose multiple answers and it is counted as WRONG
                     cv2.circle(overlay, (bcx, bcy), r + 2, (0, 0, 220), 2)

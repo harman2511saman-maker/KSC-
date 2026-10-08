@@ -91,8 +91,9 @@ async def process_single_image(
     # Initial context (if exam_id provided)
     exam_ctx = build_exam_context(exam_id, db) if exam_id else None
 
-    # Run OMR Pipeline
-    pipeline_res = process_omr_sheet(
+    # Run OMR Pipeline in threadpool
+    pipeline_res = await asyncio.to_thread(
+        process_omr_sheet,
         image_input=contents,
         exam_data=exam_ctx["exam_data"] if exam_ctx else None,
         answer_key_dict=exam_ctx["answer_key_dict"] if exam_ctx else None,
