@@ -18,27 +18,10 @@ def extract_bubble_features(
     local_bg_thresh: Optional[float] = None
 ) -> Dict[str, Any]:
     """
-    Extracts multi-dimensional features for a single bubble ROI with sub-pixel center snapping.
+    Extracts multi-dimensional features for a single bubble ROI.
     Masks the inner circular region to measure graphite/ink density and core darkness.
     """
     h, w = canonical_gray.shape[:2]
-
-    # Search a tiny local neighborhood (-4..+4 px) to lock precisely on the printed bubble center
-    best_cx, best_cy = cx, cy
-    min_mean = 255.0
-
-    for dy in [-3, -1, 0, 1, 3]:
-        for dx in [-3, -1, 0, 1, 3]:
-            tcx, tcy = cx + dx, cy + dy
-            if tcy - 5 < 0 or tcy + 5 >= h or tcx - 5 < 0 or tcx + 5 >= w:
-                continue
-            core_patch = canonical_gray[tcy - 4:tcy + 5, tcx - 4:tcx + 5]
-            cur_mean = float(np.mean(core_patch))
-            if cur_mean < min_mean:
-                min_mean = cur_mean
-                best_cx, best_cy = tcx, tcy
-
-    cx, cy = best_cx, best_cy
     
     r_pad = radius + 3
     x1 = max(0, cx - r_pad)
@@ -55,8 +38,7 @@ def extract_bubble_features(
             "mean_intensity": 255.0,
             "contrast_diff": 0.0,
             "center_occupancy": 0.0,
-            "threshold_val": 120.0,
-            "center": (cx, cy)
+            "threshold_val": 120.0
         }
 
     rcx = cx - x1
@@ -82,7 +64,7 @@ def extract_bubble_features(
     mean_intensity = float(np.mean(inner_pixels))
 
     # Adaptive darkness threshold based on local paper brightness
-    threshold_val = local_bg_thresh if local_bg_thresh is not None else (local_bg_mean * 0.80)
+    threshold_val = local_bg_thresh if local_bg_thresh is not None else (local_bg_mean * 0.82)
     dark_pixels = np.sum(inner_pixels < threshold_val)
     fill_ratio = float(dark_pixels / inner_pixel_count)
 
@@ -100,8 +82,7 @@ def extract_bubble_features(
         "local_bg_mean": round(local_bg_mean, 2),
         "contrast_diff": round(contrast_diff, 2),
         "center_occupancy": round(core_fill, 4),
-        "threshold_val": round(threshold_val, 2),
-        "center": (cx, cy)
+        "threshold_val": round(threshold_val, 2)
     }
 
 def classify_question_answers(
@@ -173,18 +154,10 @@ def classify_question_answers(
         score_delta = top_score - second_score
         contrast_delta = top_contrast - second_contrast
 
-        # 4. Strict and Accurate Classification Decision
-        # An actual filled bubble must have genuine ink/graphite fill
-        is_top_marked = (
-            (top_feat["fill_ratio"] >= 0.28) or
-            (top_contrast >= 24.0 and top_feat["fill_ratio"] >= 0.16) or
-            (top_score >= 0.36)
-        )
-        is_second_marked = (
-            (second_feat["fill_ratio"] >= 0.26) or
-            (second_contrast >= 22.0 and second_feat["fill_ratio"] >= 0.15) or
-            (second_score >= 0.33)
-        )
+        # 4. Deterministic Classification Decision
+        # Minimum threshold for a mark: relative contrast >= 14 or combined score >= 0.22 or fill_ratio >= 0.20
+        is_top_marked = (top_contrast >= 15.0 or top_score >= 0.24 or top_feat["fill_ratio"] >= 0.20)
+        is_second_marked = (second_contrast >= 15.0 or second_score >= 0.24 or second_feat["fill_ratio"] >= 0.20)
 
         if not is_top_marked:
             # Clearly blank question
@@ -193,7 +166,7 @@ def classify_question_answers(
             confidence = 0.99
             count_blank += 1
 
-        elif is_second_marked and (contrast_delta < 15.0 or score_delta < 0.18):
+        elif is_second_marked and (contrast_delta < 12.0 or score_delta < 0.16):
             # Two choices are clearly filled (Multiple answers) -> Treated as invalid/wrong
             status = "MULTIPLE"
             detected_answer = None

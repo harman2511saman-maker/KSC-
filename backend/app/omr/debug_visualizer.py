@@ -54,19 +54,16 @@ def generate_debug_overlay(
             feat = q_res.get("choices_metrics", {}).get(choice_key, {})
             fill_pct = int(feat.get("fill_ratio", 0) * 100)
 
-            feat_center = feat.get("center", (bcx, bcy))
-            draw_cx, draw_cy = int(feat_center[0]), int(feat_center[1])
-
             if choice_key == detected_ans:
                 if status == "SELECTED":
                     if correct_ans is not None:
                         color = (0, 200, 0) if detected_ans == correct_ans else (0, 0, 220)
                     else:
                         color = (0, 200, 0)
-                    cv2.circle(overlay, (draw_cx, draw_cy), r + 2, color, 2)
-                    cv2.circle(overlay, (draw_cx, draw_cy), inner_r, color, -1)
+                    cv2.circle(overlay, (bcx, bcy), r + 2, color, 2)
+                    cv2.circle(overlay, (bcx, bcy), inner_r, color, -1)
                 elif status == "UNCERTAIN":
-                    cv2.circle(overlay, (draw_cx, draw_cy), r + 2, (0, 140, 255), 2)
+                    cv2.circle(overlay, (bcx, bcy), r + 2, (0, 140, 255), 2)
             elif status == "MULTIPLE":
                 # Highlight only the actual multiple filled choices (top_choice and second_choice)
                 top_c = q_res.get("top_choice")
@@ -74,23 +71,23 @@ def generate_debug_overlay(
                 is_marked = False
                 if choice_key in [top_c, sec_c]:
                     is_marked = (
-                        feat.get("rel_contrast", 0) >= 15.0 or
-                        feat.get("fill_ratio", 0) >= 0.22 or
-                        feat.get("combined_score", 0) >= 0.28
+                        feat.get("rel_contrast", 0) >= 12.0 or
+                        feat.get("fill_ratio", 0) >= 0.18 or
+                        feat.get("combined_score", 0) >= 0.22
                     )
                 if is_marked:
                     # Mark in bright RED to show student chose multiple answers and it is counted as WRONG
-                    cv2.circle(overlay, (draw_cx, draw_cy), r + 2, (0, 0, 220), 2)
-                    cv2.circle(overlay, (draw_cx, draw_cy), inner_r, (0, 0, 220), -1)
+                    cv2.circle(overlay, (bcx, bcy), r + 2, (0, 0, 220), 2)
+                    cv2.circle(overlay, (bcx, bcy), inner_r, (0, 0, 220), -1)
                 else:
-                    cv2.circle(overlay, (draw_cx, draw_cy), r, (180, 180, 180), 1)
+                    cv2.circle(overlay, (bcx, bcy), r, (180, 180, 180), 1)
             else:
                 # Normal or blank
-                cv2.circle(overlay, (draw_cx, draw_cy), r, (180, 180, 180), 1)
+                cv2.circle(overlay, (bcx, bcy), r, (180, 180, 180), 1)
 
             # Tiny percentage label below bubble for calibration inspect
-            if fill_pct > 18:
-                cv2.putText(overlay, f"{fill_pct}%", (draw_cx - 12, draw_cy + r + 11), cv2.FONT_HERSHEY_SIMPLEX, 0.32, (100, 100, 100), 1)
+            if fill_pct > 15:
+                cv2.putText(overlay, f"{fill_pct}%", (bcx - 12, bcy + r + 11), cv2.FONT_HERSHEY_SIMPLEX, 0.32, (100, 100, 100), 1)
 
     return overlay
 
