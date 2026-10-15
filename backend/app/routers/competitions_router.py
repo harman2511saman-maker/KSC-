@@ -50,18 +50,14 @@ def get_competition_leaderboard(
         results = query.all()
         student_count = len(results)
         
-        if student_count > 0:
-            total_score = sum(r.total_score for r in results)
-            max_score = sum(r.max_score for r in results)
-            avg_percentage = round(sum(r.percentage for r in results) / student_count, 1)
-            passed_count = sum(1 for r in results if r.status == "PASSED" or r.percentage >= 50.0)
-            top_score = max(r.percentage for r in results)
-        else:
-            total_score = 0.0
-            max_score = 0.0
-            avg_percentage = 0.0
-            passed_count = 0
-            top_score = 0.0
+        if student_count == 0:
+            continue
+
+        total_score = sum(r.total_score or 0.0 for r in results)
+        max_score = sum(r.max_score or 100.0 for r in results)
+        avg_percentage = round(sum(r.percentage or 0.0 for r in results) / student_count, 1)
+        passed_count = sum(1 for r in results if r.status == "PASSED" or (r.percentage or 0.0) >= 50.0)
+        top_score = max((r.percentage or 0.0) for r in results)
 
         schools_ranking.append({
             "school_id": s.id,
@@ -135,17 +131,18 @@ def get_competition_leaderboard(
 
     # 3. Overall Stats
     total_participants = sum(s["students_participated"] for s in schools_ranking)
-    overall_avg = round(sum(s["average_percentage"] for s in schools_ranking) / max(1, len(schools_ranking)), 1)
+    overall_avg = round(sum(s["average_percentage"] for s in schools_ranking) / max(1, len(schools_ranking)), 1) if schools_ranking else 0.0
     total_passed = sum(s["passed_students"] for s in schools_ranking)
+    overall_success_rate = round((total_passed / max(1, total_participants)) * 100, 1) if total_participants > 0 else 0.0
 
     return {
         "exams_list": exams_list,
         "classes_list": classes_list,
-        "schools_count": len(schools),
+        "schools_count": len(schools_ranking),
         "total_participants": total_participants,
         "overall_average": overall_avg,
         "total_passed": total_passed,
-        "overall_success_rate": round((total_passed / max(1, total_participants)) * 100, 1),
+        "overall_success_rate": overall_success_rate,
         "schools_ranking": schools_ranking,
         "top_students": top_students,
         "students_leaderboard": paginated_students,

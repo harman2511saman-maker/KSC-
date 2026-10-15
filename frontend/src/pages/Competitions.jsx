@@ -48,6 +48,7 @@ export default function Competitions({ onShowToast }) {
   // Filters State
   const [selectedExamId, setSelectedExamId] = useState('');
   const [selectedSchoolId, setSelectedSchoolId] = useState('');
+  const [schoolSearchTerm, setSchoolSearchTerm] = useState('');
   const [scoreRange, setScoreRange] = useState('all');
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('rank_asc');
@@ -128,6 +129,7 @@ export default function Competitions({ onShowToast }) {
   const resetFilters = () => {
     setSelectedExamId('');
     setSelectedSchoolId('');
+    setSchoolSearchTerm('');
     setScoreRange('all');
     setStudentSearchTerm('');
     setSortBy('rank_asc');
@@ -135,8 +137,13 @@ export default function Competitions({ onShowToast }) {
     onShowToast({ type: 'info', message: 'گشت فلتەرەکان پاککرانەوە' });
   };
 
-  const top3 = leaderboard?.schools_ranking?.slice(0, 3) || [];
+  const selectedExam = exams.find((e) => String(e.id) === String(selectedExamId));
   const schoolsRanking = leaderboard?.schools_ranking || [];
+  const displayedSchools = schoolsRanking.filter((s) => {
+    if (!schoolSearchTerm.trim()) return true;
+    return s.school_name.toLowerCase().includes(schoolSearchTerm.toLowerCase().trim());
+  });
+  const top3 = schoolsRanking.slice(0, 3);
 
   // Filter and Sort Students Leaderboard
   const allStudents = leaderboard?.students_leaderboard || [];
@@ -314,26 +321,116 @@ export default function Competitions({ onShowToast }) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column (7 cols): Full Schools Ranking Dark Table */}
         <div className="lg:col-span-7 bg-[#080d1a] rounded-3xl border border-slate-800/80 p-5 sm:p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
             <div className="flex items-center gap-2.5">
-              <Building2 className="w-5 h-5 text-brand-400" />
-              <h3 className="text-base sm:text-lg font-black text-white">
-                خشتەی تەواوی ڕیزبەندی قوتابخانەکان
-              </h3>
+              <Building2 className="w-5 h-5 text-brand-400 shrink-0" />
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-white">
+                  خشتەی تەواوی ڕیزبەندی قوتابخانەکان
+                </h3>
+                {selectedExam && (
+                  <span className="text-[11px] text-amber-400 font-bold block mt-0.5">
+                    بەپێی تاقیکردنەوەی: {selectedExam.exam_name}
+                  </span>
+                )}
+              </div>
             </div>
-            <span className="text-xs text-slate-400 font-bold">
-              {schoolsRanking.length} قوتابخانە
-            </span>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Exam Filter Dropdown */}
+              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 rounded-xl px-2.5 py-1.5 shadow-inner">
+                <Filter className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="text-[11px] font-bold text-slate-300 shrink-0">تاقیکردنەوە:</span>
+                <select
+                  value={selectedExamId}
+                  onChange={(e) => {
+                    setSelectedExamId(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="bg-transparent border-none text-xs font-black text-amber-300 focus:outline-none cursor-pointer pr-1"
+                >
+                  <option value="" className="bg-slate-900 text-slate-200">
+                    هەموو تاقیکردنەوەکان ({exams.length})
+                  </option>
+                  {exams.map((ex) => (
+                    <option key={ex.id} value={ex.id} className="bg-slate-900 text-slate-200">
+                      {ex.exam_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* School Search */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="گەڕان لە قوتابخانەکان..."
+                  value={schoolSearchTerm}
+                  onChange={(e) => setSchoolSearchTerm(e.target.value)}
+                  className="w-36 sm:w-40 pr-8 pl-2.5 py-1.5 bg-slate-900 border border-slate-700/80 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+              </div>
+
+              {(selectedExamId || schoolSearchTerm) && (
+                <button
+                  onClick={() => {
+                    setSelectedExamId('');
+                    setSchoolSearchTerm('');
+                  }}
+                  className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl text-xs transition-colors"
+                  title="پاککردنەوەی فلتەر"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              <span className="text-xs text-slate-400 font-bold px-2.5 py-1 bg-slate-800/80 rounded-xl shrink-0">
+                {displayedSchools.length} قوتابخانە
+              </span>
+            </div>
           </div>
+
+          {/* Quick Exam Filter Tabs */}
+          {exams.length > 1 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+              <span className="text-[11px] text-slate-400 font-bold shrink-0">فلتەری خێرا:</span>
+              <button
+                onClick={() => setSelectedExamId('')}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  !selectedExamId
+                    ? 'bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-400/20'
+                    : 'bg-slate-900/90 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                گشت تاقیکردنەوەکان
+              </button>
+              {exams.map((ex) => (
+                <button
+                  key={ex.id}
+                  onClick={() => setSelectedExamId(String(ex.id))}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                    String(selectedExamId) === String(ex.id)
+                      ? 'bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-400/20'
+                      : 'bg-slate-900/90 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <span>{ex.exam_name}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {loading ? (
             <div className="text-center py-12 text-slate-400">
               <div className="animate-spin w-8 h-8 border-3 border-amber-400 border-t-transparent rounded-full mx-auto mb-2" />
               لە بارکردندایە...
             </div>
-          ) : schoolsRanking.length === 0 ? (
+          ) : displayedSchools.length === 0 ? (
             <div className="text-center py-10 text-slate-500 text-xs">
-              هیچ داتایەکی قوتابخانە بەردەست نییە
+              {selectedExam
+                ? `هیچ قوتابخانەیەک بەشداری لە (${selectedExam.exam_name}) نەکردووە`
+                : 'هیچ داتایەکی قوتابخانە بەردەست نییە'}
             </div>
           ) : (
             <div className="overflow-x-auto rounded-2xl border border-slate-800/80">
@@ -350,7 +447,7 @@ export default function Competitions({ onShowToast }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 font-medium">
-                  {schoolsRanking.map((s) => (
+                  {displayedSchools.map((s) => (
                     <tr key={s.school_id} className="hover:bg-slate-800/40 transition-colors">
                       <td className="py-3 px-3 text-center font-bold text-slate-300">
                         {s.rank}
@@ -391,7 +488,7 @@ export default function Competitions({ onShowToast }) {
             </span>
 
             <h3 className="text-base sm:text-lg font-black text-white">
-              سێ قوتابخانەی پێشەنگی کوردستان
+              {selectedExam ? `سێ پێشەنگی (${selectedExam.exam_name})` : 'سێ قوتابخانەی پێشەنگی کوردستان'}
             </h3>
           </div>
 
