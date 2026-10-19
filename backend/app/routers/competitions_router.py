@@ -10,7 +10,7 @@ import shutil
 from datetime import datetime
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, or_
+from sqlalchemy import desc, func, or_, case
 from typing import Optional, List, Dict, Any
 
 from app.database import get_db
@@ -25,12 +25,49 @@ DEFAULT_SYSTEM_SETTINGS = {
         "text": "ئەنجامی فەرمیی تاقیکردنەوەکانی پلاتفۆرمی KSC بڵاوکرایەوە • پیرۆزبایی لە سەرجەم قوتابییان و قوتابخانە سەرکەوتووەکان دەکەین!",
         "badge": "ئاگاداری گرنگ"
     },
+    "promo_slides": [
+        {
+            "id": 1,
+            "badge": "سپۆنسەری فەرمی",
+            "title": "پاڵپشتی فەرمیی پێشبڕکێی قوتابییانی کوردستان (KSC)",
+            "description": "بەشداری لە بەهێزترین پێشبڕکێی زانستی و خوێندنی کوردستان • دیاری و بڕوانامەی شایستە بۆ قوتابخانە و قوتابییە یەکەمەکان",
+            "tag": "KSC VIP",
+            "link": "https://t.me/KurdishOMR",
+            "link_text": "پەیوەندی لە تێلیگرام",
+            "bg_gradient": "from-emerald-700 via-emerald-800 to-slate-900"
+        },
+        {
+            "id": 2,
+            "badge": "ڕێنمایی تاقیکردنەوە",
+            "title": "سیستەمی سکان و پشکنینی ئەلیکترۆنیی فۆڕمی وەڵام",
+            "description": "تەنها یەک بازنە بە قەڵەمی جافی تۆخ پڕبکەرەوە • ئەنجامەکان بە شێوازی دەستبەجێ بە ژیری دەستکرد شیکاری دەکرێن",
+            "tag": "OMR GUIDE",
+            "link": "#",
+            "link_text": "خوێندنەوەی یاساکان",
+            "bg_gradient": "from-amber-600 via-amber-800 to-slate-950"
+        },
+        {
+            "id": 3,
+            "badge": "ڕێکلام و هاوبەشی",
+            "title": "دەرگای سپۆنسەری و هاوبەشی کراوەیە بۆ کۆمپانیا و ناوەندەکان",
+            "description": "بۆ ناساندنی براندەکەت بە دەیان هەزار قوتابی و مامۆستا لە سەرانسەری هەرێمی کوردستان، پەیوەندیمان پێوە بکەن",
+            "tag": "SPONSOR",
+            "link": "https://wa.me/HarmanGaraway",
+            "link_text": "پەیوەندی لە وەتسئاپ",
+            "bg_gradient": "from-indigo-700 via-slate-900 to-slate-950"
+        }
+    ],
     "certificate_config": {
         "enabled": True,
         "title": "بڕوانامەی ڕێزلێنان و سەرکەوتن",
         "min_percentage": 75.0,
-        "top_ranks_only": False,
+        "eligibility_mode": "top_schools_123",  # "all", "top_schools_123", "selected_schools", "top_students"
+        "top_schools_count": 3,
+        "allowed_exam_id": "",
+        "allowed_school_ids": [],
         "appreciation_text": "بە بۆنەی بەشداریکردنی کارا و بەدەستهێنانی پلەی شایستە لە پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان",
+        "school_cert_title": "بڕوانامەی شایستەیی و سەرکەوتنی قوتابخانە",
+        "school_appreciation_text": "پیرۆزبایی گەرم ئاراستەی دەستەی کارگێڕی، مامۆستایان و قوتابیانی ئەم قوتابخانە ئازیزە دەکەین بە بۆنەی بەدەستهێنانی پلەی شایستە لەسەر ئاستی هەرێمی کوردستان",
         "signee_name": "سەرپەرشتیاری گشتیی پڕۆژەی KSC",
         "signee_title": "لیژنەی باڵای هەڵسەنگاندن و تاقیکردنەوەکان"
     }
@@ -236,6 +273,75 @@ def trigger_database_backup(
         "total_backups": len(existing)
     }
 
+@router.get("/school-certificate/{school_id}")
+def get_school_certificate_data(
+    school_id: int,
+    exam_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Generates verified certificate data for a winning or participating school."""
+    school = db.query(SchoolClass).filter(SchoolClass.id == school_id).first()
+    if not school:
+        raise HTTPException(status_code=404, detail="قوتابخانە نەدۆزرایەوە")
+
+    settings = get_system_settings_dict(db)
+    cert_cfg = settings.get("certificate_config", DEFAULT_SYSTEM_SETTINGS["certificate_config"])
+
+    query = (
+        db.query(
+            Student.class_id,
+            func.avg(Result.percentage).label("avg_pct"),
+            func.count(Result.id).label("total_students"),
+            func.sum(case((Result.percentage >= 50, 1), else_=0)).label("passed_count")
+        )
+        .join(Result, Student.id == Result.student_id)
+        .filter(Result.status == "PROCESSED")
+    )
+    if exam_id:
+        query = query.filter(Result.exam_id == exam_id)
+
+    all_ranks = query.group_by(Student.class_id).order_by(func.avg(Result.percentage).desc()).all()
+
+    school_rank = 1
+    avg_pct = 0.0
+    total_st = 0
+    passed_st = 0
+    for idx, row in enumerate(all_ranks, start=1):
+        if row[0] == school_id:
+            school_rank = idx
+            avg_pct = round(float(row[1] or 0.0), 1)
+            total_st = int(row[2] or 0)
+            passed_st = int(row[3] or 0)
+            break
+
+    exam_name = "سەرجەم تاقیکردنەوەکان"
+    if exam_id:
+        ex = db.query(Exam).filter(Exam.id == exam_id).first()
+        if ex:
+            exam_name = ex.exam_name
+
+    cert_id = f"KSC-SCH-{school_id:03d}-{datetime.now().strftime('%Y')}"
+
+    return {
+        "is_school": True,
+        "certificate_id": cert_id,
+        "title": cert_cfg.get("school_cert_title", "بڕوانامەی شایستەیی و سەرکەوتنی قوتابخانە"),
+        "appreciation_text": cert_cfg.get("school_appreciation_text", "پیرۆزبایی گەرم ئاراستەی دەستەی کارگێڕی، مامۆستایان و قوتابیانی ئەم قوتابخانە ئازیزە دەکەین بە بۆنەی بەدەستهێنانی پلەی شایستە لەسەر ئاستی هەرێمی کوردستان"),
+        "school_name": school.name,
+        "student_name": f"قوتابخانەی {school.name}",
+        "grade": school.grade or "گشتی",
+        "school_rank": school_rank,
+        "overall_rank": school_rank,
+        "percentage": avg_pct,
+        "average_percentage": avg_pct,
+        "total_participants": total_st,
+        "passed_count": passed_st,
+        "exam_name": exam_name,
+        "signee_name": cert_cfg.get("signee_name", "سەرپەرشتیاری گشتیی پڕۆژەی KSC"),
+        "signee_title": cert_cfg.get("signee_title", "لیژنەی باڵای هەڵسەنگاندن و تاقیکردنەوەکان"),
+        "date": datetime.now().strftime("%Y/%m/%d")
+    }
+
 @router.get("/public-search")
 def search_student_public_result(
     student_code: Optional[str] = Query(None, description="Student code to lookup score card"),
@@ -321,14 +427,48 @@ def search_student_public_result(
         min_pct = float(cert_cfg.get("min_percentage", 75.0))
         cert_enabled = bool(cert_cfg.get("enabled", True))
         pct = float(r.percentage or 0.0)
-        
+        eligibility_mode = cert_cfg.get("eligibility_mode", "top_schools_123")
+        allowed_exam_id = cert_cfg.get("allowed_exam_id")
+        allowed_school_ids = [int(sid) for sid in cert_cfg.get("allowed_school_ids", []) if str(sid).isdigit()]
+
         is_eligible = cert_enabled and (pct >= min_pct)
-        if cert_cfg.get("top_ranks_only", False):
-            is_eligible = is_eligible and (rank_in_exam <= 10)
+
+        # 1. Filter by specific exam if configured
+        if allowed_exam_id and str(allowed_exam_id).strip():
+            if str(r.exam_id) != str(allowed_exam_id).strip():
+                is_eligible = False
+
+        # 2. Filter by Top Schools (1, 2, 3) in this exam
+        if is_eligible and eligibility_mode == "top_schools_123":
+            top_k = int(cert_cfg.get("top_schools_count", 3))
+            school_ranks_query = (
+                db.query(Student.class_id)
+                .join(Result, Student.id == Result.student_id)
+                .filter(Result.exam_id == r.exam_id, Result.status == "PROCESSED")
+                .group_by(Student.class_id)
+                .order_by(func.avg(Result.percentage).desc())
+                .limit(top_k)
+                .all()
+            )
+            top_school_ids = [s[0] for s in school_ranks_query if s[0] is not None]
+            if student.class_id not in top_school_ids:
+                is_eligible = False
+
+        # 3. Filter by Selected Schools
+        elif is_eligible and eligibility_mode == "selected_schools":
+            if allowed_school_ids and student.class_id not in allowed_school_ids:
+                is_eligible = False
+
+        # 4. Filter by Top Students only
+        elif is_eligible and eligibility_mode == "top_students":
+            top_st_count = int(cert_cfg.get("top_students_count", 3))
+            if rank_in_exam > top_st_count:
+                is_eligible = False
 
         certificate_data = None
         if is_eligible:
             certificate_data = {
+                "is_school": False,
                 "certificate_id": f"KSC-{r.id:04d}-{student.id:04d}",
                 "title": cert_cfg.get("title", "بڕوانامەی ڕێزلێنان و سەرکەوتن"),
                 "appreciation_text": cert_cfg.get("appreciation_text", "بە بۆنەی بەشداریکردنی کارا و بەدەستهێنانی پلەی شایستە لە پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان"),
@@ -336,15 +476,16 @@ def search_student_public_result(
                 "signee_title": cert_cfg.get("signee_title", "لیژنەی باڵای هەڵسەنگاندن و تاقیکردنەوەکان"),
                 "student_name": student.name,
                 "school_name": student.school_class.name if student.school_class else "—",
-                "grade": student.grade,
+                "grade": student.grade or "گشتی",
                 "exam_name": r.exam.exam_name if r.exam else "—",
                 "subject": r.exam.subject if r.exam else "—",
                 "total_score": r.total_score,
                 "max_score": r.max_score,
                 "percentage": r.percentage,
                 "overall_rank": rank_in_exam,
+                "school_rank": rank_in_school,
                 "total_participants": total_in_exam,
-                "date": r.created_at.strftime("%Y/%m/%d") if r.created_at else ""
+                "date": r.created_at.strftime("%Y/%m/%d") if r.created_at else datetime.now().strftime("%Y/%m/%d")
             }
 
         # Load answers list

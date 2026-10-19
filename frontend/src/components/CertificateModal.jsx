@@ -80,20 +80,32 @@ export default function CertificateModal({ isOpen, onClose, data }) {
       ctx.font = '26px Vazirmatn, Arial, sans-serif';
       ctx.fillText('پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان (KSC)', 960, 355);
 
-      // Student intro
+      // Intro
       ctx.fillStyle = '#cbd5e1';
       ctx.font = '28px Vazirmatn, Arial, sans-serif';
-      ctx.fillText('ئەم بڕوانامەیە بە شانازییەوە دەبەخشرێت بە قوتابیی شایستە:', 960, 430);
+      ctx.fillText(
+        data.is_school
+          ? 'ئەم بڕوانامەیە بە شانازییەوە دەبەخشرێت بە دەستەی کارگێڕی و مامۆستایانی قوتابخانەی:'
+          : 'ئەم بڕوانامەیە بە شانازییەوە دەبەخشرێت بە قوتابیی شایستە:',
+        960,
+        430
+      );
 
-      // Student Name (Prominent Gold)
+      // Recipient Name (Prominent Gold)
       ctx.fillStyle = '#ffffff';
-      ctx.font = '900 64px Vazirmatn, Arial, sans-serif';
-      ctx.fillText(student_name, 960, 510);
+      ctx.font = '900 60px Vazirmatn, Arial, sans-serif';
+      ctx.fillText(data.is_school ? `قوتابخانەی ${school_name}` : student_name, 960, 510);
 
-      // School & Grade
+      // School & Grade or School Rank
       ctx.fillStyle = '#38bdf8';
       ctx.font = 'bold 30px Vazirmatn, Arial, sans-serif';
-      ctx.fillText(`لە ${school_name} • ${grade}`, 960, 565);
+      ctx.fillText(
+        data.is_school
+          ? `پلەی #${overall_rank} لەسەر ئاستی سەرجەم قوتابخانەکانی کوردستان • ${exam_name}`
+          : `لە ${school_name} • ${grade}`,
+        960,
+        565
+      );
 
       // Appreciation Text
       ctx.fillStyle = '#e2e8f0';
@@ -105,13 +117,19 @@ export default function CertificateModal({ isOpen, onClose, data }) {
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.roundRect(560, 685, 800, 95, 20);
+      ctx.roundRect(520, 685, 880, 95, 20);
       ctx.fill();
       ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 30px Vazirmatn, Arial, sans-serif';
-      ctx.fillText(`ڕێژەی بەدەستهاتوو: %${percentage}   |   پلەی ${overall_rank} لەسەر ئاستی کوردستان`, 960, 745);
+      ctx.font = 'bold 28px Vazirmatn, Arial, sans-serif';
+      ctx.fillText(
+        data.is_school
+          ? `تێکڕای نمرە: %${percentage}   |   پلەی #${overall_rank} ی سەرکەوتن   |   ${total_participants} قوتابیی بەشداربوو`
+          : `ڕێژەی بەدەستهاتوو: %${percentage}   |   پلەی #${overall_rank} لەسەر ئاستی کوردستان`,
+        960,
+        745
+      );
 
       // Footer: Date & Certificate ID
       ctx.fillStyle = '#94a3b8';
@@ -131,7 +149,10 @@ export default function CertificateModal({ isOpen, onClose, data }) {
 
       // Trigger Download
       const link = document.createElement('a');
-      link.download = `KSC_Certificate_${student_name.replace(/\s+/g, '_')}.png`;
+      const filename = data.is_school
+        ? `KSC_School_Certificate_${school_name.replace(/\s+/g, '_')}.png`
+        : `KSC_Student_Certificate_${student_name.replace(/\s+/g, '_')}.png`;
+      link.download = filename;
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch (err) {
@@ -196,13 +217,17 @@ export default function CertificateModal({ isOpen, onClose, data }) {
 
           <div className="my-5 space-y-2 relative z-10">
             <p className="text-xs sm:text-sm text-slate-300">
-              ئەم بڕوانامەیە بە شانازییەوە پێشکەش دەکرێت بە قوتابیی شایستە:
+              {data.is_school
+                ? 'ئەم بڕوانامەیە بە شانازییەوە پێشکەش دەکرێت بە دەستەی کارگێڕی و مامۆستایانی قوتابخانەی:'
+                : 'ئەم بڕوانامەیە بە شانازییەوە پێشکەش دەکرێت بە قوتابیی شایستە:'}
             </p>
             <h3 className="text-2xl sm:text-4xl font-black text-white drop-shadow-md py-1">
-              {student_name}
+              {data.is_school ? `قوتابخانەی ${school_name}` : student_name}
             </h3>
             <p className="text-xs sm:text-sm font-bold text-sky-400">
-              لە {school_name} • {grade}
+              {data.is_school
+                ? `پلەی #${overall_rank} لەسەر ئاستی سەرجەم قوتابخانەکانی کوردستان • ${exam_name}`
+                : `لە ${school_name} • ${grade}`}
             </p>
           </div>
 
@@ -213,18 +238,24 @@ export default function CertificateModal({ isOpen, onClose, data }) {
           {/* Results Badge */}
           <div className="inline-flex items-center gap-4 sm:gap-8 px-6 py-2.5 rounded-2xl bg-slate-900/90 border border-amber-400/50 text-white text-xs sm:text-sm font-bold shadow-lg relative z-10 my-2">
             <div>
-              <span className="text-slate-400 block text-[10px]">ڕێژەی نمرە</span>
+              <span className="text-slate-400 block text-[10px]">
+                {data.is_school ? 'تێکڕای نمرە' : 'ڕێژەی نمرە'}
+              </span>
               <span className="text-amber-400 text-base font-black">%{percentage}</span>
             </div>
             <div className="h-6 w-px bg-slate-700" />
             <div>
               <span className="text-slate-400 block text-[10px]">پلەی سەرکەوتن</span>
-              <span className="text-emerald-400 text-base font-black">پلەی {overall_rank}</span>
+              <span className="text-emerald-400 text-base font-black">پلەی #{overall_rank}</span>
             </div>
             <div className="h-6 w-px bg-slate-700" />
             <div>
-              <span className="text-slate-400 block text-[10px]">بەشداربووان</span>
-              <span className="text-sky-400 text-base font-black">{total_participants}</span>
+              <span className="text-slate-400 block text-[10px]">
+                {data.is_school ? 'قوتابییانی بەشداربوو' : 'بەشداربووان'}
+              </span>
+              <span className="text-sky-400 text-base font-black">
+                {total_participants} {data.is_school && data.passed_count ? `(${data.passed_count} دەرچوو)` : ''}
+              </span>
             </div>
           </div>
 

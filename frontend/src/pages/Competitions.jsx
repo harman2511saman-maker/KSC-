@@ -40,6 +40,7 @@ import {
 import api, { getUploadUrl } from '../api';
 import OMRGuideModal from '../components/OMRGuideModal';
 import CertificateModal from '../components/CertificateModal';
+import PromoSlider from '../components/PromoSlider';
 
 export default function Competitions({ onShowToast }) {
   const [leaderboard, setLeaderboard] = useState(null);
@@ -68,6 +69,7 @@ export default function Competitions({ onShowToast }) {
   // Modals State
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
+  const [promoSlides, setPromoSlides] = useState([]);
 
   // Pagination for Students List
   const [currentPage, setCurrentPage] = useState(1);
@@ -148,6 +150,26 @@ export default function Competitions({ onShowToast }) {
       onShowToast({ type: 'error', message: err.message });
     } finally {
       setSearchLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    api.get('/competitions/settings')
+      .then((res) => {
+        if (res.data?.promo_slides) setPromoSlides(res.data.promo_slides);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleOpenSchoolCertificate = async (schoolId) => {
+    try {
+      const res = await api.get(`/competitions/school-certificate/${schoolId}`, {
+        params: { exam_id: selectedExamId || undefined }
+      });
+      setSelectedCertificate(res.data);
+      onShowToast({ type: 'success', message: `بڕوانامەی فەرمیی (${res.data.school_name}) ئامادەکرا` });
+    } catch (err) {
+      onShowToast({ type: 'error', message: err.response?.data?.detail || err.message });
     }
   };
 
@@ -374,6 +396,11 @@ export default function Competitions({ onShowToast }) {
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
               شیکاری و ڕیزبەندی ڕاستەوخۆ بەپێی نمرە، پلەی سەرکەوتن لەسەر ئاستی هەر قوتابخانەیەک و سەرجەم پارێزگاکانی کوردستان.
             </p>
+
+            {/* Promo / Sponsor / Guidance Carousel Banner matching Image 1 */}
+            <div className="pt-2 w-full">
+              <PromoSlider slides={promoSlides} />
+            </div>
           </div>
         </div>
 
@@ -597,6 +624,16 @@ export default function Competitions({ onShowToast }) {
                     <div>{top3[1].students_participated} قوتابی • {top3[1].passed_students} دەرچوو</div>
                     <div className="font-black text-cyan-300 text-xs">تێکڕای {top3[1].average_percentage}%</div>
                     <div className="text-slate-300 font-bold">پلەی دووەم</div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenSchoolCertificate(top3[1].school_id);
+                      }}
+                      className="w-full mt-2 py-1 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-[10px] border border-slate-600 flex items-center justify-center gap-1 transition-all active:scale-95"
+                    >
+                      <Award className="w-3 h-3 text-slate-400" />
+                      <span>بڕوانامەی قوتابخانە</span>
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -623,6 +660,16 @@ export default function Competitions({ onShowToast }) {
                     <div>{top3[0].students_participated} قوتابی • {top3[0].passed_students} دەرچوو</div>
                     <div className="font-black text-amber-400 text-sm">تێکڕای {top3[0].average_percentage}% نمرە</div>
                     <div className="text-amber-300 font-black">پلەی یەکەم 🥇</div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenSchoolCertificate(top3[0].school_id);
+                      }}
+                      className="w-full mt-2 py-1.5 px-2 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 text-slate-950 font-black rounded-lg text-[10px] shadow-md shadow-amber-500/20 flex items-center justify-center gap-1 transition-all active:scale-95"
+                    >
+                      <Award className="w-3.5 h-3.5 text-slate-950" />
+                      <span>🎓 بڕوانامەی قوتابخانە</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -645,6 +692,16 @@ export default function Competitions({ onShowToast }) {
                     <div>{top3[2].students_participated} قوتابی • {top3[2].passed_students} دەرچوو</div>
                     <div className="font-black text-cyan-300 text-xs">تێکڕای {top3[2].average_percentage}%</div>
                     <div className="text-amber-500 font-bold">پلەی سێیەم</div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenSchoolCertificate(top3[2].school_id);
+                      }}
+                      className="w-full mt-2 py-1 px-2 bg-amber-950/60 hover:bg-amber-900/80 text-amber-200 font-bold rounded-lg text-[10px] border border-amber-700/60 flex items-center justify-center gap-1 transition-all active:scale-95"
+                    >
+                      <Award className="w-3 h-3 text-amber-400" />
+                      <span>بڕوانامەی قوتابخانە</span>
+                    </button>
                   </div>
                 </div>
               ) : (

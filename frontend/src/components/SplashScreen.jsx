@@ -17,25 +17,22 @@ export default function SplashScreen({ onFinish }) {
     // Show splash screen
     setVisible(true);
 
-    // Animate progress bar over 2 seconds
+    // Smoothly animate progress bar to 100%
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
+          setTimeout(() => {
+            handleDismiss();
+          }, 350);
           return 100;
         }
-        return prev + 2;
+        return Math.min(100, prev + 2);
       });
-    }, 35);
-
-    // Auto dismiss after 2.2 seconds
-    const timer = setTimeout(() => {
-      handleDismiss();
-    }, 2200);
+    }, 25);
 
     return () => {
       clearInterval(interval);
-      clearTimeout(timer);
     };
   }, []);
 
@@ -101,16 +98,25 @@ export default function SplashScreen({ onFinish }) {
       </div>
 
       {/* Bottom Loading Progress Bar */}
-      <div className="w-full max-w-xs z-10 pb-4 space-y-2">
-        <div className="w-full h-1.5 bg-slate-800/80 rounded-full overflow-hidden border border-slate-700/50 p-0.5">
+      <div className="w-full max-w-sm z-10 pb-4 space-y-2.5">
+        <div
+          dir="ltr"
+          className="w-full h-3 sm:h-3.5 bg-slate-900/90 rounded-full border border-amber-500/40 p-0.5 shadow-inner relative overflow-hidden"
+        >
           <div
-            className="h-full bg-gradient-to-r from-amber-400 via-emerald-400 to-sky-400 rounded-full transition-all duration-75 ease-out shadow-[0_0_12px_rgba(245,158,11,0.6)]"
+            className="h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 rounded-full transition-all duration-100 ease-out shadow-[0_0_16px_rgba(245,158,11,0.8)] relative"
             style={{ width: `${progress}%` }}
-          />
+          >
+            {/* Glowing tip light */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_8px_#ffffff]" />
+          </div>
         </div>
-        <div className="flex items-center justify-between text-[10px] text-slate-500 px-1 font-mono">
-          <span>بارکردنی سیستەم...</span>
-          <span>{progress}%</span>
+        <div className="flex items-center justify-between text-xs text-amber-300/80 px-1 font-mono font-bold">
+          <span className="flex items-center gap-1.5 font-kurdish text-[11px] text-slate-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+            <span>بارکردنی سیستەم...</span>
+          </span>
+          <span className="text-amber-400 text-xs font-black">{progress}%</span>
         </div>
       </div>
     </div>

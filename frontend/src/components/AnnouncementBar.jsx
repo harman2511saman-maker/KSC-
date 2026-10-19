@@ -33,16 +33,16 @@ export default function AnnouncementBar({ initialSettings }) {
 
   return (
     <div
-      className="relative z-30 bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 text-white px-4 py-2.5 shadow-md border-b border-amber-400/30 flex items-center justify-between text-xs sm:text-sm font-semibold select-none animate-fadeIn"
+      className="relative z-30 bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 text-white px-3 sm:px-6 py-2.5 shadow-md border-b border-amber-400/30 select-none animate-fadeIn"
       dir="rtl"
     >
-      <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-950/80 text-amber-300 text-[11px] font-black shrink-0 shadow-inner border border-amber-400/40">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
             <span>{announcement.badge || 'ئاگاداری'}</span>
           </span>
-          <p className="truncate text-amber-50 drop-shadow-sm font-medium">
+          <p className="text-amber-50 drop-shadow-sm font-medium text-xs sm:text-sm leading-relaxed break-words">
             {announcement.text}
           </p>
         </div>
