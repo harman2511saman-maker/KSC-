@@ -81,11 +81,11 @@ export default function SplashScreen({ onFinish }) {
       <div className="flex flex-col items-center text-center my-auto z-10 max-w-lg px-4">
         {/* Glow behind the emblem */}
         <div className="relative mb-6 group">
-          <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-amber-500/20 via-sky-500/20 to-emerald-500/20 blur-xl opacity-75 animate-pulse" />
+          <div className="absolute -inset-6 rounded-full bg-gradient-to-r from-amber-500/25 via-emerald-500/20 to-sky-500/25 blur-2xl opacity-85 animate-pulse pointer-events-none" />
           <img
             src="/logo.png"
             alt="KSC Kurdistan Students Competition Official Emblem"
-            className="relative max-w-[280px] sm:max-w-[340px] w-full h-auto object-contain rounded-2xl drop-shadow-[0_12px_35px_rgba(0,0,0,0.8)] border border-slate-700/40"
+            className="relative max-w-[260px] sm:max-w-[320px] w-full h-auto object-contain drop-shadow-[0_10px_35px_rgba(245,158,11,0.35)]"
           />
         </div>
 

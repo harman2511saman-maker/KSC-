@@ -4,15 +4,49 @@ Computes real-time rankings, school aggregate tournament scores,
 all-student rankings, and student rank lookup.
 """
 
-from fastapi import APIRouter, Depends, Query
+import json
+import os
+import shutil
+from datetime import datetime
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, or_
 from typing import Optional, List, Dict, Any
 
 from app.database import get_db
-from app.models import Result, Exam, Student, SchoolClass
+from app.models import Result, Exam, Student, SchoolClass, OMRCalibration, User
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/competitions", tags=["Competitions"])
+
+DEFAULT_SYSTEM_SETTINGS = {
+    "announcement": {
+        "enabled": True,
+        "text": "ئەنجامی فەرمیی تاقیکردنەوەکانی پلاتفۆرمی KSC بڵاوکرایەوە • پیرۆزبایی لە سەرجەم قوتابییان و قوتابخانە سەرکەوتووەکان دەکەین!",
+        "badge": "ئاگاداری گرنگ"
+    },
+    "certificate_config": {
+        "enabled": True,
+        "title": "بڕوانامەی ڕێزلێنان و سەرکەوتن",
+        "min_percentage": 75.0,
+        "top_ranks_only": False,
+        "appreciation_text": "بە بۆنەی بەشداریکردنی کارا و بەدەستهێنانی پلەی شایستە لە پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان",
+        "signee_name": "سەرپەرشتیاری گشتیی پڕۆژەی KSC",
+        "signee_title": "لیژنەی باڵای هەڵسەنگاندن و تاقیکردنەوەکان"
+    }
+}
+
+def get_system_settings_dict(db: Session) -> dict:
+    calib = db.query(OMRCalibration).filter(OMRCalibration.key == "system_settings").first()
+    if not calib:
+        return DEFAULT_SYSTEM_SETTINGS
+    try:
+        data = json.loads(calib.value_json)
+        res = dict(DEFAULT_SYSTEM_SETTINGS)
+        res.update(data)
+        return res
+    except Exception:
+        return DEFAULT_SYSTEM_SETTINGS
 
 @router.get("/leaderboard")
 def get_competition_leaderboard(
@@ -149,22 +183,110 @@ def get_competition_leaderboard(
         "total_students_count": total_matching_students
     }
 
+@router.get("/settings")
+def get_public_settings(db: Session = Depends(get_db)):
+    """Returns public settings for announcement ticker and certificate eligibility rules."""
+    return get_system_settings_dict(db)
+
+@router.put("/settings")
+def update_public_settings(
+    settings: Dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Admin endpoint to update announcement banner and certificate configuration."""
+    calib = db.query(OMRCalibration).filter(OMRCalibration.key == "system_settings").first()
+    if not calib:
+        calib = OMRCalibration(key="system_settings", value_json=json.dumps(settings, ensure_ascii=False))
+        db.add(calib)
+    else:
+        calib.value_json = json.dumps(settings, ensure_ascii=False)
+    db.commit()
+    return {"message": "ڕێکخستنەکانی سیستەم بە سەرکەوتوویی نوێکرانەوە", "settings": settings}
+
+@router.post("/admin/backup")
+def trigger_database_backup(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Admin endpoint to create a timestamped database backup."""
+    db_paths = ["/app/data/omr_system.db", "data/omr_system.db", "backend/omr_system.db", "omr_system.db"]
+    source = None
+    for p in db_paths:
+        if os.path.exists(p):
+            source = p
+            break
+            
+    if not source:
+        raise HTTPException(status_code=404, detail="داتابەیس نەدۆزرایەوە بۆ پاشەکەوتکردن")
+        
+    backup_dir = os.path.join(os.path.dirname(source), "backups")
+    os.makedirs(backup_dir, exist_ok=True)
+    
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_file = os.path.join(backup_dir, f"omr_backup_{ts}.db")
+    shutil.copy2(source, backup_file)
+    
+    existing = sorted([f for f in os.listdir(backup_dir) if f.startswith("omr_backup_")])
+    
+    return {
+        "success": True,
+        "message": f"پاشەکەوت بە سەرکەوتوویی دروستکرا: omr_backup_{ts}.db",
+        "file": f"omr_backup_{ts}.db",
+        "total_backups": len(existing)
+    }
+
 @router.get("/public-search")
 def search_student_public_result(
-    student_code: str = Query(..., description="Student code to lookup score card"),
+    student_code: Optional[str] = Query(None, description="Student code to lookup score card"),
+    student_name: Optional[str] = Query(None, description="Student name to lookup score card"),
     db: Session = Depends(get_db)
 ):
     """
-    Public search endpoint that returns verified score, precise rank position across Kurdistan,
-    school rank, percentile, and annotated OMR sheet overlay.
+    Public search endpoint by code OR name that returns verified score, precise rank position across Kurdistan,
+    school rank, percentile, annotated OMR sheet overlay, and admin-controlled certificate data.
     """
-    code_cleaned = student_code.strip()
-    student = db.query(Student).filter(
-        or_(Student.student_id == code_cleaned, Student.qr_identifier == code_cleaned)
-    ).first()
+    settings = get_system_settings_dict(db)
+    cert_cfg = settings.get("certificate_config", DEFAULT_SYSTEM_SETTINGS["certificate_config"])
+
+    if not student_code and not student_name:
+        return {"found": False, "message_ku": "تکایە کۆدی قوتابی یان ناوی سیانی بنووسە"}
+
+    student = None
+    if student_code and student_code.strip():
+        code_cleaned = student_code.strip()
+        student = db.query(Student).filter(
+            or_(Student.student_id == code_cleaned, Student.qr_identifier == code_cleaned)
+        ).first()
+        if not student:
+            return {"found": False, "message_ku": "هیچ قوتابییەک بەم کۆدە نەدۆزرایەوە"}
+    elif student_name and student_name.strip():
+        name_cleaned = student_name.strip()
+        matching_students = db.query(Student).filter(
+            Student.name.ilike(f"%{name_cleaned}%")
+        ).all()
+        if not matching_students:
+            return {"found": False, "message_ku": "هیچ قوتابییەک بەم ناوە نەدۆزرایەوە"}
+        if len(matching_students) > 1:
+            matches = [
+                {
+                    "student_code": s.student_id,
+                    "student_name": s.name,
+                    "school_name": s.school_class.name if s.school_class else "—",
+                    "grade": s.grade
+                }
+                for s in matching_students
+            ]
+            return {
+                "found": False,
+                "multiple_matches": True,
+                "matches": matches,
+                "message_ku": f"{len(matches)} قوتابی بەم ناوە دۆزرایەوە، تکایە قوتابخانەکەت هەڵبژێرە"
+            }
+        student = matching_students[0]
 
     if not student:
-        return {"found": False, "message_ku": "هیچ قوتابییەک بەم کۆدە نەدۆزرایەوە"}
+        return {"found": False, "message_ku": "زانیاری قوتابی نەدۆزرایەوە"}
 
     results = db.query(Result).filter(Result.student_id == student.id).order_by(desc(Result.created_at)).all()
     res_list = []
@@ -194,6 +316,36 @@ def search_student_public_result(
                 break
 
         percentile = round(((total_in_exam - rank_in_exam + 1) / max(1, total_in_exam)) * 100, 1)
+
+        # Check Certificate Eligibility based on Admin's exact rules
+        min_pct = float(cert_cfg.get("min_percentage", 75.0))
+        cert_enabled = bool(cert_cfg.get("enabled", True))
+        pct = float(r.percentage or 0.0)
+        
+        is_eligible = cert_enabled and (pct >= min_pct)
+        if cert_cfg.get("top_ranks_only", False):
+            is_eligible = is_eligible and (rank_in_exam <= 10)
+
+        certificate_data = None
+        if is_eligible:
+            certificate_data = {
+                "certificate_id": f"KSC-{r.id:04d}-{student.id:04d}",
+                "title": cert_cfg.get("title", "بڕوانامەی ڕێزلێنان و سەرکەوتن"),
+                "appreciation_text": cert_cfg.get("appreciation_text", "بە بۆنەی بەشداریکردنی کارا و بەدەستهێنانی پلەی شایستە لە پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان"),
+                "signee_name": cert_cfg.get("signee_name", "سەرپەرشتیاری گشتیی پڕۆژەی KSC"),
+                "signee_title": cert_cfg.get("signee_title", "لیژنەی باڵای هەڵسەنگاندن و تاقیکردنەوەکان"),
+                "student_name": student.name,
+                "school_name": student.school_class.name if student.school_class else "—",
+                "grade": student.grade,
+                "exam_name": r.exam.exam_name if r.exam else "—",
+                "subject": r.exam.subject if r.exam else "—",
+                "total_score": r.total_score,
+                "max_score": r.max_score,
+                "percentage": r.percentage,
+                "overall_rank": rank_in_exam,
+                "total_participants": total_in_exam,
+                "date": r.created_at.strftime("%Y/%m/%d") if r.created_at else ""
+            }
 
         # Load answers list
         answers = []
@@ -237,6 +389,8 @@ def search_student_public_result(
             "school_rank": rank_in_school,
             "total_in_school": total_in_school,
             "percentile": percentile,
+            "certificate_eligible": is_eligible,
+            "certificate_data": certificate_data,
             "debug_file": scan_page.debug_file if scan_page else None,
             "normalized_file": scan_page.normalized_file if scan_page else None,
             "created_at": r.created_at,
@@ -251,4 +405,5 @@ def search_student_public_result(
         "grade": student.grade,
         "results": res_list
     }
+
 

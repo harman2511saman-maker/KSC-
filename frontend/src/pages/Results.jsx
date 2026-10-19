@@ -16,12 +16,14 @@ import {
 } from 'lucide-react';
 import api, { getUploadUrl } from '../api';
 import Modal from '../components/Modal';
+import AdminSettingsModal from '../components/AdminSettingsModal';
 
 export default function Results({ onShowToast, onOpenReviewForPage }) {
   const [results, setResults] = useState([]);
   const [exams, setExams] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   // Filters
   const [selectedExamId, setSelectedExamId] = useState('');
@@ -158,7 +160,14 @@ export default function Results({ onShowToast, onOpenReviewForPage }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setSettingsModalOpen(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 px-3.5 py-2 rounded-xl font-black text-xs shadow-md shadow-amber-500/20 transition-all active:scale-95"
+          >
+            <Award className="w-4 h-4" />
+            <span>ڕێکخستنی بڕوانامە و ئاگاداری</span>
+          </button>
           <button
             onClick={handleExportCsv}
             className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-xl font-bold text-xs shadow-xs transition-colors"
@@ -450,6 +459,13 @@ export default function Results({ onShowToast, onOpenReviewForPage }) {
           </div>
         ) : null}
       </Modal>
+
+      {/* Admin Certificate & Announcement Settings Modal */}
+      <AdminSettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        onShowToast={onShowToast}
+      />
     </div>
   );
 }

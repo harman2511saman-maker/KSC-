@@ -38,6 +38,8 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import api, { getUploadUrl } from '../api';
+import OMRGuideModal from '../components/OMRGuideModal';
+import CertificateModal from '../components/CertificateModal';
 
 export default function Competitions({ onShowToast }) {
   const [leaderboard, setLeaderboard] = useState(null);
@@ -55,10 +57,17 @@ export default function Competitions({ onShowToast }) {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Student Search
+  const [searchMode, setSearchMode] = useState('code'); // 'code' | 'name'
   const [searchCode, setSearchCode] = useState('');
+  const [searchName, setSearchName] = useState('');
   const [searchResult, setSearchResult] = useState(null);
+  const [multipleMatches, setMultipleMatches] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+
+  // Modals State
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [selectedCertificate, setSelectedCertificate] = useState(null);
 
   // Pagination for Students List
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,23 +103,46 @@ export default function Competitions({ onShowToast }) {
     fetchLeaderboard();
   }, [selectedExamId, selectedSchoolId]);
 
-  const handleSearchStudent = async (codeToSearch) => {
-    const targetCode = typeof codeToSearch === 'string' ? codeToSearch : searchCode;
-    if (!targetCode || !targetCode.trim()) return;
+  const handleSearchStudent = async (codeToSearch, nameToSearch) => {
+    const isSearchingByName = searchMode === 'name' || Boolean(nameToSearch);
+    const targetVal = isSearchingByName
+      ? (typeof nameToSearch === 'string' ? nameToSearch : searchName)
+      : (typeof codeToSearch === 'string' ? codeToSearch : searchCode);
+
+    if (!targetVal || !targetVal.trim()) return;
 
     try {
       setSearchLoading(true);
-      const res = await api.get('/competitions/public-search', {
-        params: { student_code: targetCode.trim() }
-      });
+      setMultipleMatches(null);
+      const params = isSearchingByName
+        ? { student_name: targetVal.trim() }
+        : { student_code: targetVal.trim() };
+
+      const res = await api.get('/competitions/public-search', { params });
+
+      if (res.data?.multiple_matches) {
+        setMultipleMatches(res.data.matches);
+        setSearchResult(null);
+        onShowToast({
+          type: 'info',
+          message: `${res.data.matches.length} قوتابی بەم ناوەوە دۆزرانەوە، تکایە قوتابخانەکەت هەڵبژێرە`
+        });
+        setTimeout(() => {
+          const el = document.getElementById('multiple-matches-box');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+        return;
+      }
+
       setSearchResult(res.data);
       if (!res.data.found) {
-        onShowToast({ type: 'warning', message: res.data.message_ku || 'قوتابی بەم کۆدە نەدۆزرایەوە' });
+        onShowToast({ type: 'warning', message: res.data.message_ku || 'قوتابی نەدۆزرایەوە' });
       } else {
         onShowToast({ type: 'success', message: `ئەنجام و ڕیزبەندی (${res.data.student_name}) دۆزرایەوە` });
-        // Smooth scroll to result section
-        const el = document.getElementById('student-result-card');
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => {
+          const el = document.getElementById('student-result-card');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
       }
     } catch (err) {
       onShowToast({ type: 'error', message: err.message });
@@ -188,16 +220,42 @@ export default function Competitions({ onShowToast }) {
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6 lg:gap-8">
           {/* Hero Left Widgets (Search + Compact Stats) in RTL Left / Visual Start */}
           <div className="flex flex-col sm:flex-row items-stretch gap-3.5 order-2 lg:order-1 w-full lg:w-auto shrink-0">
-            {/* Student Code Lookup Box */}
-            <div className="bg-[#0f172a]/90 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-slate-700/60 shadow-xl space-y-3 flex-1 sm:w-80">
+            {/* Student Search & Lookup Box */}
+            <div className="bg-[#0f172a]/90 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-slate-700/60 shadow-xl space-y-3 flex-1 sm:w-88">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2.5 py-0.5 rounded-full font-mono font-bold">
-                  STD CODE
+                  {searchMode === 'code' ? 'STD CODE' : 'TRIPLE NAME'}
                 </span>
                 <label className="text-xs font-black text-amber-300 flex items-center gap-1.5">
                   <Search className="w-3.5 h-3.5" />
-                  <span>پشکنینی ڕیزبەندی قوتابی:</span>
+                  <span>پشکنینی ئەنجامی قوتابی:</span>
                 </label>
+              </div>
+
+              {/* Search Mode Toggle Tabs */}
+              <div className="flex items-center gap-1 bg-slate-900/95 p-1 rounded-xl border border-slate-700/70">
+                <button
+                  type="button"
+                  onClick={() => { setSearchMode('code'); setMultipleMatches(null); }}
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all ${
+                    searchMode === 'code'
+                      ? 'bg-amber-400 text-slate-950 shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  بەپێی کۆدی قوتابی
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setSearchMode('name'); setMultipleMatches(null); }}
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all ${
+                    searchMode === 'name'
+                      ? 'bg-amber-400 text-slate-950 shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  بەپێی ناوی سیانی
+                </button>
               </div>
 
               <form
@@ -207,14 +265,27 @@ export default function Competitions({ onShowToast }) {
                 }}
                 className="flex gap-2"
               >
-                <input
-                  type="text"
-                  required
-                  placeholder="کۆدی قوتابی بنووسە..."
-                  value={searchCode}
-                  onChange={(e) => setSearchCode(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs font-mono font-bold text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                />
+                {searchMode === 'code' ? (
+                  <input
+                    type="text"
+                    required
+                    placeholder="کۆدی قوتابی (وەک 1001)..."
+                    value={searchCode}
+                    onChange={(e) => setSearchCode(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs font-mono font-bold text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    dir="ltr"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    placeholder="ناوی سیانی بنووسە..."
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs font-bold text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    dir="rtl"
+                  />
+                )}
                 <button
                   type="submit"
                   disabled={searchLoading}
@@ -223,6 +294,16 @@ export default function Competitions({ onShowToast }) {
                   <span>{searchLoading ? '...' : 'پشکنین'}</span>
                 </button>
               </form>
+
+              {/* OMR Guide Quick Button */}
+              <button
+                type="button"
+                onClick={() => setIsGuideOpen(true)}
+                className="w-full py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-400/25 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>ڕێنمایی پڕکردنەوەی فۆڕم بۆ قوتابییان</span>
+              </button>
 
               <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800">
                 <span>ڕیزبەندی کوردستان و پۆل</span>
@@ -576,6 +657,52 @@ export default function Competitions({ onShowToast }) {
         </div>
       </div>
 
+      {/* 2.5 MULTIPLE MATCHES DISAMBIGUATION (When searching by name matches multiple students) */}
+      {multipleMatches && (
+        <div
+          id="multiple-matches-box"
+          className="bg-[#0c1324] rounded-3xl p-6 border-2 border-amber-400/70 shadow-2xl space-y-4 animate-fadeIn"
+        >
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="flex items-center gap-2.5 text-amber-400 font-bold text-sm">
+              <Users className="w-5 h-5 text-amber-400 shrink-0" />
+              <span>چەند قوتابییەک بەم ناوەوە دۆزرانەوە، تکایە قوتابخانەکەت هەڵبژێرە:</span>
+            </div>
+            <span className="text-xs text-slate-400 font-mono">({multipleMatches.length} قوتابی)</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {multipleMatches.map((m) => (
+              <button
+                key={m.student_code}
+                onClick={() => {
+                  setSearchCode(m.student_code);
+                  setMultipleMatches(null);
+                  handleSearchStudent(m.student_code);
+                }}
+                className="p-4 rounded-2xl bg-slate-900/90 border border-slate-700/80 hover:border-amber-400 text-right space-y-1.5 transition-all group hover:scale-[1.02] shadow-md"
+              >
+                <div className="flex items-center justify-between">
+                  <h4 className="font-black text-sm text-white group-hover:text-amber-400 transition-colors">
+                    {m.student_name}
+                  </h4>
+                  <span className="text-[11px] font-mono font-bold text-amber-300 bg-amber-400/10 px-2 py-0.5 rounded-lg border border-amber-400/20">
+                    {m.student_code}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  قوتابخانە: <strong className="text-amber-300">{m.school_name}</strong>
+                </p>
+                <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">
+                  <span>پۆل: {m.grade || 'گشتی'}</span>
+                  <span className="text-emerald-400 font-bold group-hover:underline">کلیک بکە بۆ ئەنجام ←</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 3. STUDENT DETAILED RESULT & RANK CARD (Appears upon search) */}
       {searchResult?.found && (
         <div
@@ -615,16 +742,26 @@ export default function Competitions({ onShowToast }) {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {searchResult.certificate_eligible && searchResult.certificate_data && (
+                <button
+                  onClick={() => setSelectedCertificate(searchResult.certificate_data)}
+                  className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-amber-500/30 transition-transform active:scale-95"
+                >
+                  <Award className="w-4 h-4 text-slate-950" />
+                  <span>🎓 داگرتنی بڕوانامەی فەرمی</span>
+                </button>
+              )}
+
               <button
                 onClick={() => window.print()}
                 className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-700 transition-colors shadow-md"
               >
                 <Printer className="w-4 h-4" />
-                <span>چاپکردنی بڕوانامە</span>
+                <span>چاپکردن</span>
               </button>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 flex items-center justify-center font-bold shrink-0">
-                <CheckCircle2 className="w-7 h-7" />
+              <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                <CheckCircle2 className="w-6 h-6" />
               </div>
             </div>
           </div>
@@ -943,6 +1080,19 @@ export default function Competitions({ onShowToast }) {
           </div>
         </div>
       )}
+
+      {/* Visual OMR Form Guide Modal */}
+      <OMRGuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+      />
+
+      {/* Verified Official Certificate Modal */}
+      <CertificateModal
+        isOpen={Boolean(selectedCertificate)}
+        onClose={() => setSelectedCertificate(null)}
+        data={selectedCertificate}
+      />
     </div>
   );
 }

@@ -4,6 +4,8 @@ import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import Toast from './components/Toast';
 import SplashScreen from './components/SplashScreen';
+import Footer from './components/Footer';
+import AnnouncementBar from './components/AnnouncementBar';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -181,6 +183,32 @@ function MainApp() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Hidden URL query trigger (e.g. ksciq.com/?admin=1)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('admin') !== null || params.get('login') !== null) {
+        setShowAdminModal(true);
+      }
+    }
+  }, []);
+
+  // Secret 4-click trigger on the logo
+  const logoClickRef = React.useRef({ count: 0, last: 0 });
+  const handleSecretLogoClick = () => {
+    const now = Date.now();
+    if (now - logoClickRef.current.last > 2000) {
+      logoClickRef.current.count = 1;
+    } else {
+      logoClickRef.current.count += 1;
+    }
+    logoClickRef.current.last = now;
+    if (logoClickRef.current.count >= 4) {
+      setShowAdminModal(true);
+      logoClickRef.current.count = 0;
+    }
+  };
+
   const showToast = ({ type = 'success', message }) => {
     setToast({ type, message });
     setTimeout(() => {
@@ -217,6 +245,7 @@ function MainApp() {
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col justify-between">
+        <AnnouncementBar />
         <header className="sticky top-0 z-40 bg-[#080d1a]/95 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-2xl">
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -224,7 +253,9 @@ function MainApp() {
               <img
                 src="/logo.png"
                 alt="لۆگۆی فەرمیی پێشبڕکێی قوتابیانی کوردستان"
-                className="relative h-12 sm:h-14 w-auto object-contain rounded-xl drop-shadow-[0_4px_12px_rgba(245,158,11,0.35)] hover:scale-105 transition-transform duration-300"
+                onClick={handleSecretLogoClick}
+                title=""
+                className="relative h-12 sm:h-14 w-auto object-contain rounded-xl drop-shadow-[0_4px_12px_rgba(245,158,11,0.35)] hover:scale-105 transition-transform duration-300 select-none cursor-default"
               />
             </div>
             <div>
@@ -237,38 +268,13 @@ function MainApp() {
               </p>
             </div>
           </div>
-
-          {/* Ultra-discreet faint lock button for administrator only */}
-          <button
-            onClick={() => setShowAdminModal(true)}
-            aria-label="Admin Access"
-            className="p-1.5 text-slate-600/30 hover:text-slate-400 opacity-20 hover:opacity-100 transition-all duration-300 rounded-lg"
-          >
-            <Lock className="w-3.5 h-3.5" />
-          </button>
         </header>
 
         <main className="flex-1">
           <Competitions onShowToast={showToast} />
         </main>
 
-        <footer className="border-t border-slate-800/80 bg-slate-950/90 py-6 px-4 sm:px-8">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-            <p>© {new Date().getFullYear()} پلاتفۆرمی فەرمیی پێشبڕکێی قوتابخانەکانی کوردستان • هەموو مافەکان پارێزراون</p>
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1 text-slate-400">
-                <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                سەرجەم داتاکان پارێزراو و بەردەستن
-              </span>
-              <button
-                onClick={() => setShowAdminModal(true)}
-                className="text-slate-600 hover:text-slate-400 text-[11px] transition-colors"
-              >
-                دەستگەیشتنی کارگێڕی
-              </button>
-            </div>
-          </div>
-        </footer>
+        <Footer />
 
         <AdminLoginModal
           isOpen={showAdminModal}
