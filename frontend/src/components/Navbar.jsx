@@ -14,7 +14,7 @@ export default function Navbar({ onOpenMobile, onQuickScan, activeTitle }) {
         <img
           src="/logo.png"
           alt="Logo"
-          className="w-8 h-8 object-contain hidden sm:inline-block"
+          className="h-8 sm:h-9 w-auto object-contain hidden sm:inline-block rounded-lg shadow-sm"
         />
         <div>
           <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">

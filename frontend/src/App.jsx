@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import Toast from './components/Toast';
+import SplashScreen from './components/SplashScreen';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -52,7 +53,7 @@ function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
           <img
             src="/logo.png"
             alt="KSC Logo"
-            className="w-16 h-16 object-contain mx-auto mb-3 drop-shadow-lg"
+            className="h-16 w-auto object-contain mx-auto mb-3 drop-shadow-lg rounded-xl"
           />
           <h3 className="text-xl font-black text-slate-900">دەروازەی کارگێڕی پارێزراو</h3>
           <p className="text-xs text-slate-500 mt-1">
@@ -223,7 +224,7 @@ function MainApp() {
               <img
                 src="/logo.png"
                 alt="لۆگۆی فەرمیی پێشبڕکێی قوتابیانی کوردستان"
-                className="relative w-12 h-12 sm:w-14 sm:h-14 object-contain rounded-xl drop-shadow-[0_4px_12px_rgba(245,158,11,0.35)] hover:scale-105 transition-transform duration-300"
+                className="relative h-12 sm:h-14 w-auto object-contain rounded-xl drop-shadow-[0_4px_12px_rgba(245,158,11,0.35)] hover:scale-105 transition-transform duration-300"
               />
             </div>
             <div>
@@ -383,6 +384,7 @@ function MainApp() {
 export default function App() {
   return (
     <AuthProvider>
+      <SplashScreen />
       <MainApp />
     </AuthProvider>
   );

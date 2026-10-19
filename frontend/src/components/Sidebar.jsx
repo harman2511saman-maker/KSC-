@@ -55,7 +55,7 @@ export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobile
               <img
                 src="/logo.png"
                 alt="KSC Logo"
-                className="w-10 h-10 object-contain drop-shadow-sm"
+                className="h-10 w-auto object-contain rounded-lg drop-shadow-sm"
               />
               <div>
                 <h1 className="font-black text-slate-900 text-sm leading-tight">پلاتفۆرمی کوردستان</h1>

@@ -274,7 +274,7 @@ export default function Competitions({ onShowToast }) {
                 <img
                   src="/logo.png"
                   alt="KSC Kurdistan Students Competition Official Emblem"
-                  className="relative w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_25px_rgba(245,158,11,0.4)] hover:scale-105 transition-transform duration-300"
+                  className="relative h-16 sm:h-20 w-auto object-contain rounded-xl drop-shadow-[0_8px_25px_rgba(245,158,11,0.4)] hover:scale-105 transition-transform duration-300"
                 />
               </div>
               <div className="space-y-1.5">
@@ -588,7 +588,7 @@ export default function Competitions({ onShowToast }) {
               <img
                 src="/logo.png"
                 alt="Emblem"
-                className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-xl"
+                className="h-14 sm:h-16 w-auto object-contain rounded-xl drop-shadow-xl"
               />
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
