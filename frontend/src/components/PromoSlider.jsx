@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ExternalLink, Sparkles, ChevronRight, ChevronLeft, Award, Megaphone } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ExternalLink, Sparkles, ChevronRight, ChevronLeft } from 'lucide-react';
 
 export default function PromoSlider({ slides: propSlides }) {
   const defaultSlides = [
@@ -41,34 +41,135 @@ export default function PromoSlider({ slides: propSlides }) {
   const slides = (propSlides && propSlides.length > 0) ? propSlides : defaultSlides;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [touchOffset, setTouchOffset] = useState(0);
 
-  // Auto rotate slides every 5.5 seconds
+  // Touch Swipe Refs
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const touchStartY = useRef(0);
+  const isSwiping = useRef(false);
+
+  // Mouse Drag Refs for desktop
+  const isMouseDown = useRef(false);
+  const mouseStartX = useRef(0);
+
+  // Auto rotate slides every 6 seconds when not paused
   useEffect(() => {
     if (isPaused || slides.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % slides.length);
-    }, 5500);
+      goToNext();
+    }, 6000);
     return () => clearInterval(timer);
-  }, [isPaused, slides.length]);
+  }, [isPaused, slides.length, currentIndex]);
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % slides.length);
+  };
+
+  const goToPrev = () => {
+    setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
+  };
+
+  // TOUCH GESTURE HANDLERS (Mobile / iPad Swipe Support)
+  const handleTouchStart = (e) => {
+    setIsPaused(true);
+    isSwiping.current = true;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isSwiping.current) return;
+    touchEndX.current = e.touches[0].clientX;
+    const deltaX = touchEndX.current - touchStartX.current;
+    const deltaY = e.touches[0].clientY - touchStartY.current;
+
+    // Only apply horizontal drag if user is swiping horizontally more than vertically
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      setTouchOffset(deltaX * 0.4); // Subtle rubber-band visual feedback
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isSwiping.current) return;
+    isSwiping.current = false;
+    setTouchOffset(0);
+
+    const deltaX = touchStartX.current - touchEndX.current;
+    // 40px threshold to trigger slide change
+    if (Math.abs(deltaX) > 40) {
+      if (deltaX > 0) {
+        // Swiped left
+        goToNext();
+      } else {
+        // Swiped right
+        goToPrev();
+      }
+    }
+
+    setTimeout(() => setIsPaused(false), 2000);
+  };
+
+  // MOUSE DRAG HANDLERS (Desktop Drag Support)
+  const handleMouseDown = (e) => {
+    isMouseDown.current = true;
+    mouseStartX.current = e.clientX;
+    setIsPaused(true);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isMouseDown.current) return;
+    const diff = e.clientX - mouseStartX.current;
+    setTouchOffset(diff * 0.3);
+  };
+
+  const handleMouseUp = (e) => {
+    if (!isMouseDown.current) return;
+    isMouseDown.current = false;
+    setTouchOffset(0);
+    const diff = mouseStartX.current - e.clientX;
+    if (Math.abs(diff) > 45) {
+      if (diff > 0) goToNext();
+      else goToPrev();
+    }
+    setTimeout(() => setIsPaused(false), 2000);
+  };
 
   const currentSlide = slides[currentIndex] || slides[0];
 
   return (
     <div
-      className="relative w-full overflow-hidden select-none"
+      className="relative w-full overflow-hidden select-none group"
       onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+      onMouseLeave={() => {
+        setIsPaused(false);
+        isMouseDown.current = false;
+        setTouchOffset(0);
+      }}
       dir="rtl"
     >
-      {/* Slide Card matching requested promo banner style */}
+      {/* Slide Card Container with Touch Swipe Listeners */}
       <div
-        className={`relative rounded-3xl p-6 sm:p-8 bg-gradient-to-br ${currentSlide.bg_gradient || 'from-emerald-700 via-emerald-800 to-slate-900'} border border-white/15 shadow-2xl overflow-hidden transition-all duration-500`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        style={{
+          transform: touchOffset ? `translateX(${touchOffset}px)` : 'translateX(0)',
+          touchAction: 'pan-y'
+        }}
+        className={`relative rounded-3xl p-6 sm:p-8 bg-gradient-to-br ${
+          currentSlide.bg_gradient || 'from-emerald-700 via-emerald-800 to-slate-900'
+        } border border-white/20 shadow-2xl overflow-hidden transition-all duration-300 cursor-grab active:cursor-grabbing`}
       >
         {/* Ambient Decorative Lighting */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col justify-between min-h-[170px] sm:min-h-[190px] space-y-4">
+        <div className="relative z-10 flex flex-col justify-between min-h-[170px] sm:min-h-[190px] space-y-4 pointer-events-auto">
           
           {/* Top Tag & Emblem */}
           <div className="flex items-center justify-between gap-3">
@@ -87,7 +188,7 @@ export default function PromoSlider({ slides: propSlides }) {
             <img
               src="/logo.png"
               alt="KSC"
-              className="h-10 sm:h-12 w-auto object-contain drop-shadow-md rounded-lg"
+              className="h-10 sm:h-12 w-auto object-contain drop-shadow-md rounded-lg pointer-events-none"
             />
           </div>
 
@@ -108,6 +209,7 @@ export default function PromoSlider({ slides: propSlides }) {
                 href={currentSlide.link}
                 target="_blank"
                 rel="noreferrer"
+                onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-bold transition-all border border-white/20 shadow-md"
               >
                 <ExternalLink className="w-3.5 h-3.5 text-amber-300" />
@@ -120,25 +222,54 @@ export default function PromoSlider({ slides: propSlides }) {
             )}
 
             <span className="text-xs font-bold text-white/80">
-              {currentSlide.badge || 'ڕێکلام'}
+              {currentSlide.badge || 'KSC Platform'}
             </span>
           </div>
 
         </div>
 
+        {/* Swipe Left / Right Arrow Buttons (Visible on hover and on touch) */}
+        {slides.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                goToPrev();
+              }}
+              aria-label="سلایدی پێشوو"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/40 hover:bg-black/60 active:scale-90 text-white flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                goToNext();
+              }}
+              aria-label="سلایدی دواتر"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/40 hover:bg-black/60 active:scale-90 text-white flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          </>
+        )}
+
       </div>
 
-      {/* Pagination Indicators (Dots: • ▬ •) */}
+      {/* Pagination Indicators (Clickable Dots) */}
       {slides.length > 1 && (
         <div className="flex items-center justify-center gap-2 mt-3">
           {slides.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentIndex(idx)}
-              aria-label={`سڵایدی ${idx + 1}`}
+              aria-label={`سلایدی ${idx + 1}`}
               className={`transition-all duration-300 rounded-full ${
                 currentIndex === idx
-                  ? 'w-7 h-2 bg-emerald-400 shadow-lg shadow-emerald-400/50'
+                  ? 'w-7 h-2 bg-amber-400 shadow-lg shadow-amber-400/50'
                   : 'w-2 h-2 bg-slate-700 hover:bg-slate-500'
               }`}
             />

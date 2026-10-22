@@ -163,6 +163,24 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
     if (onShowToast) onShowToast({ type: 'success', message: 'سلایدی نوێ زیادکرا' });
   };
 
+  const handleMoveSlide = (currentIndex, direction) => {
+    // direction: -1 (swap with previous / move earlier), 1 (swap with next / move later)
+    const targetIndex = currentIndex + direction;
+    if (targetIndex < 0 || targetIndex >= slides.length) return;
+    const updated = [...slides];
+    const temp = updated[currentIndex];
+    updated[currentIndex] = updated[targetIndex];
+    updated[targetIndex] = temp;
+    setSlides(updated);
+    setActiveSlideIndex(targetIndex);
+    if (onShowToast) {
+      onShowToast({
+        type: 'info',
+        message: `شوێنی سلایدەکە گۆڕدرا بۆ پلەی ${targetIndex + 1}`
+      });
+    }
+  };
+
   const handleDeleteSlide = (indexToDelete) => {
     if (slides.length <= 1) {
       if (onShowToast) onShowToast({ type: 'error', message: 'دەبێت لانیکەم یەک سلاید هەبێت لەسەر پلاتفۆرم' });
@@ -352,13 +370,39 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
 
       {/* EDITING FORM FOR CURRENT SLIDE */}
       <div className="p-5 sm:p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2 text-white font-black text-sm">
             <Sliders className="w-4 h-4 text-amber-400" />
             <span>دەستکاریکردنی سلایدی ژمارە {activeSlideIndex + 1}</span>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Reorder Buttons (Move Up / Down, Earlier / Later) */}
+            <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+              <span className="text-[11px] text-slate-400 px-1.5 font-bold hidden sm:inline">شوێنی سلاید:</span>
+              <button
+                type="button"
+                onClick={() => handleMoveSlide(activeSlideIndex, -1)}
+                disabled={activeSlideIndex === 0}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed"
+                title="سەرخستن بۆ پلەی ١ (بۆ لای ڕاست)"
+              >
+                <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                <span>پێشخستن</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleMoveSlide(activeSlideIndex, 1)}
+                disabled={activeSlideIndex === slides.length - 1}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed"
+                title="خوارخستن بۆ پلەی دواتر (بۆ لای چەپ)"
+              >
+                <span>دواخستن</span>
+                <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={() => handleDeleteSlide(activeSlideIndex)}
@@ -366,7 +410,7 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
               className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold transition-colors flex items-center gap-1.5 border border-rose-500/20 disabled:opacity-40"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>سڕینەوەی ئەم سلایدە</span>
+              <span>سڕینەوە</span>
             </button>
           </div>
         </div>
