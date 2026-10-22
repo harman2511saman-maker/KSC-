@@ -14,6 +14,7 @@ import {
   Lock
 } from 'lucide-react';
 import api, { getUploadUrl } from '../api';
+import PromoSlideEditor from '../components/PromoSlideEditor';
 
 export default function Calibration({ onShowToast }) {
   const [settings, setSettings] = useState({
@@ -283,6 +284,25 @@ export default function Calibration({ onShowToast }) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Hero Promo Banner & Slides Publishing Manager */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900">
+              بەڕێوەبردن و بڵاوکردنەوەی سلایدەکانی سەرەوەی ماڵپەڕ (Hero Promo Banner)
+            </h3>
+            <p className="text-xs text-slate-500">
+              کۆنترۆڵی تەواوی نووسین، بەستەری ڕاستەوخۆ، ڕەنگ و ژمارەکان بکە و ڕاستەوخۆ بڵاوی بکەرەوە لەسەر www.ksciq.com
+            </p>
+          </div>
+        </div>
+
+        <PromoSlideEditor onShowToast={onShowToast} />
       </div>
 
       {/* Admin Security & Password Change Card */}
