@@ -157,9 +157,16 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
       const startTime = new Date(currentExam.start_time).getTime();
       const diff = startTime - now;
 
+      const cutoffMins = currentExam.entry_cutoff_minutes || 3;
+      const cutoffSeconds = cutoffMins * 60;
+
       if (diff <= 0) {
+        const secondsSinceStart = Math.floor((now - startTime) / 1000);
+        const entryClosed = secondsSinceStart > cutoffSeconds;
         setTimeRemaining({
           started: true,
+          entryClosed,
+          secondsSinceStart,
           hours: 0,
           minutes: 0,
           seconds: 0,
@@ -173,6 +180,8 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
 
         setTimeRemaining({
           started: false,
+          entryClosed: false,
+          secondsSinceStart: 0,
           hours,
           minutes,
           seconds,
@@ -184,7 +193,7 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
     calculateTime();
     const interval = setInterval(calculateTime, 1000);
     return () => clearInterval(interval);
-  }, [currentExam?.id, currentExam?.start_time]);
+  }, [currentExam?.id, currentExam?.start_time, currentExam?.entry_cutoff_minutes]);
 
   if (loading || exams.length === 0 || !currentExam) return null;
 
@@ -198,13 +207,24 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
       if (onShowToast) {
         onShowToast({
           type: 'info',
-          message: `وادەی دەستپێکردنی تاقیکردنەوە ماوە! کاتی دەستپێکردن: ${formattedDate} (بە کاتی کوردستان)`
+          message: `وادەی دەستپێکردنی تاقیکردنەوە ماوە!\nکاتی دەستپێکردن: ${formattedDate} (بە کاتی کوردستان)`
         });
       } else {
         alert(`وادەی دەستپێکردنی ئەم تاقیکردنەوەیە ماوە!\nکاتی دەستپێکردن: ${formattedDate} (بە کاتی کوردستان)`);
       }
       return;
     }
+
+    if (timeRemaining.entryClosed) {
+      const msg = 'تاقیکردنەوە دەستی پێکردووە و دەرگای بەشداری داخراوە! ناتوانیت بەشداری بکەیت، لە تاقیکردنەوەی داهاتوو بەشداری بکە.';
+      if (onShowToast) {
+        onShowToast({ type: 'warning', message: msg });
+      } else {
+        alert(msg);
+      }
+      return;
+    }
+
     if (onStartExam) {
       onStartExam(currentExam);
     }
@@ -305,6 +325,10 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
                   <span>کاتی گشتی: {currentExam.total_duration_minutes} خولەک</span>
                 </span>
               )}
+              <span className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 font-bold flex items-center gap-1.5 shrink-0 text-amber-300">
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <span>مۆڵەتی چوونەژوورەوە: {currentExam.entry_cutoff_minutes || 3} خولەک</span>
+              </span>
             </div>
           </div>
 
@@ -343,20 +367,27 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
               type="button"
               onClick={handleButtonClick}
               className={`w-full sm:w-auto lg:w-full px-6 py-3.5 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2.5 transition-all shadow-xl active:scale-95 ${
-                timeRemaining.started
-                  ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25 ring-2 ring-emerald-400/50 animate-pulse'
-                  : 'bg-slate-800/90 hover:bg-slate-800 text-amber-300 border border-amber-500/30'
+                !timeRemaining.started
+                  ? 'bg-slate-800/90 hover:bg-slate-800 text-amber-300 border border-amber-500/30'
+                  : timeRemaining.entryClosed
+                  ? 'bg-rose-950/70 hover:bg-rose-900/80 text-rose-300 border border-rose-500/40 shadow-rose-950/40'
+                  : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25 ring-2 ring-emerald-400/50 animate-pulse'
               }`}
             >
-              {timeRemaining.started ? (
-                <>
-                  <Play className="w-4 h-4 fill-current" />
-                  <span>دەستپێکردنی تاقیکردنەوەی ئۆنلاین</span>
-                </>
-              ) : (
+              {!timeRemaining.started ? (
                 <>
                   <Lock className="w-4 h-4 text-amber-400" />
                   <span>وادەی دەستپێک ماوە (چاوەڕوانی)</span>
+                </>
+              ) : timeRemaining.entryClosed ? (
+                <>
+                  <Lock className="w-4 h-4 text-rose-400" />
+                  <span>دەرگای بەشداری داخراوە (تاقیکردنەوە دەستی پێکردووە)</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>دەستپێکردنی تاقیکردنەوەی ئۆنلاین</span>
                 </>
               )}
             </button>

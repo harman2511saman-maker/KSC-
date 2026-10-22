@@ -2,22 +2,21 @@ import React, { useState } from 'react';
 import {
   X,
   Key,
-  User,
-  Phone,
   AlertTriangle,
   Play,
   Loader2,
-  FileText,
-  ShieldAlert
+  Clock,
+  ShieldAlert,
+  FileText
 } from 'lucide-react';
 import api from '../api';
 
 export default function OnlineExamPasscodeModal({ exam, onClose, onSuccess, onShowToast }) {
   const [passcode, setPasscode] = useState('');
-  const [studentName, setStudentName] = useState('');
-  const [studentPhone, setStudentPhone] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const cutoffMins = exam.entry_cutoff_minutes || 3;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,18 +26,13 @@ export default function OnlineExamPasscodeModal({ exam, onClose, onSuccess, onSh
       setErrorMessage('تکایە کۆدی تایبەت (پاسوۆرد) بنووسە');
       return;
     }
-    if (!studentName.trim()) {
-      setErrorMessage('تکایە ناوی سیانی خۆت بنووسە');
-      return;
-    }
 
     try {
       setSubmitting(true);
       const res = await api.post('/online-exam/verify-passcode', {
         exam_id: exam.id,
         code: passcode.trim(),
-        student_name: studentName.trim(),
-        student_phone: studentPhone.trim() || undefined
+        student_name: 'بەشداربووی KSC'
       });
 
       if (res.data?.success) {
@@ -60,23 +54,23 @@ export default function OnlineExamPasscodeModal({ exam, onClose, onSuccess, onSh
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn"
       dir="rtl"
     >
-      <div className="relative w-full max-w-lg rounded-3xl bg-slate-900 border border-indigo-500/30 shadow-2xl p-6 sm:p-7 space-y-5 overflow-hidden">
+      <div className="relative w-full max-w-lg rounded-3xl bg-slate-900 border border-indigo-500/40 shadow-2xl p-6 sm:p-7 space-y-5 overflow-hidden">
         
         {/* Ambient Top Light */}
-        <div className="absolute top-0 right-1/2 translate-x-1/2 w-64 h-24 bg-indigo-500/20 blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-1/2 translate-x-1/2 w-64 h-24 bg-amber-500/15 blur-3xl pointer-events-none" />
 
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center shadow-inner">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shadow-inner">
               <Key className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-black text-white">
-                چوونەژوورەوە بۆ تاقیکردنەوە
+                چوونەژوورەوەی تاقیکردنەوەی ئۆنلاین
               </h3>
               <p className="text-xs text-slate-400 truncate max-w-xs sm:max-w-sm">
                 {exam.title}
@@ -96,7 +90,7 @@ export default function OnlineExamPasscodeModal({ exam, onClose, onSuccess, onSh
         {errorMessage && (
           <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-bold flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
-            <span>{errorMessage}</span>
+            <span className="leading-relaxed">{errorMessage}</span>
           </div>
         )}
 
@@ -104,10 +98,10 @@ export default function OnlineExamPasscodeModal({ exam, onClose, onSuccess, onSh
         <form onSubmit={handleSubmit} className="space-y-4">
           
           {/* Passcode input */}
-          <div>
-            <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1.5">
-              <Key className="w-3.5 h-3.5 text-amber-400" />
-              <span>پاسوۆردی تاقیکردنەوە (کۆدی تایبەتی بەشداربوون):</span>
+          <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
+            <label className="block text-xs font-black text-amber-300 flex items-center gap-1.5">
+              <Key className="w-4 h-4 text-amber-400" />
+              <span>پاسوۆردی تایبەتی بەشداریکردن (کۆد):</span>
             </label>
             <input
               type="text"
@@ -115,43 +109,21 @@ export default function OnlineExamPasscodeModal({ exam, onClose, onSuccess, onSh
               onChange={(e) => setPasscode(e.target.value.toUpperCase())}
               placeholder="نموونە: KSC-9482-XA"
               autoFocus
-              className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-base font-mono font-black text-amber-300 tracking-wider text-center focus:outline-none focus:ring-2 focus:ring-amber-400 uppercase"
+              className="w-full px-4 py-3.5 rounded-xl bg-slate-900 border-2 border-amber-500/40 text-lg font-mono font-black text-amber-300 tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 uppercase placeholder:text-slate-600"
               dir="ltr"
             />
-            <span className="text-[11px] text-slate-400 block mt-1">
-              ئەم پاسوۆردە تایبەتە و تەنها یەکجار کار دەکات بۆ یەک بەشداربوو.
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 pt-1">
+              <FileText className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span>پێویست بە ناوی خۆت ناکات؛ ناوی خۆت لەسەر پەڕەی سۆما دەنووسیت.</span>
+            </div>
+          </div>
+
+          {/* Time Window Notice */}
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-200 text-xs flex items-center gap-2">
+            <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="font-bold leading-relaxed">
+              لە کاتی دەستپێکردن تەنها <span className="text-amber-400 font-black">{cutoffMins} خولەک</span> مۆڵەتت هەیە بۆ چوونەژوورەوە؛ دوای ئەوە دەرگا دادەخرێت.
             </span>
-          </div>
-
-          {/* Student Name */}
-          <div>
-            <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-indigo-400" />
-              <span>ناوی سیانی قوتابی:</span>
-            </label>
-            <input
-              type="text"
-              value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
-              placeholder="ناوی سیانی بنووسە..."
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            />
-          </div>
-
-          {/* Student Phone */}
-          <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-slate-400" />
-              <span>ژمارەی مۆبایل یان پەیوەندی (ئارەزوومەندانە):</span>
-            </label>
-            <input
-              type="tel"
-              value={studentPhone}
-              onChange={(e) => setStudentPhone(e.target.value)}
-              placeholder="0750 000 0000"
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              dir="ltr"
-            />
           </div>
 
           {/* Crucial Instructions Box */}

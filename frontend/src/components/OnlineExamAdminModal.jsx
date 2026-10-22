@@ -46,6 +46,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
   const [questionDuration, setQuestionDuration] = useState(60);
   const [telegramUrl, setTelegramUrl] = useState('');
   const [telegramMins, setTelegramMins] = useState(5);
+  const [entryCutoffMins, setEntryCutoffMins] = useState(3);
   const [isActive, setIsActive] = useState(true);
 
   // Questions state
@@ -113,6 +114,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         setQuestionDuration(current.question_duration_seconds || 60);
         setTelegramUrl(current.telegram_group_url || 'https://t.me/KurdishOMR');
         setTelegramMins(current.telegram_submission_minutes || 5);
+        setEntryCutoffMins(current.entry_cutoff_minutes || 3);
         setIsActive(current.is_active ?? true);
       }
 
@@ -145,6 +147,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
     setQuestionDuration(60);
     setTelegramUrl('https://t.me/KurdishOMR');
     setTelegramMins(5);
+    setEntryCutoffMins(3);
     setIsActive(true);
     setQuestions([]);
     setPasscodes([]);
@@ -169,6 +172,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         question_duration_seconds: Number(questionDuration) || 60,
         telegram_group_url: telegramUrl.trim(),
         telegram_submission_minutes: Number(telegramMins) || 5,
+        entry_cutoff_minutes: Number(entryCutoffMins) || 3,
         is_active: isActive
       };
 
@@ -556,6 +560,31 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                   </div>
 
                   <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-amber-400" />
+                        <span>مۆڵەتی چوونەژوورەوە دوای دەستپێکردن:</span>
+                      </span>
+                      <span className="text-[10px] text-amber-300">
+                        خولەک
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={60}
+                      value={entryCutoffMins}
+                      onChange={(e) => setEntryCutoffMins(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    />
+                    <span className="block text-[10px] text-slate-400 mt-1">
+                      دوای تێپەڕبوونی ئەم ماوەیە، دەرگای بەشداری دادەخرێت.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1.5">
                       کاتی هەر پرسیارێک (بە چرکە):
                     </label>
@@ -566,23 +595,6 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                       value={questionDuration}
                       onChange={(e) => setQuestionDuration(e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                      <Send className="w-3.5 h-3.5 text-sky-400" />
-                      <span>لینکی گرووپی تێلیگرام بۆ ناردنی پەڕەی سۆما:</span>
-                    </label>
-                    <input
-                      type="url"
-                      value={telegramUrl}
-                      onChange={(e) => setTelegramUrl(e.target.value)}
-                      placeholder="https://t.me/..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-mono text-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                      dir="ltr"
                     />
                   </div>
 
@@ -599,6 +611,21 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                       className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <Send className="w-3.5 h-3.5 text-sky-400" />
+                    <span>لینکی گرووپی تێلیگرام بۆ ناردنی پەڕەی سۆما:</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={telegramUrl}
+                    onChange={(e) => setTelegramUrl(e.target.value)}
+                    placeholder="https://t.me/..."
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-mono text-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                    dir="ltr"
+                  />
                 </div>
 
                 {/* Active Toggle */}

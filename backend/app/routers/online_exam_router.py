@@ -15,9 +15,11 @@ import io
 import uuid
 import secrets
 import string
+import time
+from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Body
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Body, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -30,13 +32,28 @@ from app.auth import get_current_user, require_role, create_access_token
 
 router = APIRouter(prefix="/api/online-exam", tags=["Online Exam"])
 
+# In-memory brute force protection against passcode guessing
+_failed_attempts: Dict[str, list] = defaultdict(list)
+
+def check_brute_force(key: str):
+    now = time.time()
+    _failed_attempts[key] = [t for t in _failed_attempts[key] if now - t < 180]
+    if len(_failed_attempts[key]) >= 5:
+        raise HTTPException(
+            status_code=429,
+            detail="ژمارەی هەوڵە هەڵەکانت زۆرە! لەبەر پاراستنی پلاتفۆرم تکایە ٣ خولەک چاوەڕێ بکە."
+        )
+
+def record_failed_attempt(key: str):
+    _failed_attempts[key].append(time.time())
+
 # -------------------------------------------------------------
 # PYDANTIC SCHEMAS
 # -------------------------------------------------------------
 class VerifyPasscodeRequest(BaseModel):
     exam_id: int
     code: str
-    student_name: str
+    student_name: Optional[str] = ""
     student_phone: Optional[str] = None
 
 class ReportCheatRequest(BaseModel):
@@ -57,6 +74,7 @@ class ExamCreateOrUpdateSchema(BaseModel):
     question_duration_seconds: int = 60
     telegram_group_url: Optional[str] = "https://t.me/KurdishOMR"
     telegram_submission_minutes: int = 5
+    entry_cutoff_minutes: int = 3
     is_active: bool = True
 
 class GeneratePasscodesRequest(BaseModel):
@@ -157,6 +175,7 @@ def get_active_online_exams(db: Session = Depends(get_db)):
             "telegram_submission_minutes": exam.telegram_submission_minutes,
             "questions_count": questions_count,
             "total_duration_minutes": total_duration_minutes,
+            "entry_cutoff_minutes": getattr(exam, 'entry_cutoff_minutes', 3) or 3,
             "is_active": exam.is_active,
             "available_passcodes_count": passcodes_count - used_passcodes_count
         })
@@ -169,7 +188,11 @@ def get_active_online_exams(db: Session = Depends(get_db)):
     }
 
 @router.post("/verify-passcode")
-def verify_passcode_and_start_exam(payload: VerifyPasscodeRequest, db: Session = Depends(get_db)):
+def verify_passcode_and_start_exam(
+    payload: VerifyPasscodeRequest,
+    request: Request,
+    db: Session = Depends(get_db)
+):
     """
     Validates candidate passcode, registers student session,
     and returns full questions for the exam.
@@ -181,14 +204,29 @@ def verify_passcode_and_start_exam(payload: VerifyPasscodeRequest, db: Session =
 
     now = datetime.utcnow()
     exam_start = to_utc_naive(exam.start_time)
-    # Check if start time has arrived (allow a 2-minute clock skew buffer)
+
+    # 1. Check if start time has arrived (allow a 2-minute clock skew buffer)
     time_diff = (exam_start - now).total_seconds()
     if time_diff > 120:
         mins_remaining = int(time_diff / 60) + 1
         raise HTTPException(
             status_code=400,
-            detail=f"وادەی دەستپێکردنی ئەم تاقیکردنەوەیە ماوە! نزیکەی {mins_remaining} خولەکی تر دەستپێدەکات."
+            detail=f"وادەی دەستپێکردنی ئەم تاقیکردنەوەیە ماوە! هێشتا کاتی دەستپێکردن نەهاتووە."
         )
+
+    # 2. Check if late entry cutoff window has passed (EXPLICIT USER REQUIREMENT)
+    cutoff_mins = getattr(exam, 'entry_cutoff_minutes', 3) or 3
+    cutoff_seconds = cutoff_mins * 60
+    seconds_since_start = (now - exam_start).total_seconds()
+    if seconds_since_start > cutoff_seconds:
+        raise HTTPException(
+            status_code=403,
+            detail="تاقیکردنەوە دەستی پێکردووە و دەرگای بەشداری داخراوە! ناتوانیت بەشداری بکەیت، لە تاقیکردنەوەی داهاتوو بەشداری بکە."
+        )
+
+    # 3. Brute force guard per IP
+    client_ip = request.client.host if request.client else "unknown"
+    check_brute_force(f"{client_ip}:{exam.id}")
 
     clean_code = payload.code.strip().upper()
     passcode = db.query(OnlineExamPasscode).filter(
@@ -197,6 +235,8 @@ def verify_passcode_and_start_exam(payload: VerifyPasscodeRequest, db: Session =
     ).first()
 
     if not passcode:
+        record_failed_attempt(f"{client_ip}:{exam.id}")
+        time.sleep(0.3)
         raise HTTPException(status_code=404, detail="پاسوۆردەکە هەڵەیە! تکایە دڵنیابەرەوە لە کۆدەکەت.")
 
     if passcode.disqualified:
@@ -214,7 +254,7 @@ def verify_passcode_and_start_exam(payload: VerifyPasscodeRequest, db: Session =
     # Consume passcode
     passcode.is_used = True
     passcode.used_at = now
-    passcode.student_name = payload.student_name.strip()
+    passcode.student_name = payload.student_name.strip() if payload.student_name else "بەشداربووی KSC"
     passcode.student_phone = payload.student_phone.strip() if payload.student_phone else None
     db.commit()
 
@@ -304,6 +344,7 @@ def admin_get_exams(
             "question_duration_seconds": exam.question_duration_seconds,
             "telegram_group_url": exam.telegram_group_url,
             "telegram_submission_minutes": exam.telegram_submission_minutes,
+            "entry_cutoff_minutes": getattr(exam, 'entry_cutoff_minutes', 3) or 3,
             "is_active": exam.is_active,
             "questions_count": q_count,
             "passcodes_count": total_codes,
@@ -327,6 +368,7 @@ def admin_create_exam(
         question_duration_seconds=payload.question_duration_seconds,
         telegram_group_url=payload.telegram_group_url,
         telegram_submission_minutes=payload.telegram_submission_minutes,
+        entry_cutoff_minutes=payload.entry_cutoff_minutes,
         is_active=payload.is_active
     )
     db.add(exam)
@@ -353,6 +395,7 @@ def admin_update_exam(
     exam.question_duration_seconds = payload.question_duration_seconds
     exam.telegram_group_url = payload.telegram_group_url
     exam.telegram_submission_minutes = payload.telegram_submission_minutes
+    exam.entry_cutoff_minutes = payload.entry_cutoff_minutes
     exam.is_active = payload.is_active
 
     db.commit()

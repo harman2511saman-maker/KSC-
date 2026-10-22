@@ -202,7 +202,11 @@ export default function OnlineExamRoom({ sessionData, onClose, onShowToast }) {
               سوپاس بۆ بەشداریکردنت لە تاقیکردنەوەی KSC!
             </h2>
             <p className="text-xs sm:text-sm text-slate-300">
-              قوتابی بەڕێز: <span className="font-bold text-amber-300">{student_name}</span>
+              {student_name && student_name !== 'بەشداربووی KSC' ? (
+                <>قوتابی بەڕێز: <span className="font-bold text-amber-300">{student_name}</span></>
+              ) : (
+                <span className="font-bold text-amber-300">بەشداربووی تاقیکردنەوەی KSC</span>
+              )}
             </p>
           </div>
 
@@ -274,7 +278,11 @@ export default function OnlineExamRoom({ sessionData, onClose, onShowToast }) {
               {exam.title}
             </h1>
             <span className="text-[11px] text-slate-400 font-bold">
-              بەشداربوو: <span className="text-amber-400">{student_name}</span>
+              {student_name && student_name !== 'بەشداربووی KSC' ? (
+                <>بەشداربوو: <span className="text-amber-400">{student_name}</span></>
+              ) : (
+                <span className="text-amber-400">تاقیکردنەوەی ئۆنلاینی KSC</span>
+              )}
             </span>
           </div>
         </div>
@@ -315,12 +323,12 @@ export default function OnlineExamRoom({ sessionData, onClose, onShowToast }) {
       </div>
 
       {/* Main Question Display Area */}
-      <main className="flex-1 overflow-y-auto p-4 sm:p-8 flex flex-col items-center justify-center max-w-5xl mx-auto w-full">
+      <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 flex flex-col items-center justify-start max-w-4xl mx-auto w-full">
         
-        <div className="w-full space-y-6">
+        <div className="w-full my-auto py-2 space-y-6">
 
           {/* Question Box Card */}
-          <div className="p-6 sm:p-10 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl space-y-6 relative overflow-hidden">
+          <div className="p-5 sm:p-9 rounded-3xl bg-slate-900/95 border border-slate-800 shadow-2xl space-y-6 relative overflow-hidden backdrop-blur-md">
             
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
               <span className="text-xs font-black text-amber-400 flex items-center gap-1.5">

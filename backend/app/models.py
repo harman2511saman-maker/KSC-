@@ -215,6 +215,7 @@ class OnlineExam(Base):
     question_duration_seconds = Column(Integer, default=60)
     telegram_group_url = Column(String(512), nullable=True)
     telegram_submission_minutes = Column(Integer, default=5)
+    entry_cutoff_minutes = Column(Integer, default=3)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

@@ -29,6 +29,15 @@ from app.routers import (
 # Initialize database schema
 Base.metadata.create_all(bind=engine)
 
+# Auto-migration check for newly added columns in existing SQLite databases
+from sqlalchemy import text
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE online_exams ADD COLUMN entry_cutoff_minutes INTEGER DEFAULT 3"))
+        conn.commit()
+except Exception:
+    pass
+
 # Seed realistic demo data
 db_session = SessionLocal()
 try:
