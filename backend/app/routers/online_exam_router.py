@@ -96,15 +96,15 @@ def generate_passcode_string() -> str:
 # -------------------------------------------------------------
 # PUBLIC ENDPOINTS
 # -------------------------------------------------------------
+@router.get("/active")
 @router.get("/current")
-def get_current_online_exam(db: Session = Depends(get_db)):
+def get_active_online_exams(db: Session = Depends(get_db)):
     """
-    Returns public overview of the active/upcoming online exam.
+    Returns public list of active/upcoming online exams for carousel/slider display.
     Questions and passcodes are kept hidden from public.
     """
-    exam = db.query(OnlineExam).filter(OnlineExam.is_active == True).order_by(desc(OnlineExam.created_at)).first()
-    if not exam:
-        # Create a default active exam if none exists
+    active_exams = db.query(OnlineExam).filter(OnlineExam.is_active == True).order_by(OnlineExam.start_time).all()
+    if not active_exams:
         default_exam = OnlineExam(
             title="خولی فەرمیی پێشبڕکێی ئۆنلاینی KSC",
             description="تاقیکردنەوەی ڕاستەوخۆ بە شێوازی فۆڕمی وەڵام (پەڕەی سۆما OMR). پرسیارەکان لەسەر شاشە دەردەکەون و لەسەر پەڕەی سۆما بازنەکان پڕدەکرێنەوە.",
@@ -118,30 +118,38 @@ def get_current_online_exam(db: Session = Depends(get_db)):
         db.add(default_exam)
         db.commit()
         db.refresh(default_exam)
-        exam = default_exam
+        active_exams = [default_exam]
 
-    questions_count = db.query(OnlineExamQuestion).filter(OnlineExamQuestion.exam_id == exam.id).count()
-    passcodes_count = db.query(OnlineExamPasscode).filter(OnlineExamPasscode.exam_id == exam.id).count()
-    used_passcodes_count = db.query(OnlineExamPasscode).filter(
-        OnlineExamPasscode.exam_id == exam.id,
-        OnlineExamPasscode.is_used == True
-    ).count()
+    formatted_exams = []
+    for exam in active_exams:
+        questions_count = db.query(OnlineExamQuestion).filter(OnlineExamQuestion.exam_id == exam.id).count()
+        passcodes_count = db.query(OnlineExamPasscode).filter(OnlineExamPasscode.exam_id == exam.id).count()
+        used_passcodes_count = db.query(OnlineExamPasscode).filter(
+            OnlineExamPasscode.exam_id == exam.id,
+            OnlineExamPasscode.is_used == True
+        ).count()
+        total_duration_minutes = round((questions_count * exam.question_duration_seconds) / 60, 1)
 
-    total_duration_minutes = round((questions_count * exam.question_duration_seconds) / 60, 1)
+        formatted_exams.append({
+            "id": exam.id,
+            "title": exam.title,
+            "description": exam.description,
+            "sponsors_and_prizes": exam.sponsors_and_prizes,
+            "start_time": exam.start_time.isoformat(),
+            "question_duration_seconds": exam.question_duration_seconds,
+            "telegram_group_url": exam.telegram_group_url,
+            "telegram_submission_minutes": exam.telegram_submission_minutes,
+            "questions_count": questions_count,
+            "total_duration_minutes": total_duration_minutes,
+            "is_active": exam.is_active,
+            "available_passcodes_count": passcodes_count - used_passcodes_count
+        })
 
+    primary = formatted_exams[0] if formatted_exams else {}
     return {
-        "id": exam.id,
-        "title": exam.title,
-        "description": exam.description,
-        "sponsors_and_prizes": exam.sponsors_and_prizes,
-        "start_time": exam.start_time.isoformat(),
-        "question_duration_seconds": exam.question_duration_seconds,
-        "telegram_group_url": exam.telegram_group_url,
-        "telegram_submission_minutes": exam.telegram_submission_minutes,
-        "questions_count": questions_count,
-        "total_duration_minutes": total_duration_minutes,
-        "is_active": exam.is_active,
-        "available_passcodes_count": passcodes_count - used_passcodes_count
+        **primary,
+        "exams": formatted_exams,
+        "total_active_exams": len(formatted_exams)
     }
 
 @router.post("/verify-passcode")
@@ -339,13 +347,29 @@ def admin_delete_exam(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"]))
 ):
-    """Admin deletes an exam."""
+    """Admin deletes an exam and purges all its questions, passcodes, and uploaded images from disk."""
     exam = db.query(OnlineExam).filter(OnlineExam.id == exam_id).first()
     if not exam:
         raise HTTPException(status_code=404, detail="تاقیکردنەوە نەدۆزرایەوە")
+
+    # 1. Clean up all question images from disk so server disk stays clean
+    questions = db.query(OnlineExamQuestion).filter(OnlineExamQuestion.exam_id == exam_id).all()
+    for q in questions:
+        if q.image_url:
+            filename = os.path.basename(q.image_url)
+            file_path = UPLOADS_ONLINE_EXAMS_DIR / filename
+            if file_path.exists():
+                try:
+                    file_path.unlink()
+                except Exception:
+                    pass
+
+    # 2. Delete passcodes, questions, and the exam record
+    db.query(OnlineExamPasscode).filter(OnlineExamPasscode.exam_id == exam_id).delete()
+    db.query(OnlineExamQuestion).filter(OnlineExamQuestion.exam_id == exam_id).delete()
     db.delete(exam)
     db.commit()
-    return {"message": "تاقیکردنەوە بە سەرکەوتوویی سڕایەوە"}
+    return {"message": "تاقیکردنەوە و سەرجەم فایل و داتاکانی لە سێرڤەر بە سەرکەوتوویی سڕانەوە"}
 
 @router.get("/admin/exams/{exam_id}/questions")
 def admin_get_questions(
@@ -375,10 +399,23 @@ def admin_save_questions(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"]))
 ):
-    """Admin replaces/saves all questions for an exam."""
+    """Admin replaces/saves all questions for an exam, automatically removing deleted images from disk."""
     exam = db.query(OnlineExam).filter(OnlineExam.id == exam_id).first()
     if not exam:
         raise HTTPException(status_code=404, detail="تاقیکردنەوە نەدۆزرایەوە")
+
+    # Clean up removed images from disk
+    existing_questions = db.query(OnlineExamQuestion).filter(OnlineExamQuestion.exam_id == exam_id).all()
+    new_image_urls = set(q.image_url for q in questions_list if q.image_url)
+    for eq in existing_questions:
+        if eq.image_url and eq.image_url not in new_image_urls:
+            filename = os.path.basename(eq.image_url)
+            file_path = UPLOADS_ONLINE_EXAMS_DIR / filename
+            if file_path.exists():
+                try:
+                    file_path.unlink()
+                except Exception:
+                    pass
 
     # Remove existing questions
     db.query(OnlineExamQuestion).filter(OnlineExamQuestion.exam_id == exam_id).delete()

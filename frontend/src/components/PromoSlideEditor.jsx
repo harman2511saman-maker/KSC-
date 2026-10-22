@@ -844,6 +844,16 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
             </button>
             <button
               type="button"
+              onClick={() => handleAddLink('سناپچات', 'https://www.snapchat.com/add/')}
+              className="px-2.5 py-1 rounded-lg bg-yellow-500/15 hover:bg-yellow-500/25 border border-yellow-500/30 text-yellow-300 text-[11px] font-bold flex items-center gap-1 transition-colors"
+            >
+              <svg className="w-3 h-3 fill-current text-yellow-400" viewBox="0 0 24 24">
+                <path d="M12.016 2.013c-3.79 0-6.108 2.502-6.108 5.767 0 1.09.28 2.213.67 3.012.18.368.21.57.06.82-.18.3-.59.51-.88.66-.43.22-.9.41-1.34.66-.6.34-.84.77-.84 1.34 0 .97.86 1.62 1.76 1.83.47.11.96.12 1.44.15.35.02.5.15.54.49.07.61.27 1.15.7 1.6.58.6 1.38.86 2.18.99.37.06.67.2.82.55.22.52.62.8 1.18.8h.04c.56 0 .96-.28 1.18-.8.15-.35.45-.49.82-.55.8-.13 1.6-.39 2.18-.99.43-.45.63-.99.7-1.6.04-.34.19-.47.54-.49.48-.03.97-.04 1.44-.15.9-.21 1.76-.86 1.76-1.83 0-.57-.24-1-.84-1.34-.44-.25-.91-.44-1.34-.66-.29-.15-.7-.36-.88-.66-.15-.25-.12-.452.06-.82.39-.799.67-1.922.67-3.012 0-3.265-2.318-5.767-6.108-5.767z" />
+              </svg>
+              <span>+ سناپچات (Snapchat)</span>
+            </button>
+            <button
+              type="button"
               onClick={() => handleAddLink('ماڵپەڕی فەرمی', 'https://')}
               className="px-2.5 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-[11px] font-bold flex items-center gap-1 transition-colors"
             >

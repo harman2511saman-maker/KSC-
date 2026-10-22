@@ -48,6 +48,17 @@ export default function Footer() {
       ),
     },
     {
+      name: 'سناپچات',
+      sub: '@ksc_edu',
+      url: 'https://www.snapchat.com',
+      color: 'from-yellow-400/20 to-amber-500/20 border-yellow-400/30 text-yellow-300 hover:border-yellow-400',
+      icon: (
+        <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+          <path d="M12.016 2.013c-3.79 0-6.108 2.502-6.108 5.767 0 1.09.28 2.213.67 3.012.18.368.21.57.06.82-.18.3-.59.51-.88.66-.43.22-.9.41-1.34.66-.6.34-.84.77-.84 1.34 0 .97.86 1.62 1.76 1.83.47.11.96.12 1.44.15.35.02.5.15.54.49.07.61.27 1.15.7 1.6.58.6 1.38.86 2.18.99.37.06.67.2.82.55.22.52.62.8 1.18.8h.04c.56 0 .96-.28 1.18-.8.15-.35.45-.49.82-.55.8-.13 1.6-.39 2.18-.99.43-.45.63-.99.7-1.6.04-.34.19-.47.54-.49.48-.03.97-.04 1.44-.15.9-.21 1.76-.86 1.76-1.83 0-.57-.24-1-.84-1.34-.44-.25-.91-.44-1.34-.66-.29-.15-.7-.36-.88-.66-.15-.25-.12-.452.06-.82.39-.799.67-1.922.67-3.012 0-3.265-2.318-5.767-6.108-5.767z" />
+        </svg>
+      ),
+    },
+    {
       name: 'ئیمەیڵی فەرمی',
       sub: 'studentchamption@gmail.com',
       url: 'mailto:studentchamption@gmail.com',
@@ -82,7 +93,7 @@ export default function Footer() {
         </div>
 
         {/* Social Accounts Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
           {socialLinks.map((item, idx) => (
             <a
               key={idx}
