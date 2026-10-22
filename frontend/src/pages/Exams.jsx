@@ -12,10 +12,12 @@ import {
   Edit,
   CheckCircle2,
   AlertCircle,
-  BarChart2
+  BarChart2,
+  Globe
 } from 'lucide-react';
 import api from '../api';
 import Modal from '../components/Modal';
+import OnlineExamAdminModal from '../components/OnlineExamAdminModal';
 
 export default function Exams({ onSelectAnswerKey, onSelectExamForScan, onSelectExamForSheet, onShowToast }) {
   const [exams, setExams] = useState([]);
@@ -26,6 +28,7 @@ export default function Exams({ onSelectAnswerKey, onSelectExamForScan, onSelect
 
   // Modal State
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [onlineExamModalOpen, setOnlineExamModalOpen] = useState(false);
   const [editingExam, setEditingExam] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
@@ -157,30 +160,41 @@ export default function Exams({ onSelectAnswerKey, onSelectExamForScan, onSelect
           <p className="text-xs text-slate-500">دروستکردن، دەستکاریکردن، کلیلی وەڵام و چاپکردنی پەڕەکان</p>
         </div>
 
-        <button
-          onClick={() => {
-            setEditingExam(null);
-            setFormData({
-              exam_name: '',
-              subject: '',
-              grade: 'پۆلی ١٢',
-              class_id: '',
-              academic_year: '2025 - 2026',
-              exam_date: new Date().toISOString().split('T')[0],
-              number_of_questions: 50,
-              choices: 'A,B,C,D',
-              total_marks: 100,
-              pass_mark: 50,
-              instructions: 'تکایە پەڕەی وەڵام بە قەڵەمی ڕەساس (HB) بە شێوەیەکی تۆخ پڕبکەرەوە.',
-              template_version: 'OMR-V1'
-            });
-            setCreateModalOpen(true);
-          }}
-          className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md shadow-brand-500/20 transition-all transform active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          <span>دروستکردنی تاقیکردنەوەی نوێ</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setOnlineExamModalOpen(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 hover:from-slate-800 hover:to-indigo-900 text-amber-300 border border-indigo-500/40 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md shadow-indigo-950/20 transition-all transform active:scale-95"
+          >
+            <Globe className="w-4 h-4 text-amber-400" />
+            <span>تاقیکردنەوەی ئۆنلاین (Online Exam)</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setEditingExam(null);
+              setFormData({
+                exam_name: '',
+                subject: '',
+                grade: 'پۆلی ١٢',
+                class_id: '',
+                academic_year: '2025 - 2026',
+                exam_date: new Date().toISOString().split('T')[0],
+                number_of_questions: 50,
+                choices: 'A,B,C,D',
+                total_marks: 100,
+                pass_mark: 50,
+                instructions: 'تکایە پەڕەی وەڵام بە قەڵەمی ڕەساس (HB) بە شێوەیەکی تۆخ پڕبکەرەوە.',
+                template_version: 'OMR-V1'
+              });
+              setCreateModalOpen(true);
+            }}
+            className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md shadow-brand-500/20 transition-all transform active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>دروستکردنی تاقیکردنەوەی نوێ (OMR)</span>
+          </button>
+        </div>
       </div>
 
       {/* Filters Bar */}
@@ -509,6 +523,14 @@ export default function Exams({ onSelectAnswerKey, onSelectExamForScan, onSelect
           </div>
         </div>
       </Modal>
+
+      {/* Online Exam Admin Modal */}
+      {onlineExamModalOpen && (
+        <OnlineExamAdminModal
+          onClose={() => setOnlineExamModalOpen(false)}
+          onShowToast={onShowToast}
+        />
+      )}
     </div>
   );
 }
