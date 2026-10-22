@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ExternalLink, Sparkles, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ExternalLink, Sparkles } from 'lucide-react';
 
 export default function PromoSlider({ slides: propSlides }) {
   const defaultSlides = [
@@ -228,34 +228,7 @@ export default function PromoSlider({ slides: propSlides }) {
 
         </div>
 
-        {/* Swipe Left / Right Arrow Buttons (Visible on hover and on touch) */}
-        {slides.length > 1 && (
-          <>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                goToPrev();
-              }}
-              aria-label="سلایدی پێشوو"
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/40 hover:bg-black/60 active:scale-90 text-white flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                goToNext();
-              }}
-              aria-label="سلایدی دواتر"
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/40 hover:bg-black/60 active:scale-90 text-white flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-          </>
-        )}
 
       </div>
 
