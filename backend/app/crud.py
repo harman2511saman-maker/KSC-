@@ -37,25 +37,18 @@ def log_audit(
     db.commit()
 
 def init_seed_data(db: Session):
-    """Initializes master admin user from environment variables and calibration defaults."""
-    # 1. Master Admin User (Configured via Environment)
-    admin = db.query(User).filter(User.username == ADMIN_USERNAME).first()
-    if not admin:
-        # Check if old admin exists and upgrade
-        old_admin = db.query(User).filter(User.username == "admin").first()
-        if old_admin:
-            old_admin.username = ADMIN_USERNAME
-            old_admin.password_hash = get_password_hash(ADMIN_PASSWORD)
-            old_admin.full_name_ku = ADMIN_FULL_NAME_KU
-            old_admin.role = "ADMIN"
-        else:
-            admin = User(
-                username=ADMIN_USERNAME,
-                password_hash=get_password_hash(ADMIN_PASSWORD),
-                full_name_ku=ADMIN_FULL_NAME_KU,
-                role="ADMIN"
-            )
-            db.add(admin)
+    """Initializes master admin user from environment variables if no admin exists, and calibration defaults."""
+    # 1. Master Admin User: Only seed if database has no active administrator
+    existing_admin = db.query(User).filter(User.role == "ADMIN").first()
+    if not existing_admin:
+        admin = User(
+            username=ADMIN_USERNAME,
+            password_hash=get_password_hash(ADMIN_PASSWORD),
+            full_name_ku=ADMIN_FULL_NAME_KU,
+            role="ADMIN",
+            is_active=True
+        )
+        db.add(admin)
         db.commit()
 
     # 2. Calibration defaults

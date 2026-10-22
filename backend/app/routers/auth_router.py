@@ -4,7 +4,7 @@ Handles login, JWT tokens, and user profiling.
 """
 
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -18,8 +18,18 @@ import time
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-# Simple In-Memory Brute Force Tracker (IP/Username tracking)
-failed_attempts = {}
+# In-Memory Brute Force Tracker (Tracks failed attempts per IP and per (IP, Username))
+ip_failed_attempts = {}
+ip_user_failed_attempts = {}
+
+def get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip.strip()
+    return request.client.host if request.client else "unknown"
 
 class ChangePasswordRequest(BaseModel):
     current_password: str
@@ -28,38 +38,60 @@ class ChangePasswordRequest(BaseModel):
 
 @router.post("/token", response_model=Token)
 def login_for_access_token(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    ip_key = form_data.username.strip().lower()
+    client_ip = get_client_ip(request)
+    normalized_user = form_data.username.strip().lower()
+    ip_user_key = f"{client_ip}:{normalized_user}"
     now = time.time()
 
-    # Brute-force protection: Lock out after 5 consecutive failed attempts for 15 minutes
-    if ip_key in failed_attempts:
-        attempts, last_time = failed_attempts[ip_key]
-        if attempts >= 5 and (now - last_time) < 900:
-            remaining_mins = int((900 - (now - last_time)) / 60) + 1
+    # 1. IP-level brute-force lock (e.g. scanning multiple accounts)
+    if client_ip in ip_failed_attempts:
+        ip_attempts, ip_last = ip_failed_attempts[client_ip]
+        if ip_attempts >= 10 and (now - ip_last) < 900:
+            remaining_mins = int((900 - (now - ip_last)) / 60) + 1
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"هەوڵی نەگونجاوی زۆر لەم ئایپیەوە دراوە. تکایە {remaining_mins} خولەکی تر هەوڵ بدەرەوە."
+            )
+        elif (now - ip_last) >= 900:
+            ip_failed_attempts[client_ip] = (0, now)
+
+    # 2. Targeted IP+User lock (5 consecutive failed attempts on an account from this IP)
+    if ip_user_key in ip_user_failed_attempts:
+        user_attempts, user_last = ip_user_failed_attempts[ip_user_key]
+        if user_attempts >= 5 and (now - user_last) < 900:
+            remaining_mins = int((900 - (now - user_last)) / 60) + 1
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=f"هەوڵی چوونەژوورەوەی زۆر دراوە. تکایە {remaining_mins} خولەکی تر هەوڵ بدەرەوە."
             )
-        elif (now - last_time) >= 900:
-            failed_attempts[ip_key] = (0, now)
+        elif (now - user_last) >= 900:
+            ip_user_failed_attempts[ip_user_key] = (0, now)
 
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.password_hash):
-        # Increment failed attempts
-        cur_attempts = failed_attempts.get(ip_key, (0, now))[0] + 1
-        failed_attempts[ip_key] = (cur_attempts, now)
+        # Increment failed counters
+        cur_ip_att = ip_failed_attempts.get(client_ip, (0, now))[0] + 1
+        ip_failed_attempts[client_ip] = (cur_ip_att, now)
+
+        cur_user_att = ip_user_failed_attempts.get(ip_user_key, (0, now))[0] + 1
+        ip_user_failed_attempts[ip_user_key] = (cur_user_att, now)
+
+        time.sleep(0.3)  # Mitigate timing side-channel attacks
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="ناوی بەکارهێنەر یان وشەی نهێنی هەڵەیە",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Reset failed attempts on success
-    if ip_key in failed_attempts:
-        del failed_attempts[ip_key]
+    # Reset failed attempts on success for this IP and user
+    if client_ip in ip_failed_attempts:
+        del ip_failed_attempts[client_ip]
+    if ip_user_key in ip_user_failed_attempts:
+        del ip_user_failed_attempts[ip_user_key]
 
     if not user.is_active:
         raise HTTPException(

@@ -26,6 +26,7 @@ import numpy as np
 import requests
 from app.omr.template_definitions import generate_template_spec
 from app.omr.sheet_generator import generate_omr_sheet_image, generate_omr_sheet_pdf
+from app.config import ADMIN_USERNAME, ADMIN_PASSWORD
 
 API_BASE = "http://127.0.0.1:8000/api"
 
@@ -39,7 +40,7 @@ def test_full_workflow():
     assert health["status"] == "online"
 
     # Authenticate
-    login_resp = s.post(f"{API_BASE}/auth/token", data={"username": "admin", "password": "Admin@Secure2026!"})
+    login_resp = s.post(f"{API_BASE}/auth/token", data={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD})
     assert login_resp.status_code == 200, f"Login failed: {login_resp.text}"
     token = login_resp.json()["access_token"]
     s.headers.update({"Authorization": f"Bearer {token}"})

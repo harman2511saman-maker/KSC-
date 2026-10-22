@@ -32,14 +32,38 @@ elif DATABASE_URL.startswith("postgres://"):
 elif DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("postgresql+"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
+import secrets
+
 # Security Configuration (Loaded exclusively from Environment Variables)
-SECRET_KEY = os.getenv("SECRET_KEY", "omr-kurdish-sorani-secure-jwt-key-2026")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY or SECRET_KEY in ["omr-kurdish-sorani-secure-jwt-key-2026", "your_cryptographically_secure_random_key_here"]:
+    secret_key_file = DATA_DIR / ".jwt_secret"
+    if secret_key_file.exists():
+        SECRET_KEY = secret_key_file.read_text().strip()
+    else:
+        SECRET_KEY = secrets.token_urlsafe(48)
+        try:
+            secret_key_file.write_text(SECRET_KEY)
+        except Exception:
+            pass
+
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
 
-# Default Admin Seed Config (Set your secure credentials in .env file)
+# Default Admin Seed Config (Loaded from .env; auto-generates secure key if unset)
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "Admin@Secure2026!")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+if not ADMIN_PASSWORD:
+    admin_pass_file = DATA_DIR / ".initial_admin_password"
+    if admin_pass_file.exists():
+        ADMIN_PASSWORD = admin_pass_file.read_text().strip()
+    else:
+        ADMIN_PASSWORD = f"KscSecure#{secrets.token_hex(6)}!"
+        try:
+            admin_pass_file.write_text(ADMIN_PASSWORD)
+        except Exception:
+            pass
+
 ADMIN_FULL_NAME_KU = os.getenv("ADMIN_FULL_NAME_KU", "بەڕێوەبەری سەرەکی پلاتفۆرم")
 
 # Canonical A4 Geometry (Standardized OMR-V1 coordinate system)

@@ -15,7 +15,7 @@ from typing import Optional, List, Dict, Any
 
 from app.database import get_db
 from app.models import Result, Exam, Student, SchoolClass, OMRCalibration, User
-from app.auth import get_current_user
+from app.auth import get_current_user, require_role
 
 router = APIRouter(prefix="/api/competitions", tags=["Competitions"])
 
@@ -229,7 +229,7 @@ def get_public_settings(db: Session = Depends(get_db)):
 def update_public_settings(
     settings: Dict[str, Any],
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["ADMIN"]))
 ):
     """Admin endpoint to update announcement banner and certificate configuration."""
     calib = db.query(OMRCalibration).filter(OMRCalibration.key == "system_settings").first()
@@ -244,7 +244,7 @@ def update_public_settings(
 @router.post("/admin/backup")
 def trigger_database_backup(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["ADMIN"]))
 ):
     """Admin endpoint to create a timestamped database backup."""
     db_paths = ["/app/data/omr_system.db", "data/omr_system.db", "backend/omr_system.db", "omr_system.db"]

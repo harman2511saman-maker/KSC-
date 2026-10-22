@@ -18,7 +18,7 @@ from app.auth import get_current_user
 from app.omr.sheet_generator import generate_omr_sheet_pdf, generate_omr_sheet_image
 from app.config import UPLOADS_SHEETS_DIR
 
-router = APIRouter(prefix="/api/sheets", tags=["Sheets Generator"])
+router = APIRouter(prefix="/api/sheets", tags=["Sheets Generator"], dependencies=[Depends(get_current_user)])
 
 @router.get("/preview-image/{exam_id}")
 def preview_sheet_image(

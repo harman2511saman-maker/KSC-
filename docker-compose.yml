@@ -9,9 +9,12 @@ services:
     restart: always
     environment:
       - PORT=8000
-      - SECRET_KEY=${SECRET_KEY:-ksc_production_secret_key_change_me_in_env_file_99}
+      - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=${DATABASE_URL:-}
       - ENVIRONMENT=production
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://ksciq.com,https://www.ksciq.com}
     volumes:
       - omr_data:/app/data
     networks:

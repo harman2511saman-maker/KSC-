@@ -35,19 +35,41 @@ try:
 finally:
     db_session.close()
 
+import os
+
+# Base Paths
+ENVIRONMENT = os.getenv("ENVIRONMENT", "production").lower()
+is_production = (ENVIRONMENT == "production")
+
 app = FastAPI(
     title="سیستەمی OMR بۆ تاقیکردنەوەکان (Kurdish Sorani OMR Platform)",
     version="1.0.0",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    docs_url=None if is_production else "/api/docs",
+    redoc_url=None if is_production else "/api/redoc",
+    openapi_url=None if is_production else "/openapi.json"
 )
 
-# CORS Middleware
+# CORS Security: Restrict to authorized production domains and local development
+allowed_origins_env = os.getenv("CORS_ORIGINS")
+if allowed_origins_env:
+    origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+else:
+    origins = [
+        "https://ksciq.com",
+        "https://www.ksciq.com",
+        "http://ksciq.com",
+        "http://www.ksciq.com",
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 

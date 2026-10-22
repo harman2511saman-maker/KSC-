@@ -17,7 +17,7 @@ from app.models import Result, Exam, Student, SchoolClass, User
 from app.auth import get_current_user
 from app.crud import log_audit
 
-router = APIRouter(prefix="/api/export", tags=["Exports"])
+router = APIRouter(prefix="/api/export", tags=["Exports"], dependencies=[Depends(get_current_user)])
 
 def get_results_dataframe(exam_id: Optional[int], class_id: Optional[int], db: Session) -> pd.DataFrame:
     query = db.query(Result).join(Result.exam).outerjoin(Result.student)
