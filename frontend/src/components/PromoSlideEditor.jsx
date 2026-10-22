@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Sparkles,
   ExternalLink,
   Plus,
   Trash2,
@@ -401,7 +400,7 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800">
         <div>
           <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-400" />
+            <Sliders className="w-5 h-5 text-amber-400" />
             <span>بەڕێوەبردن و بڵاوکردنەوەی سلایدەکانی پەڕەی سەرەکی</span>
           </h3>
           <p className="text-xs text-slate-400 mt-1">
@@ -488,8 +487,7 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
             {/* Top Tag & Emblem */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold flex items-center gap-1.5 shadow-sm">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold shadow-sm">
                   <span>{currentSlide.badge || 'ڕێنمایی تاقیکردنەوە'}</span>
                 </span>
                 {currentSlide.tag && (

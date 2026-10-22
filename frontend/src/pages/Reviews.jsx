@@ -7,7 +7,6 @@ import {
   HelpCircle,
   Eye,
   ArrowRight,
-  Sparkles,
   ShieldCheck
 } from 'lucide-react';
 import api, { getUploadUrl } from '../api';

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Sparkles,
   Clock,
   Play,
   Calendar,
@@ -245,8 +244,7 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
           <div className="space-y-3 flex-1 min-w-0">
             {/* Top Badges & Live Status */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-black border border-indigo-500/40 shadow-inner">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-black border border-indigo-500/40 shadow-inner">
                 <span>تاقیکردنەوەی ئۆنلاینی فەرمیی KSC</span>
               </span>
 

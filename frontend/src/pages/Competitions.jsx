@@ -6,7 +6,6 @@ import {
   Search,
   Building2,
   Users,
-  Sparkles,
   TrendingUp,
   CheckCircle2,
   XCircle,
@@ -382,33 +381,19 @@ export default function Competitions({ onShowToast }) {
             )}
           </div>
 
-          {/* Hero Right Header Text (in RTL Right side) */}
-          <div className="space-y-4 order-1 lg:order-2 max-w-2xl text-right">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="absolute -inset-1 rounded-full bg-amber-500/25 blur-md pointer-events-none animate-pulse" />
+          {/* Hero Main Content (with centered logo & banners) */}
+          <div className="space-y-3 order-1 lg:order-2 flex-1 min-w-0">
+            {/* Centered KSC Official Emblem */}
+            <div className="flex justify-center items-center py-1">
+              <div className="relative group">
+                <div className="absolute -inset-2 rounded-2xl bg-amber-500/20 blur-xl pointer-events-none group-hover:bg-amber-500/30 transition-all duration-500" />
                 <img
                   src="/logo.png"
                   alt="KSC Kurdistan Students Competition Official Emblem"
-                  className="relative h-16 sm:h-20 w-auto object-contain rounded-xl drop-shadow-[0_8px_25px_rgba(245,158,11,0.4)] hover:scale-105 transition-transform duration-300"
+                  className="relative h-20 sm:h-24 md:h-28 w-auto object-contain drop-shadow-[0_10px_30px_rgba(245,158,11,0.45)] hover:scale-105 transition-transform duration-300 pointer-events-none"
                 />
               </div>
-              <div className="space-y-1.5">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-xs font-bold shadow-inner">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span>پڕۆژەی پاڵپشتی قوتابیانی کوردستان (KSC)</span>
-                </div>
-                <span className="block text-[11px] text-slate-400 font-semibold">سەکۆی نیشتمانی بۆ ڕیزبەندی و ئەنجامی تاقیکردنەوەکان</span>
-              </div>
             </div>
-
-            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
-              ڕیزبەندی و پێشبڕکێی <span className="text-amber-400">قوتابیان و قوتابخانەکان</span>
-            </h1>
-
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
-              شیکاری و ڕیزبەندی ڕاستەوخۆ بەپێی نمرە، پلەی سەرکەوتن لەسەر ئاستی هەر قوتابخانەیەک و سەرجەم پارێزگاکانی کوردستان.
-            </p>
 
             {/* Online Live Exam Card & Countdown matching user request */}
             <OnlineExamBanner

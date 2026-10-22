@@ -10,7 +10,6 @@ import {
   Building2,
   Sliders,
   LayoutGrid,
-  Sparkles,
   Layers
 } from 'lucide-react';
 import api from '../api';
@@ -126,7 +125,7 @@ export default function AdminSettingsModal({ isOpen, onClose, onShowToast }) {
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
-              <Sparkles className="w-6 h-6" />
+              <Sliders className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-black text-white">
@@ -157,7 +156,7 @@ export default function AdminSettingsModal({ isOpen, onClose, onShowToast }) {
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
+            <LayoutGrid className="w-4 h-4" />
             <span>سلاید و ڕیکلامەکانی پلاتفۆرم (Hero Banner)</span>
           </button>
 

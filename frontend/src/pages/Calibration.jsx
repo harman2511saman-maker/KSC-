@@ -3,7 +3,6 @@ import {
   Sliders,
   Save,
   RotateCcw,
-  Sparkles,
   Upload,
   Eye,
   CheckCircle2,
@@ -211,7 +210,7 @@ export default function Calibration({ onShowToast }) {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-brand-600" />
+              <Eye className="w-4 h-4 text-brand-600" />
               <h3 className="font-bold text-sm text-slate-900">تاقیکردنەوەی ڕاستەوخۆی پەڕەی نموونە</h3>
             </div>
           </div>
@@ -290,7 +289,7 @@ export default function Calibration({ onShowToast }) {
       <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <Sparkles className="w-5 h-5" />
+            <Sliders className="w-5 h-5" />
           </div>
           <div>
             <h3 className="text-base font-bold text-slate-900">

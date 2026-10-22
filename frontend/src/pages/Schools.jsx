@@ -8,7 +8,6 @@ import {
   Users,
   School,
   CheckCircle2,
-  Sparkles,
   GraduationCap,
   Calendar,
   Layers,

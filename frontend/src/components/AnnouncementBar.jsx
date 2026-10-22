@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Megaphone, X, ChevronLeft } from 'lucide-react';
+import { Megaphone, X, ChevronLeft } from 'lucide-react';
 import api from '../api';
 
 export default function AnnouncementBar({ initialSettings }) {

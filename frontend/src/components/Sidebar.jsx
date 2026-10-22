@@ -9,7 +9,6 @@ import {
   BarChart3,
   Sliders,
   LogOut,
-  Sparkles,
   Layers,
   HelpCircle,
   Building2,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Camera, Sparkles, CheckCircle2, ShieldCheck, Bell } from 'lucide-react';
+import { Menu, Camera, CheckCircle2, ShieldCheck, Bell } from 'lucide-react';
 
 export default function Navbar({ onOpenMobile, onQuickScan, activeTitle }) {
   return (

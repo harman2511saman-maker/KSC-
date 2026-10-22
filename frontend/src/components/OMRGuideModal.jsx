@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, CheckCircle2, XCircle, AlertTriangle, PenTool, ShieldAlert, FileText, Sparkles } from 'lucide-react';
+import { X, CheckCircle2, XCircle, AlertTriangle, PenTool, ShieldAlert, FileText } from 'lucide-react';
 
 export default function OMRGuideModal({ isOpen, onClose }) {
   if (!isOpen) return null;
@@ -38,7 +38,7 @@ export default function OMRGuideModal({ isOpen, onClose }) {
         {/* Visual Comparison: Correct vs Incorrect */}
         <div className="my-6 space-y-4">
           <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400" />
+            <PenTool className="w-4 h-4 text-amber-400" />
             <span>شێوازی پڕکردنەوەی بڵقی وەڵامەکان:</span>
           </h3>
 

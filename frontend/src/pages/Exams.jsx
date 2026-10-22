@@ -12,8 +12,7 @@ import {
   Edit,
   CheckCircle2,
   AlertCircle,
-  BarChart2,
-  Sparkles
+  BarChart2
 } from 'lucide-react';
 import api from '../api';
 import Modal from '../components/Modal';

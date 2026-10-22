@@ -8,7 +8,6 @@ import {
   Trash2,
   Edit,
   GraduationCap,
-  Sparkles,
   School,
   Building2,
   Copy,

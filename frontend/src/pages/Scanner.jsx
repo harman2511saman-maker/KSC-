@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   FileText,
-  Sparkles,
   Eye,
   Sliders,
   Layers,
@@ -800,7 +799,7 @@ export default function Scanner({ defaultExamId, onShowToast, onNavigateToReview
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <Camera className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                     <span className="truncate">{cameraFeedback}</span>
                   </>
                 )}

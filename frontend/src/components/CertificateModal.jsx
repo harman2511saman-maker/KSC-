@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { X, Download, Printer, Award, Sparkles, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { X, Download, Printer, Award, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 export default function CertificateModal({ isOpen, onClose, data }) {
   if (!isOpen || !data) return null;

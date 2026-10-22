@@ -20,7 +20,7 @@ import Calibration from './pages/Calibration';
 import AnswerKey from './pages/AnswerKey';
 import Competitions from './pages/Competitions';
 
-import { Lock, Shield, KeyRound, AlertCircle, ArrowLeft, Loader2, Sparkles } from 'lucide-react';
+import { Lock, Shield, KeyRound, AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import api from './api';
 
 function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {

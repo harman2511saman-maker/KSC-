@@ -10,7 +10,6 @@ import {
   Printer,
   CheckCircle2,
   Clock,
-  Sparkles,
   ChevronLeft
 } from 'lucide-react';
 import api from '../api';
@@ -80,8 +79,7 @@ export default function Dashboard({ setActiveTab, onSelectExamForScan, onOpenRev
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-brand-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-brand-300 border border-white/10">
-              <Sparkles className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-brand-300 border border-white/10">
               <span>پلاتفۆرمی خوێندنەوەی پەڕەی وەڵامی تاقیکردنەوە بە زمانی کوردی</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">

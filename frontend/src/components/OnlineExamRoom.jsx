@@ -9,7 +9,6 @@ import {
   ExternalLink,
   ZoomIn,
   X,
-  Sparkles,
   Trophy,
   Camera,
   FileText
@@ -325,7 +324,7 @@ export default function OnlineExamRoom({ sessionData, onClose, onShowToast }) {
             
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
               <span className="text-xs font-black text-amber-400 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4" />
+                <FileText className="w-4 h-4" />
                 <span>پرسیاری ژمارە {currentIndex + 1}</span>
               </span>
 

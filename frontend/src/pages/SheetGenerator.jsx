@@ -4,7 +4,6 @@ import {
   Download,
   FileDown,
   Layers,
-  Sparkles,
   Users,
   Eye,
   CheckCircle2,

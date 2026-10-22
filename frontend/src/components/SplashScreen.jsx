@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 export default function SplashScreen({ onFinish }) {
   const [visible, setVisible] = useState(false);
@@ -61,7 +61,6 @@ export default function SplashScreen({ onFinish }) {
       {/* Top Header: Skip button */}
       <div className="w-full max-w-2xl flex items-center justify-between z-10 pt-2">
         <div className="flex items-center gap-2 text-xs font-bold text-amber-400/90 bg-amber-500/10 border border-amber-500/20 px-3.5 py-1.5 rounded-full shadow-inner">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '4s' }} />
           <span>پلاتفۆرمی فەرمی نیشتمانی</span>
         </div>
 

@@ -18,7 +18,6 @@ import {
   ArrowUp,
   ArrowDown,
   Clock,
-  Sparkles,
   Gift,
   Send,
   Layers,
@@ -872,7 +871,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                     disabled={generating}
                     className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md active:scale-95 disabled:opacity-50"
                   >
-                    {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                    {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Key className="w-3.5 h-3.5" />}
                     <span>خۆکارانە پاسوۆرد دروست بکە</span>
                   </button>
 

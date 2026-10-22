@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   AlertCircle,
   HelpCircle,
-  Sparkles,
   ArrowRight,
   ShieldCheck
 } from 'lucide-react';

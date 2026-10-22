@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ExternalLink, Sparkles, MessageCircle, Send, Phone, Globe } from 'lucide-react';
+import { ExternalLink, MessageCircle, Send, Phone, Globe } from 'lucide-react';
 import { getUploadUrl } from '../api';
 
 export default function PromoSlider({ slides: propSlides }) {
@@ -241,8 +241,7 @@ export default function PromoSlider({ slides: propSlides }) {
           {/* Top Tag & Emblem */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold flex items-center gap-1.5 shadow-sm">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold shadow-sm">
                 <span>{currentSlide.badge || 'ڕێکلام'}</span>
               </span>
               {currentSlide.tag && (
