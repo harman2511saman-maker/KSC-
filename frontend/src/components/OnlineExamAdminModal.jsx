@@ -96,10 +96,16 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         setSponsorsAndPrizes(current.sponsors_and_prizes || '');
 
         if (current.start_time) {
-          const d = new Date(current.start_time);
-          const tzOffset = d.getTimezoneOffset() * 60000;
-          const localISO = new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
-          setStartTime(localISO);
+          const timeStr = current.start_time.endsWith('Z') || current.start_time.includes('+')
+            ? current.start_time
+            : current.start_time + 'Z';
+          const d = new Date(timeStr);
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const hours = String(d.getHours()).padStart(2, '0');
+          const minutes = String(d.getMinutes()).padStart(2, '0');
+          setStartTime(`${year}-${month}-${day}T${hours}:${minutes}`);
         } else {
           setStartTime('');
         }
@@ -130,8 +136,12 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
     setDescription('');
     setSponsorsAndPrizes('');
     const now = new Date();
-    const tzOffset = now.getTimezoneOffset() * 60000;
-    setStartTime(new Date(now.getTime() - tzOffset).toISOString().slice(0, 16));
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    setStartTime(`${year}-${month}-${day}T${hours}:${minutes}`);
     setQuestionDuration(60);
     setTelegramUrl('https://t.me/KurdishOMR');
     setTelegramMins(5);
@@ -528,9 +538,14 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-amber-400" />
-                      <span>کاتی دەستپێکردن:</span>
+                    <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-amber-400" />
+                        <span>کاتی دەستپێکردن:</span>
+                      </span>
+                      <span className="text-[10px] text-amber-400 font-medium">
+                        بە کاتی فەرمیی کوردستان (GMT+3)
+                      </span>
                     </label>
                     <input
                       type="datetime-local"

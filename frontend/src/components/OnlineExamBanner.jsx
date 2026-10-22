@@ -191,16 +191,17 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
   const handleButtonClick = () => {
     if (!timeRemaining.started) {
       const formattedDate = new Date(currentExam.start_time).toLocaleString('ckb', {
+        timeZone: 'Asia/Baghdad',
         dateStyle: 'medium',
         timeStyle: 'short'
       });
       if (onShowToast) {
         onShowToast({
           type: 'info',
-          message: `وادەی دەستپێکردنی تاقیکردنەوە ماوە! کاتی دەستپێکردن: ${formattedDate}`
+          message: `وادەی دەستپێکردنی تاقیکردنەوە ماوە! کاتی دەستپێکردن: ${formattedDate} (بە کاتی کوردستان)`
         });
       } else {
-        alert(`وادەی دەستپێکردنی ئەم تاقیکردنەوەیە ماوە!\nکاتی دەستپێکردن: ${formattedDate}`);
+        alert(`وادەی دەستپێکردنی ئەم تاقیکردنەوەیە ماوە!\nکاتی دەستپێکردن: ${formattedDate} (بە کاتی کوردستان)`);
       }
       return;
     }
@@ -326,6 +327,14 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
                     {String(timeRemaining.seconds).padStart(2, '0')}
                   </span>
                 </div>
+                <span className="text-[10px] text-amber-300/90 font-mono block mt-1.5 pt-1 border-t border-slate-800/80">
+                  {new Date(currentExam.start_time).toLocaleTimeString('ckb', {
+                    timeZone: 'Asia/Baghdad',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                  })} (بە کاتی کوردستان)
+                </span>
               </div>
             )}
 

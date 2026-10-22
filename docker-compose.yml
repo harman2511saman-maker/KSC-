@@ -15,6 +15,7 @@ services:
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - CORS_ORIGINS=${CORS_ORIGINS:-https://ksciq.com,https://www.ksciq.com}
+      - TZ=Asia/Baghdad
     volumes:
       - omr_data:/app/data
     networks:
@@ -28,6 +29,8 @@ services:
       dockerfile: Dockerfile.frontend
     container_name: ksc-omr-frontend
     restart: always
+    environment:
+      - TZ=Asia/Baghdad
     ports:
       - "80:80"
       - "443:443"

@@ -93,6 +93,22 @@ def generate_passcode_string() -> str:
     letters = ''.join(secrets.choice(string.ascii_uppercase) for _ in range(2))
     return f"KSC-{digits}-{letters}"
 
+def to_utc_naive(dt: Optional[datetime]) -> datetime:
+    """Normalizes any incoming datetime to naive UTC for consistent database storage."""
+    if dt is None:
+        return datetime.utcnow()
+    if dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
+
+def format_datetime_iso(dt: Optional[datetime]) -> str:
+    """Formats datetime as UTC ISO-8601 string with trailing 'Z' so all clients parse it accurately."""
+    if not dt:
+        return ""
+    if dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
 # -------------------------------------------------------------
 # PUBLIC ENDPOINTS
 # -------------------------------------------------------------
@@ -135,7 +151,7 @@ def get_active_online_exams(db: Session = Depends(get_db)):
             "title": exam.title,
             "description": exam.description,
             "sponsors_and_prizes": exam.sponsors_and_prizes,
-            "start_time": exam.start_time.isoformat(),
+            "start_time": format_datetime_iso(exam.start_time),
             "question_duration_seconds": exam.question_duration_seconds,
             "telegram_group_url": exam.telegram_group_url,
             "telegram_submission_minutes": exam.telegram_submission_minutes,
@@ -164,8 +180,9 @@ def verify_passcode_and_start_exam(payload: VerifyPasscodeRequest, db: Session =
         raise HTTPException(status_code=404, detail="تاقیکردنەوە نەدۆزرایەوە یان ناچالاکە")
 
     now = datetime.utcnow()
+    exam_start = to_utc_naive(exam.start_time)
     # Check if start time has arrived (allow a 2-minute clock skew buffer)
-    time_diff = (exam.start_time - now).total_seconds()
+    time_diff = (exam_start - now).total_seconds()
     if time_diff > 120:
         mins_remaining = int(time_diff / 60) + 1
         raise HTTPException(
@@ -283,7 +300,7 @@ def admin_get_exams(
             "title": exam.title,
             "description": exam.description,
             "sponsors_and_prizes": exam.sponsors_and_prizes,
-            "start_time": exam.start_time.isoformat(),
+            "start_time": format_datetime_iso(exam.start_time),
             "question_duration_seconds": exam.question_duration_seconds,
             "telegram_group_url": exam.telegram_group_url,
             "telegram_submission_minutes": exam.telegram_submission_minutes,
@@ -306,7 +323,7 @@ def admin_create_exam(
         title=payload.title,
         description=payload.description,
         sponsors_and_prizes=payload.sponsors_and_prizes,
-        start_time=payload.start_time,
+        start_time=to_utc_naive(payload.start_time),
         question_duration_seconds=payload.question_duration_seconds,
         telegram_group_url=payload.telegram_group_url,
         telegram_submission_minutes=payload.telegram_submission_minutes,
@@ -332,7 +349,7 @@ def admin_update_exam(
     exam.title = payload.title
     exam.description = payload.description
     exam.sponsors_and_prizes = payload.sponsors_and_prizes
-    exam.start_time = payload.start_time
+    exam.start_time = to_utc_naive(payload.start_time)
     exam.question_duration_seconds = payload.question_duration_seconds
     exam.telegram_group_url = payload.telegram_group_url
     exam.telegram_submission_minutes = payload.telegram_submission_minutes
