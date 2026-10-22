@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.config import DATA_DIR, UPLOADS_ORIGINAL_DIR, UPLOADS_NORMALIZED_DIR, UPLOADS_DEBUG_DIR, UPLOADS_SHEETS_DIR, UPLOADS_PROMO_DIR, EXPORTS_DIR
+from app.config import DATA_DIR, UPLOADS_ORIGINAL_DIR, UPLOADS_NORMALIZED_DIR, UPLOADS_DEBUG_DIR, UPLOADS_SHEETS_DIR, UPLOADS_PROMO_DIR, UPLOADS_ONLINE_EXAMS_DIR, EXPORTS_DIR
 from app.database import engine, Base, SessionLocal
 from app.crud import init_seed_data
 from app.routers import (
@@ -22,7 +22,8 @@ from app.routers import (
     results_router,
     calibration_router,
     export_router,
-    competitions_router
+    competitions_router,
+    online_exam_router
 )
 
 # Initialize database schema
@@ -79,6 +80,7 @@ app.mount("/uploads/normalized", StaticFiles(directory=str(UPLOADS_NORMALIZED_DI
 app.mount("/uploads/debug", StaticFiles(directory=str(UPLOADS_DEBUG_DIR)), name="debug_uploads")
 app.mount("/uploads/sheets", StaticFiles(directory=str(UPLOADS_SHEETS_DIR)), name="sheets_uploads")
 app.mount("/uploads/promo", StaticFiles(directory=str(UPLOADS_PROMO_DIR)), name="promo_uploads")
+app.mount("/uploads/online_exams", StaticFiles(directory=str(UPLOADS_ONLINE_EXAMS_DIR)), name="online_exams_uploads")
 
 # Include Routers
 app.include_router(auth_router.router)
@@ -93,6 +95,7 @@ app.include_router(results_router.router)
 app.include_router(calibration_router.router)
 app.include_router(export_router.router)
 app.include_router(competitions_router.router)
+app.include_router(online_exam_router.router)
 
 @app.get("/")
 def root():

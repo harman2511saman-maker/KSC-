@@ -38,15 +38,28 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import api, { getUploadUrl } from '../api';
+import { useAuth } from '../context/AuthContext';
 import OMRGuideModal from '../components/OMRGuideModal';
 import CertificateModal from '../components/CertificateModal';
 import PromoSlider from '../components/PromoSlider';
+import OnlineExamBanner from '../components/OnlineExamBanner';
+import OnlineExamPasscodeModal from '../components/OnlineExamPasscodeModal';
+import OnlineExamRoom from '../components/OnlineExamRoom';
+import OnlineExamAdminModal from '../components/OnlineExamAdminModal';
 
 export default function Competitions({ onShowToast }) {
+  const { user } = useAuth() || {};
   const [leaderboard, setLeaderboard] = useState(null);
   const [exams, setExams] = useState([]);
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Online Live Exam State
+  const [selectedOnlineExam, setSelectedOnlineExam] = useState(null);
+  const [showOnlineExamPasscodeModal, setShowOnlineExamPasscodeModal] = useState(false);
+  const [activeExamSession, setActiveExamSession] = useState(null);
+  const [showOnlineExamAdminModal, setShowOnlineExamAdminModal] = useState(false);
+  const [onlineExamKey, setOnlineExamKey] = useState(0);
 
   // Filters State
   const [selectedExamId, setSelectedExamId] = useState('');
@@ -396,6 +409,18 @@ export default function Competitions({ onShowToast }) {
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
               شیکاری و ڕیزبەندی ڕاستەوخۆ بەپێی نمرە، پلەی سەرکەوتن لەسەر ئاستی هەر قوتابخانەیەک و سەرجەم پارێزگاکانی کوردستان.
             </p>
+
+            {/* Online Live Exam Card & Countdown matching user request */}
+            <OnlineExamBanner
+              key={onlineExamKey}
+              onStartExam={(examData) => {
+                setSelectedOnlineExam(examData);
+                setShowOnlineExamPasscodeModal(true);
+              }}
+              onManageExam={() => setShowOnlineExamAdminModal(true)}
+              isAdmin={user?.role === 'ADMIN'}
+              onShowToast={onShowToast}
+            />
 
             {/* Promo / Sponsor / Guidance Carousel Banner matching Image 1 */}
             <div className="pt-2 w-full">
@@ -1150,6 +1175,39 @@ export default function Competitions({ onShowToast }) {
         onClose={() => setSelectedCertificate(null)}
         data={selectedCertificate}
       />
+
+      {/* Online Exam Passcode Verification Modal */}
+      {showOnlineExamPasscodeModal && selectedOnlineExam && (
+        <OnlineExamPasscodeModal
+          exam={selectedOnlineExam}
+          onClose={() => setShowOnlineExamPasscodeModal(false)}
+          onSuccess={(sessionData) => {
+            setShowOnlineExamPasscodeModal(false);
+            setActiveExamSession(sessionData);
+          }}
+          onShowToast={onShowToast}
+        />
+      )}
+
+      {/* Fullscreen Online Exam Room (Anti-cheat & No-back question flow) */}
+      {activeExamSession && (
+        <OnlineExamRoom
+          sessionData={activeExamSession}
+          onClose={() => setActiveExamSession(null)}
+          onShowToast={onShowToast}
+        />
+      )}
+
+      {/* Online Exam Admin Management Modal */}
+      {showOnlineExamAdminModal && (
+        <OnlineExamAdminModal
+          onClose={() => setShowOnlineExamAdminModal(false)}
+          onShowToast={onShowToast}
+          onExamUpdated={() => {
+            setOnlineExamKey((prev) => prev + 1);
+          }}
+        />
+      )}
     </div>
   );
 }

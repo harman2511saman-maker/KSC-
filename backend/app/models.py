@@ -203,3 +203,49 @@ class OMRCalibration(Base):
     key = Column(String(64), unique=True, nullable=False)
     value_json = Column(Text, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class OnlineExam(Base):
+    __tablename__ = "online_exams"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    sponsors_and_prizes = Column(Text, nullable=True)
+    start_time = Column(DateTime, nullable=False, default=datetime.utcnow)
+    question_duration_seconds = Column(Integer, default=60)
+    telegram_group_url = Column(String(512), nullable=True)
+    telegram_submission_minutes = Column(Integer, default=5)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    questions = relationship("OnlineExamQuestion", back_populates="exam", cascade="all, delete-orphan", order_by="OnlineExamQuestion.order_num")
+    passcodes = relationship("OnlineExamPasscode", back_populates="exam", cascade="all, delete-orphan")
+
+class OnlineExamQuestion(Base):
+    __tablename__ = "online_exam_questions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    exam_id = Column(Integer, ForeignKey("online_exams.id"), nullable=False, index=True)
+    order_num = Column(Integer, nullable=False, default=1)
+    question_text = Column(Text, nullable=False)
+    image_url = Column(String(512), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    exam = relationship("OnlineExam", back_populates="questions")
+
+class OnlineExamPasscode(Base):
+    __tablename__ = "online_exam_passcodes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    exam_id = Column(Integer, ForeignKey("online_exams.id"), nullable=False, index=True)
+    code = Column(String(64), unique=True, index=True, nullable=False)
+    is_used = Column(Boolean, default=False)
+    used_at = Column(DateTime, nullable=True)
+    student_name = Column(String(128), nullable=True)
+    student_phone = Column(String(64), nullable=True)
+    disqualified = Column(Boolean, default=False)
+    disqualification_reason = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    exam = relationship("OnlineExam", back_populates="passcodes")
+
