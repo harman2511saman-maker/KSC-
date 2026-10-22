@@ -334,7 +334,7 @@ export default function OnlineExamRoom({ sessionData, onClose, onShowToast }) {
             </div>
 
             {/* Question Text (Large, crisp Kurdish Sorani font) */}
-            <div className="text-lg sm:text-2xl md:text-3xl font-black text-white leading-relaxed tracking-wide drop-shadow-sm">
+            <div className="text-lg sm:text-2xl md:text-3xl font-black text-white leading-relaxed tracking-wide drop-shadow-sm break-words whitespace-pre-line">
               {currentQ.question_text}
             </div>
 

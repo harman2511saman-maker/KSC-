@@ -504,11 +504,11 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                     دەقی ڕوونکردنەوەی تاقیکردنەوە:
                   </label>
                   <textarea
-                    rows={2}
+                    rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="ڕێنمایی کورت بۆ قوتابییان..."
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    placeholder="ڕێنمایی کورت بۆ قوتابییان (دەتوانیت بە Enter دێڕی نوێ بنووسیت)..."
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-400 resize-y"
                   />
                 </div>
 
@@ -517,12 +517,12 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                     <Gift className="w-3.5 h-3.5 text-amber-400" />
                     <span>سپۆنسەر و دیارییەکان:</span>
                   </label>
-                  <input
-                    type="text"
+                  <textarea
+                    rows={2}
                     value={sponsorsAndPrizes}
                     onChange={(e) => setSponsorsAndPrizes(e.target.value)}
                     placeholder="سپۆنسەری فەرمی: کۆمپانیای ... • دیاری: ١ ملیۆن دینار و بڕوانامە"
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-400 resize-y"
                   />
                 </div>
 
@@ -740,11 +740,11 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                         </button>
                       </div>
                       <textarea
-                        rows={2}
+                        rows={3}
                         value={q.question_text}
                         onChange={(e) => handleUpdateQuestion(idx, 'question_text', e.target.value)}
-                        placeholder="دەقی پرسیار لێرە بنووسە یان پەیستی بکە..."
-                        className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-400 leading-relaxed"
+                        placeholder="دەقی پرسیار لێرە بنووسە یان پەیستی بکە (دەتوانیت بە Enter دێڕی نوێ بنووسیت)..."
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-400 leading-relaxed resize-y"
                       />
                     </div>
 

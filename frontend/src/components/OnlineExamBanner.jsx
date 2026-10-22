@@ -270,11 +270,11 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
 
             {/* Exam Title */}
             <div>
-              <h2 className="text-lg sm:text-2xl lg:text-3xl font-black text-white leading-snug drop-shadow-md break-words">
+              <h2 className="text-lg sm:text-2xl lg:text-3xl font-black text-white leading-snug drop-shadow-md break-words whitespace-pre-line">
                 {currentExam.title}
               </h2>
               {currentExam.description && (
-                <p className="text-xs sm:text-sm text-slate-300/90 leading-relaxed max-w-2xl mt-1 break-words">
+                <p className="text-xs sm:text-sm text-slate-300/90 leading-relaxed max-w-2xl mt-1 break-words whitespace-pre-line">
                   {currentExam.description}
                 </p>
               )}
@@ -284,7 +284,7 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
             {currentExam.sponsors_and_prizes && (
               <div className="flex items-start gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs font-medium">
                 <Gift className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <span className="break-words leading-relaxed">{currentExam.sponsors_and_prizes}</span>
+                <span className="break-words leading-relaxed whitespace-pre-line">{currentExam.sponsors_and_prizes}</span>
               </div>
             )}
 

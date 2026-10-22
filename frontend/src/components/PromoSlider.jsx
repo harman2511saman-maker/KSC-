@@ -261,10 +261,10 @@ export default function PromoSlider({ slides: propSlides }) {
           {/* Center Main Text & Optional Side Image */}
           <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 my-1">
             <div className="space-y-1.5 flex-1 min-w-0">
-              <h3 className="text-lg sm:text-2xl font-black text-white leading-snug drop-shadow-md break-words">
+              <h3 className="text-lg sm:text-2xl font-black text-white leading-snug drop-shadow-md break-words whitespace-pre-line">
                 {currentSlide.title}
               </h3>
-              <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl font-medium break-words">
+              <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl font-medium break-words whitespace-pre-line">
                 {currentSlide.description}
               </p>
             </div>

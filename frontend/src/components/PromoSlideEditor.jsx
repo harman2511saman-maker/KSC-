@@ -507,10 +507,10 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
             {/* Center Main Text & Side Image */}
             <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 my-1">
               <div className="space-y-1.5 flex-1 min-w-0">
-                <h3 className="text-lg sm:text-2xl font-black text-white leading-snug drop-shadow-md">
+                <h3 className="text-lg sm:text-2xl font-black text-white leading-snug drop-shadow-md break-words whitespace-pre-line">
                   {currentSlide.title || 'ناونیشانی سەرەکی سلاید لێرە دەردەکەوێت'}
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl font-medium">
+                <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl font-medium break-words whitespace-pre-line">
                   {currentSlide.description || 'دەقی ڕوونکردنەوە و زانیاری زیاتر دەربارەی تاقیکردنەوە یان سپۆنسەر لێرەدا دەردەکەوێت.'}
                 </p>
               </div>
@@ -639,12 +639,12 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
           <label className="block text-xs font-bold text-slate-300 mb-1.5">
             ناونیشانی سەرەکیی سلاید (Main Title):
           </label>
-          <input
-            type="text"
+          <textarea
+            rows={1}
             value={currentSlide.title || ''}
             onChange={(e) => updateCurrentSlide('title', e.target.value)}
-            placeholder="سیستەمی سکان و پشکنینی ئەلیکترۆنیی فۆڕمی وەڵام"
-            className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm font-black text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+            placeholder="ناونیشانی سەرەکی سلاید لێرە بنووسە..."
+            className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm font-black text-white focus:outline-none focus:ring-2 focus:ring-amber-400 leading-snug resize-y"
           />
         </div>
 
@@ -654,11 +654,11 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
             دەقی ڕوونکردنەوە و زانیاری (Description):
           </label>
           <textarea
-            rows={2}
+            rows={3}
             value={currentSlide.description || ''}
             onChange={(e) => updateCurrentSlide('description', e.target.value)}
-            placeholder="ڕوونکردنەوەی تەواو لێرە بنووسە..."
-            className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-400"
+            placeholder="ڕوونکردنەوەی تەواو لێرە بنووسە (دەتوانیت بە دوگمەی Enter بچیتە لاینی دواتر)..."
+            className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-400 resize-y"
           />
         </div>
 
