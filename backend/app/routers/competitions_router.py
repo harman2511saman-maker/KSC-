@@ -7,12 +7,14 @@ all-student rankings, and student rank lookup.
 import json
 import os
 import shutil
+import uuid
 from datetime import datetime
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, or_, case
 from typing import Optional, List, Dict, Any
 
+from app.config import UPLOADS_PROMO_DIR
 from app.database import get_db
 from app.models import Result, Exam, Student, SchoolClass, OMRCalibration, User
 from app.auth import get_current_user, require_role
@@ -34,6 +36,11 @@ DEFAULT_SYSTEM_SETTINGS = {
             "tag": "KSC VIP",
             "link": "https://t.me/KurdishOMR",
             "link_text": "پەیوەندی لە تێلیگرام",
+            "links": [
+                {"id": 1, "title": "پەیوەندی لە تێلیگرام", "url": "https://t.me/KurdishOMR"}
+            ],
+            "image_url": None,
+            "image_mode": "side",
             "bg_gradient": "from-emerald-700 via-emerald-800 to-slate-900"
         },
         {
@@ -44,6 +51,11 @@ DEFAULT_SYSTEM_SETTINGS = {
             "tag": "OMR GUIDE",
             "link": "#",
             "link_text": "خوێندنەوەی یاساکان",
+            "links": [
+                {"id": 1, "title": "خوێندنەوەی یاساکان", "url": "#"}
+            ],
+            "image_url": None,
+            "image_mode": "side",
             "bg_gradient": "from-amber-600 via-amber-800 to-slate-950"
         },
         {
@@ -54,6 +66,11 @@ DEFAULT_SYSTEM_SETTINGS = {
             "tag": "SPONSOR",
             "link": "https://wa.me/HarmanGaraway",
             "link_text": "پەیوەندی لە وەتسئاپ",
+            "links": [
+                {"id": 1, "title": "پەیوەندی لە وەتسئاپ", "url": "https://wa.me/HarmanGaraway"}
+            ],
+            "image_url": None,
+            "image_mode": "side",
             "bg_gradient": "from-indigo-700 via-slate-900 to-slate-950"
         }
     ],
@@ -240,6 +257,30 @@ def update_public_settings(
         calib.value_json = json.dumps(settings, ensure_ascii=False)
     db.commit()
     return {"message": "ڕێکخستنەکانی سیستەم بە سەرکەوتوویی نوێکرانەوە", "settings": settings}
+
+@router.post("/upload-promo-image")
+async def upload_promo_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_role(["ADMIN"]))
+):
+    """Admin endpoint to upload an image for hero promo slides."""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="ناوی فایل نادیارە")
+        
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"]:
+        raise HTTPException(status_code=400, detail="تەنها وێنەی جۆری PNG, JPG, WEBP, GIF, SVG ڕێگەپێدراوە")
+        
+    unique_filename = f"promo_{uuid.uuid4().hex[:12]}{ext}"
+    dest_path = UPLOADS_PROMO_DIR / unique_filename
+    
+    with open(dest_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    return {
+        "url": f"/uploads/promo/{unique_filename}",
+        "filename": unique_filename
+    }
 
 @router.post("/admin/backup")
 def trigger_database_backup(

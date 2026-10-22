@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ExternalLink, Sparkles } from 'lucide-react';
+import { ExternalLink, Sparkles, MessageCircle, Send, Phone, Globe } from 'lucide-react';
+import { getUploadUrl } from '../api';
 
 export default function PromoSlider({ slides: propSlides }) {
   const defaultSlides = [
@@ -11,6 +12,11 @@ export default function PromoSlider({ slides: propSlides }) {
       tag: 'KSC VIP',
       link: 'https://t.me/KurdishOMR',
       link_text: 'پەیوەندی لە تێلیگرام',
+      links: [
+        { id: 1, title: 'پەیوەندی لە تێلیگرام', url: 'https://t.me/KurdishOMR' }
+      ],
+      image_url: '',
+      image_mode: 'side',
       bg_gradient: 'from-emerald-700 via-emerald-800 to-slate-900',
       accent_color: 'emerald'
     },
@@ -22,6 +28,11 @@ export default function PromoSlider({ slides: propSlides }) {
       tag: 'OMR GUIDE',
       link: '#',
       link_text: 'خوێندنەوەی یاساکان',
+      links: [
+        { id: 1, title: 'خوێندنەوەی یاساکان', url: '#' }
+      ],
+      image_url: '',
+      image_mode: 'side',
       bg_gradient: 'from-amber-600 via-amber-800 to-slate-950',
       accent_color: 'amber'
     },
@@ -33,6 +44,11 @@ export default function PromoSlider({ slides: propSlides }) {
       tag: 'SPONSOR',
       link: 'https://wa.me/HarmanGaraway',
       link_text: 'پەیوەندی لە وەتسئاپ',
+      links: [
+        { id: 1, title: 'پەیوەندی لە وەتسئاپ', url: 'https://wa.me/HarmanGaraway' }
+      ],
+      image_url: '',
+      image_mode: 'side',
       bg_gradient: 'from-indigo-700 via-slate-900 to-slate-950',
       accent_color: 'indigo'
     }
@@ -138,6 +154,42 @@ export default function PromoSlider({ slides: propSlides }) {
 
   const currentSlide = slides[currentIndex] || slides[0];
 
+  // Helper to resolve links (supports new multi-link array or legacy link/link_text)
+  const getSlideLinks = (slide) => {
+    if (slide?.links && Array.isArray(slide.links) && slide.links.length > 0) {
+      const valid = slide.links.filter((l) => l && l.url && l.url.trim() !== '');
+      if (valid.length > 0) return valid;
+    }
+    if (slide?.link && slide.link !== '#' && slide.link.trim() !== '') {
+      return [{ id: 'legacy-1', title: slide.link_text || 'کردنەوەی بەستەر', url: slide.link }];
+    }
+    return [];
+  };
+
+  const renderLinkIcon = (link) => {
+    const url = (link?.url || '').toLowerCase();
+    const text = (link?.title || link?.text || '').toLowerCase();
+
+    if (url.includes('wa.me') || url.includes('whatsapp') || text.includes('واتس') || text.includes('وەتس')) {
+      return <MessageCircle className="w-3.5 h-3.5 text-emerald-300" />;
+    }
+    if (url.includes('t.me') || url.includes('telegram') || text.includes('تێلیگرام')) {
+      return <Send className="w-3.5 h-3.5 text-sky-300" />;
+    }
+    if (url.startsWith('tel:') || text.includes('پەیوەندی') || text.includes('تەلەفۆن')) {
+      return <Phone className="w-3.5 h-3.5 text-amber-300" />;
+    }
+    if (url.includes('http://') || url.includes('https://')) {
+      return <ExternalLink className="w-3.5 h-3.5 text-amber-300" />;
+    }
+    return <Globe className="w-3.5 h-3.5 text-amber-300" />;
+  };
+
+  const activeLinks = getSlideLinks(currentSlide);
+  const hasImage = Boolean(currentSlide.image_url && currentSlide.image_url.trim() !== '');
+  const showBgImage = hasImage && (currentSlide.image_mode === 'background' || currentSlide.image_mode === 'both');
+  const showSideImage = hasImage && currentSlide.image_mode !== 'background';
+
   return (
     <div
       className="relative w-full overflow-hidden select-none group"
@@ -165,6 +217,14 @@ export default function PromoSlider({ slides: propSlides }) {
           currentSlide.bg_gradient || 'from-emerald-700 via-emerald-800 to-slate-900'
         } border border-white/20 shadow-2xl overflow-hidden transition-all duration-300 cursor-grab active:cursor-grabbing`}
       >
+        {/* Background Image Overlay (if configured) */}
+        {showBgImage && (
+          <div
+            className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-30 pointer-events-none transition-all duration-500 scale-105"
+            style={{ backgroundImage: `url(${getUploadUrl(currentSlide.image_url)})` }}
+          />
+        )}
+
         {/* Ambient Decorative Lighting */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
@@ -192,34 +252,51 @@ export default function PromoSlider({ slides: propSlides }) {
             />
           </div>
 
-          {/* Center Main Text */}
-          <div className="space-y-1.5">
-            <h3 className="text-lg sm:text-2xl font-black text-white leading-snug drop-shadow-md">
-              {currentSlide.title}
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl font-medium">
-              {currentSlide.description}
-            </p>
+          {/* Center Main Text & Optional Side Image */}
+          <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 my-1">
+            <div className="space-y-1.5 flex-1 min-w-0">
+              <h3 className="text-lg sm:text-2xl font-black text-white leading-snug drop-shadow-md">
+                {currentSlide.title}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl font-medium">
+                {currentSlide.description}
+              </p>
+            </div>
+
+            {showSideImage && (
+              <div className="shrink-0 self-center sm:self-auto group/img">
+                <img
+                  src={getUploadUrl(currentSlide.image_url)}
+                  alt={currentSlide.title || 'Slide Image'}
+                  className="w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-32 object-cover rounded-2xl border-2 border-white/30 shadow-2xl bg-black/30 backdrop-blur-sm pointer-events-none transition-transform duration-300 group-hover/img:scale-105"
+                />
+              </div>
+            )}
           </div>
 
-          {/* Bottom Bar: Action link & Tag */}
-          <div className="flex items-center justify-between pt-3 border-t border-white/15">
-            {currentSlide.link && currentSlide.link !== '#' ? (
-              <a
-                href={currentSlide.link}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-bold transition-all border border-white/20 shadow-md"
-              >
-                <ExternalLink className="w-3.5 h-3.5 text-amber-300" />
-                <span>{currentSlide.link_text || 'کردنەوەی بەستەر'}</span>
-              </a>
-            ) : (
-              <span className="text-[11px] text-white/70 font-medium">
-                {currentSlide.link_text || 'پلاتفۆرمی فەرمی KSC'}
-              </span>
-            )}
+          {/* Bottom Bar: Multi-Links & Tag */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/15">
+            <div className="flex flex-wrap items-center gap-2">
+              {activeLinks.length > 0 ? (
+                activeLinks.map((lnk, idx) => (
+                  <a
+                    key={lnk.id || idx}
+                    href={lnk.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-bold transition-all border border-white/20 shadow-md backdrop-blur-sm"
+                  >
+                    {renderLinkIcon(lnk)}
+                    <span>{lnk.title || lnk.text || 'کردنەوەی بەستەر'}</span>
+                  </a>
+                ))
+              ) : (
+                <span className="text-[11px] text-white/70 font-medium">
+                  {currentSlide.link_text || 'پلاتفۆرمی فەرمی KSC'}
+                </span>
+              )}
+            </div>
 
             <span className="text-xs font-bold text-white/80">
               {currentSlide.badge || 'KSC Platform'}
@@ -227,8 +304,6 @@ export default function PromoSlider({ slides: propSlides }) {
           </div>
 
         </div>
-
-
 
       </div>
 

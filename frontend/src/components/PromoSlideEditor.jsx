@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Sparkles,
   ExternalLink,
@@ -7,16 +7,21 @@ import {
   Save,
   RotateCcw,
   Eye,
-  CheckCircle2,
   Sliders,
   Palette,
   Link as LinkIcon,
-  Layers,
   ArrowRight,
   ArrowLeft,
-  Loader2
+  Loader2,
+  Upload,
+  Image as ImageIcon,
+  MessageCircle,
+  Send,
+  Phone,
+  Globe,
+  X
 } from 'lucide-react';
-import api from '../api';
+import api, { getUploadUrl } from '../api';
 
 export const THEME_GRADIENTS = [
   {
@@ -72,6 +77,11 @@ export const INITIAL_DEFAULT_SLIDES = [
     tag: 'KSC VIP',
     link: 'https://t.me/KurdishOMR',
     link_text: 'پەیوەندی لە تێلیگرام',
+    links: [
+      { id: 1, title: 'پەیوەندی لە تێلیگرام', url: 'https://t.me/KurdishOMR' }
+    ],
+    image_url: '',
+    image_mode: 'side',
     bg_gradient: 'from-emerald-700 via-emerald-800 to-slate-900'
   },
   {
@@ -82,6 +92,11 @@ export const INITIAL_DEFAULT_SLIDES = [
     tag: 'OMR GUIDE',
     link: '#',
     link_text: 'خوێندنەوەی یاساکان',
+    links: [
+      { id: 1, title: 'خوێندنەوەی یاساکان', url: '#' }
+    ],
+    image_url: '',
+    image_mode: 'side',
     bg_gradient: 'from-amber-600 via-amber-800 to-slate-950'
   },
   {
@@ -92,16 +107,48 @@ export const INITIAL_DEFAULT_SLIDES = [
     tag: 'SPONSOR',
     link: 'https://wa.me/HarmanGaraway',
     link_text: 'پەیوەندی لە وەتسئاپ',
+    links: [
+      { id: 1, title: 'پەیوەندی لە وەتسئاپ', url: 'https://wa.me/HarmanGaraway' }
+    ],
+    image_url: '',
+    image_mode: 'side',
     bg_gradient: 'from-indigo-700 via-slate-900 to-slate-950'
   }
 ];
+
+// Helper to normalize slides from server (ensuring links array & image fields exist)
+const normalizeSlides = (rawSlides) => {
+  if (!Array.isArray(rawSlides) || rawSlides.length === 0) {
+    return INITIAL_DEFAULT_SLIDES;
+  }
+  return rawSlides.map((s, idx) => {
+    let links = [];
+    if (Array.isArray(s.links) && s.links.length > 0) {
+      links = s.links;
+    } else if (s.link && s.link !== '#') {
+      links = [{ id: 1, title: s.link_text || 'کردنەوەی بەستەر', url: s.link }];
+    }
+    return {
+      ...s,
+      id: s.id || Date.now() + idx,
+      image_url: s.image_url || '',
+      image_mode: s.image_mode || 'side',
+      links: links,
+      link: s.link || (links[0]?.url || '#'),
+      link_text: s.link_text || (links[0]?.title || 'کردنەوەی بەستەر')
+    };
+  });
+};
 
 export default function PromoSlideEditor({ onShowToast, onPublished }) {
   const [slides, setSlides] = useState([]);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [fullSettings, setFullSettings] = useState({});
+
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchSettings();
@@ -113,7 +160,7 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
       const res = await api.get('/competitions/settings');
       setFullSettings(res.data || {});
       if (res.data?.promo_slides && res.data.promo_slides.length > 0) {
-        setSlides(res.data.promo_slides);
+        setSlides(normalizeSlides(res.data.promo_slides));
       } else {
         setSlides(INITIAL_DEFAULT_SLIDES);
       }
@@ -132,6 +179,9 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
     tag: 'INFO',
     link: '#',
     link_text: 'کردنەوەی بەستەر',
+    links: [],
+    image_url: '',
+    image_mode: 'side',
     bg_gradient: THEME_GRADIENTS[0].gradient
   };
 
@@ -147,6 +197,83 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
     });
   };
 
+  // Multiple links updates
+  const updateSlideLinks = (newLinks) => {
+    setSlides((prev) => {
+      const updated = [...prev];
+      if (!updated[activeSlideIndex]) return prev;
+      const firstLink = newLinks[0];
+      updated[activeSlideIndex] = {
+        ...updated[activeSlideIndex],
+        links: newLinks,
+        link: firstLink?.url || '#',
+        link_text: firstLink?.title || 'کردنەوەی بەستەر'
+      };
+      return updated;
+    });
+  };
+
+  const handleAddLink = (presetTitle = '', presetUrl = '') => {
+    const existing = currentSlide.links || [];
+    const newLink = {
+      id: Date.now(),
+      title: presetTitle || 'کردنەوەی بەستەر',
+      url: presetUrl || 'https://'
+    };
+    updateSlideLinks([...existing, newLink]);
+  };
+
+  const handleUpdateLinkItem = (linkIndex, field, value) => {
+    const existing = [...(currentSlide.links || [])];
+    if (!existing[linkIndex]) return;
+    existing[linkIndex] = {
+      ...existing[linkIndex],
+      [field]: value
+    };
+    updateSlideLinks(existing);
+  };
+
+  const handleDeleteLinkItem = (linkIndex) => {
+    const existing = [...(currentSlide.links || [])];
+    const filtered = existing.filter((_, idx) => idx !== linkIndex);
+    updateSlideLinks(filtered);
+  };
+
+  // Image Upload handler
+  const handleImageFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input
+    e.target.value = '';
+
+    try {
+      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await api.post('/competitions/upload-promo-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (res.data?.url) {
+        updateCurrentSlide('image_url', res.data.url);
+        if (onShowToast) {
+          onShowToast({ type: 'success', message: 'وێنەکە بە سەرکەوتوویی بارکرا!' });
+        }
+      }
+    } catch (err) {
+      if (onShowToast) {
+        onShowToast({
+          type: 'error',
+          message: err.response?.data?.detail || err.message || 'نەتوانرا وێنەکە باربکرێت'
+        });
+      }
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleAddNewSlide = () => {
     const newSlide = {
       id: Date.now(),
@@ -156,6 +283,11 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
       tag: 'NEW',
       link: 'https://',
       link_text: 'کردنەوەی بەستەر',
+      links: [
+        { id: 1, title: 'کردنەوەی بەستەر', url: 'https://' }
+      ],
+      image_url: '',
+      image_mode: 'side',
       bg_gradient: THEME_GRADIENTS[(slides.length) % THEME_GRADIENTS.length].gradient
     };
     setSlides([...slides, newSlide]);
@@ -164,7 +296,6 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
   };
 
   const handleMoveSlide = (currentIndex, direction) => {
-    // direction: -1 (swap with previous / move earlier), 1 (swap with next / move later)
     const targetIndex = currentIndex + direction;
     if (targetIndex < 0 || targetIndex >= slides.length) return;
     const updated = [...slides];
@@ -225,6 +356,25 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
     if (onShowToast) onShowToast({ type: 'info', message: 'سلایدەکان گەڕێندرانەوە سەر شێوازی بنەڕەت' });
   };
 
+  const renderPreviewLinkIcon = (link) => {
+    const url = (link?.url || '').toLowerCase();
+    const text = (link?.title || link?.text || '').toLowerCase();
+
+    if (url.includes('wa.me') || url.includes('whatsapp') || text.includes('واتس') || text.includes('وەتس')) {
+      return <MessageCircle className="w-3.5 h-3.5 text-emerald-300" />;
+    }
+    if (url.includes('t.me') || url.includes('telegram') || text.includes('تێلیگرام')) {
+      return <Send className="w-3.5 h-3.5 text-sky-300" />;
+    }
+    if (url.startsWith('tel:') || text.includes('پەیوەندی') || text.includes('تەلەفۆن')) {
+      return <Phone className="w-3.5 h-3.5 text-amber-300" />;
+    }
+    if (url.includes('http://') || url.includes('https://')) {
+      return <ExternalLink className="w-3.5 h-3.5 text-amber-300" />;
+    }
+    return <Globe className="w-3.5 h-3.5 text-amber-300" />;
+  };
+
   if (loading) {
     return (
       <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-400">
@@ -233,6 +383,17 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
       </div>
     );
   }
+
+  // Active links for preview
+  const previewLinks = (currentSlide.links && currentSlide.links.length > 0)
+    ? currentSlide.links.filter((l) => l && l.url && l.url.trim() !== '')
+    : (currentSlide.link && currentSlide.link !== '#'
+        ? [{ id: 'single', title: currentSlide.link_text || 'کردنەوەی بەستەر', url: currentSlide.link }]
+        : []);
+
+  const hasImage = Boolean(currentSlide.image_url && currentSlide.image_url.trim() !== '');
+  const showBgImage = hasImage && (currentSlide.image_mode === 'background' || currentSlide.image_mode === 'both');
+  const showSideImage = hasImage && currentSlide.image_mode !== 'background';
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -244,7 +405,7 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
             <span>بەڕێوەبردن و بڵاوکردنەوەی سلایدەکانی پەڕەی سەرەکی</span>
           </h3>
           <p className="text-xs text-slate-400 mt-1">
-            کۆنترۆڵی تەواوی نووسین، بەستەر، ڕەنگ و ژمارەکان بکە و بە یەک کلیک بڵاوی بکەرەوە لەسەر www.ksciq.com
+            کۆنترۆڵی تەواوی نووسین، بەستەر، وێنە، ڕەنگ و ژمارەکان بکە و بە یەک کلیک بڵاوی بکەرەوە لەسەر پلاتفۆرم
           </p>
         </div>
 
@@ -289,6 +450,7 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
           >
             <span>سلایدی {idx + 1}:</span>
             <span className="truncate max-w-[130px]">{s.badge || s.title}</span>
+            {s.image_url && <ImageIcon className="w-3 h-3 opacity-80" />}
           </button>
         ))}
       </div>
@@ -309,6 +471,14 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
         <div
           className={`relative rounded-3xl p-6 sm:p-8 bg-gradient-to-br ${currentSlide.bg_gradient || 'from-amber-600 via-amber-800 to-slate-950'} border border-white/20 shadow-2xl overflow-hidden transition-all duration-300`}
         >
+          {/* Background Image Overlay (if active) */}
+          {showBgImage && (
+            <div
+              className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-30 pointer-events-none transition-all duration-500 scale-105"
+              style={{ backgroundImage: `url(${getUploadUrl(currentSlide.image_url)})` }}
+            />
+          )}
+
           {/* Ambient Decorative Lighting */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
@@ -336,28 +506,47 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
               />
             </div>
 
-            {/* Center Main Text */}
-            <div className="space-y-1.5">
-              <h3 className="text-lg sm:text-2xl font-black text-white leading-snug drop-shadow-md">
-                {currentSlide.title || 'ناونیشانی سەرەکی سلاید لێرە دەردەکەوێت'}
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl font-medium">
-                {currentSlide.description || 'دەقی ڕوونکردنەوە و زانیاری زیاتر دەربارەی تاقیکردنەوە یان سپۆنسەر لێرەدا دەردەکەوێت.'}
-              </p>
+            {/* Center Main Text & Side Image */}
+            <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 my-1">
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <h3 className="text-lg sm:text-2xl font-black text-white leading-snug drop-shadow-md">
+                  {currentSlide.title || 'ناونیشانی سەرەکی سلاید لێرە دەردەکەوێت'}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl font-medium">
+                  {currentSlide.description || 'دەقی ڕوونکردنەوە و زانیاری زیاتر دەربارەی تاقیکردنەوە یان سپۆنسەر لێرەدا دەردەکەوێت.'}
+                </p>
+              </div>
+
+              {showSideImage && (
+                <div className="shrink-0 self-center sm:self-auto group/img">
+                  <img
+                    src={getUploadUrl(currentSlide.image_url)}
+                    alt={currentSlide.title || 'Preview'}
+                    className="w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-32 object-cover rounded-2xl border-2 border-white/30 shadow-2xl bg-black/30 backdrop-blur-sm"
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Bottom Bar: Action link & Tag */}
-            <div className="flex items-center justify-between pt-3 border-t border-white/15">
-              {currentSlide.link && currentSlide.link !== '#' ? (
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/15 text-white text-xs font-bold border border-white/20 shadow-md">
-                  <ExternalLink className="w-3.5 h-3.5 text-amber-300" />
-                  <span>{currentSlide.link_text || 'کردنەوەی بەستەر'}</span>
-                </div>
-              ) : (
-                <span className="text-[11px] text-white/70 font-medium">
-                  {currentSlide.link_text || 'پلاتفۆرمی فەرمی KSC'}
-                </span>
-              )}
+            {/* Bottom Bar: Action links & Tag */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/15">
+              <div className="flex flex-wrap items-center gap-2">
+                {previewLinks.length > 0 ? (
+                  previewLinks.map((lnk, idx) => (
+                    <div
+                      key={lnk.id || idx}
+                      className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-white/15 text-white text-xs font-bold border border-white/20 shadow-md backdrop-blur-sm"
+                    >
+                      {renderPreviewLinkIcon(lnk)}
+                      <span>{lnk.title || lnk.text || 'کردنەوەی بەستەر'}</span>
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-[11px] text-white/70 font-medium">
+                    {currentSlide.link_text || 'پلاتفۆرمی فەرمی KSC'}
+                  </span>
+                )}
+              </div>
 
               <span className="text-xs font-bold text-white/80">
                 {currentSlide.badge || 'KSC Platform'}
@@ -369,7 +558,7 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
       </div>
 
       {/* EDITING FORM FOR CURRENT SLIDE */}
-      <div className="p-5 sm:p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5">
+      <div className="p-5 sm:p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2 text-white font-black text-sm">
             <Sliders className="w-4 h-4 text-amber-400" />
@@ -377,7 +566,7 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Reorder Buttons (Move Up / Down, Earlier / Later) */}
+            {/* Reorder Buttons */}
             <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
               <span className="text-[11px] text-slate-400 px-1.5 font-bold hidden sm:inline">شوێنی سلاید:</span>
               <button
@@ -385,7 +574,7 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
                 onClick={() => handleMoveSlide(activeSlideIndex, -1)}
                 disabled={activeSlideIndex === 0}
                 className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed"
-                title="سەرخستن بۆ پلەی ١ (بۆ لای ڕاست)"
+                title="پێشخستن"
               >
                 <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
                 <span>پێشخستن</span>
@@ -396,7 +585,7 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
                 onClick={() => handleMoveSlide(activeSlideIndex, 1)}
                 disabled={activeSlideIndex === slides.length - 1}
                 className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed"
-                title="خوارخستن بۆ پلەی دواتر (بۆ لای چەپ)"
+                title="دواخستن"
               >
                 <span>دواخستن</span>
                 <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
@@ -470,39 +659,251 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
             rows={2}
             value={currentSlide.description || ''}
             onChange={(e) => updateCurrentSlide('description', e.target.value)}
-            placeholder="تەنها یەک بازنە بە قەڵەمی جافی تۆخ پڕبکەرەوە • ئەنجامەکان بە شێوازی دەستبەجێ بە ژیری دەستکرد شیکاری دەکرێن"
+            placeholder="ڕوونکردنەوەی تەواو لێرە بنووسە..."
             className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-400"
           />
         </div>
 
-        {/* Link and Link Text */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <LinkIcon className="w-3.5 h-3.5 text-sky-400" />
-              <span>بەستەری ڕاستەوخۆ (Direct URL Link):</span>
-            </label>
-            <input
-              type="text"
-              value={currentSlide.link || ''}
-              onChange={(e) => updateCurrentSlide('link', e.target.value)}
-              placeholder="https://t.me/... یان https://wa.me/... یان #"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-mono text-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
-              dir="ltr"
-            />
+        {/* ======================================================== */}
+        {/* NEW FEATURE 1: IMAGE MANAGEMENT (وێنەی سلاید)           */}
+        {/* ======================================================== */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-sky-500/30 space-y-4 shadow-inner">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div className="flex items-center gap-2 text-sky-400 font-bold text-xs sm:text-sm">
+              <ImageIcon className="w-4 h-4" />
+              <span>وێنەی سلاید (دانانی وێنە یان لۆگۆ یان باکگراوند)</span>
+            </div>
+            {currentSlide.image_url && (
+              <button
+                type="button"
+                onClick={() => updateCurrentSlide('image_url', '')}
+                className="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-[11px] font-bold flex items-center gap-1 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>سڕینەوەی وێنە</span>
+              </button>
+            )}
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5">
-              دەقی دوگمەی بەستەر (Button Action Text):
-            </label>
-            <input
-              type="text"
-              value={currentSlide.link_text || ''}
-              onChange={(e) => updateCurrentSlide('link_text', e.target.value)}
-              placeholder="خوێندنەوەی یاساکان / پەیوەندی لە تێلیگرام"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Upload Button & Direct URL Input */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  بارکردنی فایل لە کۆمپیوتەر / مۆبایل:
+                </label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml"
+                  onChange={handleImageFileChange}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                  className="w-full py-2.5 px-4 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {uploadingImage ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-sky-400" />
+                  ) : (
+                    <Upload className="w-4 h-4 text-sky-400" />
+                  )}
+                  <span>{uploadingImage ? 'بارکردنی وێنە...' : 'هەڵبژاردنی وێنە (Upload Image)'}</span>
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  یان بەستەری ڕاستەوخۆی وێنە (Direct Image URL):
+                </label>
+                <input
+                  type="text"
+                  value={currentSlide.image_url || ''}
+                  onChange={(e) => updateCurrentSlide('image_url', e.target.value)}
+                  placeholder="https://example.com/photo.jpg یان /uploads/promo/..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-mono text-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                  dir="ltr"
+                />
+              </div>
+
+              {/* Display mode */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  شێوازی دەرکەوتنی وێنە:
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateCurrentSlide('image_mode', 'side')}
+                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all ${
+                      (currentSlide.image_mode || 'side') === 'side'
+                        ? 'bg-sky-500 text-slate-950 border-sky-400 shadow-md'
+                        : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                    }`}
+                  >
+                    وێنەی دەستەچەپ (Side)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateCurrentSlide('image_mode', 'background')}
+                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all ${
+                      currentSlide.image_mode === 'background'
+                        ? 'bg-sky-500 text-slate-950 border-sky-400 shadow-md'
+                        : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                    }`}
+                  >
+                    باکگراوند (Background)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateCurrentSlide('image_mode', 'both')}
+                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all ${
+                      currentSlide.image_mode === 'both'
+                        ? 'bg-sky-500 text-slate-950 border-sky-400 shadow-md'
+                        : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                    }`}
+                  >
+                    هەردووکیان (Both)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Thumbnail Preview Box */}
+            <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-900 border border-slate-800 min-h-[140px]">
+              {currentSlide.image_url ? (
+                <div className="relative group/thumb flex flex-col items-center gap-2">
+                  <img
+                    src={getUploadUrl(currentSlide.image_url)}
+                    alt="Current promo preview"
+                    className="max-h-28 max-w-full rounded-xl object-contain border border-slate-700 shadow-lg"
+                  />
+                  <span className="text-[10px] text-slate-400 font-mono truncate max-w-[200px]" dir="ltr">
+                    {currentSlide.image_url}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-slate-500 gap-1.5 text-center">
+                  <ImageIcon className="w-8 h-8 opacity-40" />
+                  <span className="text-xs font-bold">هیچ وێنەیەک بۆ ئەم سلایدە دانەنراوە</span>
+                  <span className="text-[11px] text-slate-500">دەتوانیت وێنەی ڕیکلام، سپۆنسەر یان لۆگۆ زیاد بکەیت</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ======================================================== */}
+        {/* NEW FEATURE 2: MULTIPLE LINKS (فرە بەستەر / Buttons)    */}
+        {/* ======================================================== */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-amber-500/30 space-y-4 shadow-inner">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+            <div className="flex items-center gap-2 text-amber-400 font-bold text-xs sm:text-sm">
+              <LinkIcon className="w-4 h-4" />
+              <span>بەستەرەکان و دوگمەکان (زیاتر لەلینکێک / Multiple Links)</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleAddLink()}
+              className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>زیادکردنی بەستەری نوێ</span>
+            </button>
+          </div>
+
+          {/* Quick Preset Buttons */}
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-[11px] text-slate-400 font-bold">زیادکردنی خێرا:</span>
+            <button
+              type="button"
+              onClick={() => handleAddLink('وەتسئاپ', 'https://wa.me/')}
+              className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold flex items-center gap-1 transition-colors"
+            >
+              <MessageCircle className="w-3 h-3 text-emerald-400" />
+              <span>+ وەتسئاپ (WhatsApp)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAddLink('تێلیگرام', 'https://t.me/')}
+              className="px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 text-[11px] font-bold flex items-center gap-1 transition-colors"
+            >
+              <Send className="w-3 h-3 text-sky-400" />
+              <span>+ تێلیگرام (Telegram)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAddLink('پەیوەندی تەلەفۆن', 'tel:0750')}
+              className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[11px] font-bold flex items-center gap-1 transition-colors"
+            >
+              <Phone className="w-3 h-3 text-amber-400" />
+              <span>+ تەلەفۆن (Phone)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAddLink('ماڵپەڕی فەرمی', 'https://')}
+              className="px-2.5 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-[11px] font-bold flex items-center gap-1 transition-colors"
+            >
+              <Globe className="w-3 h-3 text-purple-400" />
+              <span>+ ماڵپەڕ (Website)</span>
+            </button>
+          </div>
+
+          {/* Links List */}
+          <div className="space-y-3">
+            {(currentSlide.links && currentSlide.links.length > 0) ? (
+              currentSlide.links.map((linkItem, lIdx) => (
+                <div
+                  key={linkItem.id || lIdx}
+                  className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800"
+                >
+                  <span className="w-6 h-6 rounded-full bg-slate-800 text-amber-400 font-bold text-xs flex items-center justify-center shrink-0 self-start sm:self-center">
+                    {lIdx + 1}
+                  </span>
+
+                  {/* Link Text / Title */}
+                  <div className="w-full sm:w-1/3">
+                    <input
+                      type="text"
+                      value={linkItem.title || ''}
+                      onChange={(e) => handleUpdateLinkItem(lIdx, 'title', e.target.value)}
+                      placeholder="دەقی دوگمە (وەتسئاپ / تێلیگرام)"
+                      className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-amber-400"
+                    />
+                  </div>
+
+                  {/* URL */}
+                  <div className="w-full sm:flex-1">
+                    <input
+                      type="text"
+                      value={linkItem.url || ''}
+                      onChange={(e) => handleUpdateLinkItem(lIdx, 'url', e.target.value)}
+                      placeholder="بەستەر (https://wa.me/... یان https://t.me/...)"
+                      className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-mono text-sky-300 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                      dir="ltr"
+                    />
+                  </div>
+
+                  {/* Delete button */}
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteLinkItem(lIdx)}
+                    className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors self-end sm:self-center shrink-0"
+                    title="سڕینەوەی ئەم بەستەرە"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="py-6 text-center text-slate-500 text-xs space-y-1">
+                <p className="font-bold">هیچ بەستەرێک بۆ ئەم سلایدە زیاد نەکراوە.</p>
+                <p className="text-[11px] text-slate-600">دەتوانیت دوگمەی "+ زیادکردنی بەستەری نوێ" دابگریت بۆ دانانی وەتسئاپ، تێلیگرام، ماڵپەڕ یان هەر بەستەرێکی تر.</p>
+              </div>
+            )}
           </div>
         </div>
 

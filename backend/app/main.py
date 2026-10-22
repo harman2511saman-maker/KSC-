@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.config import DATA_DIR, UPLOADS_ORIGINAL_DIR, UPLOADS_NORMALIZED_DIR, UPLOADS_DEBUG_DIR, UPLOADS_SHEETS_DIR, EXPORTS_DIR
+from app.config import DATA_DIR, UPLOADS_ORIGINAL_DIR, UPLOADS_NORMALIZED_DIR, UPLOADS_DEBUG_DIR, UPLOADS_SHEETS_DIR, UPLOADS_PROMO_DIR, EXPORTS_DIR
 from app.database import engine, Base, SessionLocal
 from app.crud import init_seed_data
 from app.routers import (
@@ -78,6 +78,7 @@ app.mount("/uploads/original", StaticFiles(directory=str(UPLOADS_ORIGINAL_DIR)),
 app.mount("/uploads/normalized", StaticFiles(directory=str(UPLOADS_NORMALIZED_DIR)), name="normalized_uploads")
 app.mount("/uploads/debug", StaticFiles(directory=str(UPLOADS_DEBUG_DIR)), name="debug_uploads")
 app.mount("/uploads/sheets", StaticFiles(directory=str(UPLOADS_SHEETS_DIR)), name="sheets_uploads")
+app.mount("/uploads/promo", StaticFiles(directory=str(UPLOADS_PROMO_DIR)), name="promo_uploads")
 
 # Include Routers
 app.include_router(auth_router.router)
