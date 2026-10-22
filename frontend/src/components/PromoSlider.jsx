@@ -220,7 +220,7 @@ export default function PromoSlider({ slides: propSlides }) {
           transform: touchOffset ? `translateX(${touchOffset}px)` : 'translateX(0)',
           touchAction: 'pan-y'
         }}
-        className={`relative rounded-3xl p-6 sm:p-8 bg-gradient-to-br ${
+        className={`relative rounded-3xl p-4 sm:p-8 bg-gradient-to-br ${
           currentSlide.bg_gradient || 'from-emerald-700 via-emerald-800 to-slate-900'
         } border border-white/20 shadow-2xl overflow-hidden transition-all duration-300 cursor-grab active:cursor-grabbing`}
       >
@@ -261,10 +261,10 @@ export default function PromoSlider({ slides: propSlides }) {
           {/* Center Main Text & Optional Side Image */}
           <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 my-1">
             <div className="space-y-1.5 flex-1 min-w-0">
-              <h3 className="text-lg sm:text-2xl font-black text-white leading-snug drop-shadow-md">
+              <h3 className="text-lg sm:text-2xl font-black text-white leading-snug drop-shadow-md break-words">
                 {currentSlide.title}
               </h3>
-              <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl font-medium">
+              <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl font-medium break-words">
                 {currentSlide.description}
               </p>
             </div>

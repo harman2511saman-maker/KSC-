@@ -232,7 +232,7 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
           transform: touchOffset ? `translateX(${touchOffset}px)` : 'translateX(0)',
           touchAction: 'pan-y'
         }}
-        className="relative rounded-3xl p-5 sm:p-7 bg-gradient-to-br from-slate-900 via-indigo-950/70 to-slate-950 border border-indigo-500/30 shadow-2xl overflow-hidden transition-all duration-300 cursor-grab active:cursor-grabbing"
+        className="relative rounded-3xl p-4 sm:p-7 bg-gradient-to-br from-slate-900 via-indigo-950/70 to-slate-950 border border-indigo-500/30 shadow-2xl overflow-hidden transition-all duration-300 cursor-grab active:cursor-grabbing"
       >
         {/* Ambient Glows */}
         <div className="absolute top-0 right-0 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -270,36 +270,36 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
 
             {/* Exam Title */}
             <div>
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-snug drop-shadow-md">
+              <h2 className="text-lg sm:text-2xl lg:text-3xl font-black text-white leading-snug drop-shadow-md break-words">
                 {currentExam.title}
               </h2>
               {currentExam.description && (
-                <p className="text-xs sm:text-sm text-slate-300/90 leading-relaxed max-w-2xl mt-1">
+                <p className="text-xs sm:text-sm text-slate-300/90 leading-relaxed max-w-2xl mt-1 break-words">
                   {currentExam.description}
                 </p>
               )}
             </div>
 
-            {/* Sponsors & Prizes */}
+            {/* Sponsors & Prizes - Full text visible on mobile without truncation */}
             {currentExam.sponsors_and_prizes && (
-              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs font-medium">
-                <Gift className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="truncate">{currentExam.sponsors_and_prizes}</span>
+              <div className="flex items-start gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs font-medium">
+                <Gift className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <span className="break-words leading-relaxed">{currentExam.sponsors_and_prizes}</span>
               </div>
             )}
 
             {/* Stats Badges */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-300">
-              <span className="px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 font-bold flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-1 text-[11px] sm:text-xs text-slate-300">
+              <span className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 font-bold flex items-center gap-1.5 shrink-0">
                 <HelpCircle className="w-3.5 h-3.5 text-indigo-400" />
                 <span>ژمارەی پرسیار: {currentExam.questions_count ?? 0} پرسیار</span>
               </span>
-              <span className="px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 font-bold flex items-center gap-1.5">
+              <span className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 font-bold flex items-center gap-1.5 shrink-0">
                 <Timer className="w-3.5 h-3.5 text-amber-400" />
                 <span>کاتی هەر پرسیارێک: {currentExam.question_duration_seconds} چرکە</span>
               </span>
               {currentExam.total_duration_minutes > 0 && (
-                <span className="px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 font-bold flex items-center gap-1.5">
+                <span className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 font-bold flex items-center gap-1.5 shrink-0">
                   <Clock className="w-3.5 h-3.5 text-emerald-400" />
                   <span>کاتی گشتی: {currentExam.total_duration_minutes} خولەک</span>
                 </span>

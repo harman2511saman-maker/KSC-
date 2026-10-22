@@ -395,7 +395,12 @@ export default function Competitions({ onShowToast }) {
               </div>
             </div>
 
-            {/* Online Live Exam Card & Countdown matching user request */}
+            {/* 1. Promo / Sponsor / Guidance Carousel Banner (directly below logo) */}
+            <div className="w-full">
+              <PromoSlider slides={promoSlides} />
+            </div>
+
+            {/* 2. Online Live Exam Card & Countdown (below promo slider) */}
             <OnlineExamBanner
               key={onlineExamKey}
               onStartExam={(examData) => {
@@ -406,11 +411,6 @@ export default function Competitions({ onShowToast }) {
               isAdmin={user?.role === 'ADMIN'}
               onShowToast={onShowToast}
             />
-
-            {/* Promo / Sponsor / Guidance Carousel Banner matching Image 1 */}
-            <div className="pt-2 w-full">
-              <PromoSlider slides={promoSlides} />
-            </div>
           </div>
         </div>
 
