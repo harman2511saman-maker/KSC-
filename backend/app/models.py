@@ -217,6 +217,7 @@ class OnlineExam(Base):
     telegram_submission_minutes = Column(Integer, default=5)
     entry_cutoff_minutes = Column(Integer, default=3)
     is_active = Column(Boolean, default=True)
+    is_coming_soon = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     questions = relationship("OnlineExamQuestion", back_populates="exam", cascade="all, delete-orphan", order_by="OnlineExamQuestion.order_num")

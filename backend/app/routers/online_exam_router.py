@@ -76,6 +76,14 @@ class ExamCreateOrUpdateSchema(BaseModel):
     telegram_submission_minutes: int = 5
     entry_cutoff_minutes: int = 3
     is_active: bool = True
+    is_coming_soon: bool = False
+
+class PasscodeNameUpdateItem(BaseModel):
+    id: int
+    student_name: Optional[str] = ""
+
+class BatchUpdatePasscodeNamesRequest(BaseModel):
+    items: List[PasscodeNameUpdateItem]
 
 class GeneratePasscodesRequest(BaseModel):
     count: int = 20
@@ -177,6 +185,7 @@ def get_active_online_exams(db: Session = Depends(get_db)):
             "total_duration_minutes": total_duration_minutes,
             "entry_cutoff_minutes": getattr(exam, 'entry_cutoff_minutes', 3) or 3,
             "is_active": exam.is_active,
+            "is_coming_soon": getattr(exam, 'is_coming_soon', False) or False,
             "available_passcodes_count": passcodes_count - used_passcodes_count
         })
 
@@ -346,6 +355,7 @@ def admin_get_exams(
             "telegram_submission_minutes": exam.telegram_submission_minutes,
             "entry_cutoff_minutes": getattr(exam, 'entry_cutoff_minutes', 3) or 3,
             "is_active": exam.is_active,
+            "is_coming_soon": getattr(exam, 'is_coming_soon', False) or False,
             "questions_count": q_count,
             "passcodes_count": total_codes,
             "used_passcodes_count": used_codes,
@@ -369,7 +379,8 @@ def admin_create_exam(
         telegram_group_url=payload.telegram_group_url,
         telegram_submission_minutes=payload.telegram_submission_minutes,
         entry_cutoff_minutes=payload.entry_cutoff_minutes,
-        is_active=payload.is_active
+        is_active=payload.is_active,
+        is_coming_soon=payload.is_coming_soon
     )
     db.add(exam)
     db.commit()
@@ -397,6 +408,7 @@ def admin_update_exam(
     exam.telegram_submission_minutes = payload.telegram_submission_minutes
     exam.entry_cutoff_minutes = payload.entry_cutoff_minutes
     exam.is_active = payload.is_active
+    exam.is_coming_soon = payload.is_coming_soon
 
     db.commit()
     return {"message": "تاقیکردنەوە نوێکرایەوە"}
@@ -613,3 +625,22 @@ def admin_clear_passcodes(
     count = q.delete()
     db.commit()
     return {"message": f"{count} پاسوۆرد سڕانەوە"}
+
+@router.put("/admin/exams/{exam_id}/passcodes/names")
+def admin_batch_update_passcode_names(
+    exam_id: int,
+    payload: BatchUpdatePasscodeNamesRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(["ADMIN"]))
+):
+    """Admin updates assigned student names for passcodes."""
+    for item in payload.items:
+        pc = db.query(OnlineExamPasscode).filter(
+            OnlineExamPasscode.id == item.id,
+            OnlineExamPasscode.exam_id == exam_id
+        ).first()
+        if pc:
+            clean_name = item.student_name.strip() if item.student_name else None
+            pc.student_name = clean_name
+    db.commit()
+    return {"message": "ناوی قوتابییان بە سەرکەوتوویی پاشەکەوت کران"}

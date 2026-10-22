@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   Lock,
   Timer,
-  Layers
+  Layers,
+  Sparkles
 } from 'lucide-react';
 import api from '../api';
 
@@ -198,6 +199,16 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
   if (loading || exams.length === 0 || !currentExam) return null;
 
   const handleButtonClick = () => {
+    if (currentExam.is_coming_soon) {
+      const msg = '✨ ئەم تاقیکردنەوەیە بەمزوانە لە پلاتفۆرمی KSC بەڕێوەدەچێت! تکایە چاوەڕوان بن.';
+      if (onShowToast) {
+        onShowToast({ type: 'info', message: msg });
+      } else {
+        alert(msg);
+      }
+      return;
+    }
+
     if (!timeRemaining.started) {
       const formattedDate = new Date(currentExam.start_time).toLocaleString('ckb', {
         timeZone: 'Asia/Baghdad',
@@ -276,7 +287,12 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
                 </span>
               )}
 
-              {timeRemaining.started ? (
+              {currentExam.is_coming_soon ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/25 via-purple-500/25 to-pink-500/25 text-amber-200 text-xs font-black border border-amber-400/40 shadow-inner animate-pulse">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>✨ بەمزوانە (Coming Soon) • لە ڕێگایە</span>
+                </span>
+              ) : timeRemaining.started ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/40">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                   <span>ئێستا بەردەستە (Live Now)</span>
@@ -367,14 +383,21 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
               type="button"
               onClick={handleButtonClick}
               className={`w-full sm:w-auto lg:w-full px-6 py-3.5 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2.5 transition-all shadow-xl active:scale-95 ${
-                !timeRemaining.started
+                currentExam.is_coming_soon
+                  ? 'bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 hover:from-amber-500/30 hover:to-purple-500/30 text-amber-200 border border-amber-400/40 shadow-lg shadow-amber-950/30 cursor-pointer'
+                  : !timeRemaining.started
                   ? 'bg-slate-800/90 hover:bg-slate-800 text-amber-300 border border-amber-500/30'
                   : timeRemaining.entryClosed
                   ? 'bg-rose-950/70 hover:bg-rose-900/80 text-rose-300 border border-rose-500/40 shadow-rose-950/40'
                   : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25 ring-2 ring-emerald-400/50 animate-pulse'
               }`}
             >
-              {!timeRemaining.started ? (
+              {currentExam.is_coming_soon ? (
+                <>
+                  <Sparkles className="w-4 h-4 text-amber-300 animate-spin" />
+                  <span>✨ بەمزوانە لە پلاتفۆرمی KSC (چاوەڕوان بن)</span>
+                </>
+              ) : !timeRemaining.started ? (
                 <>
                   <Lock className="w-4 h-4 text-amber-400" />
                   <span>وادەی دەستپێک ماوە (چاوەڕوانی)</span>

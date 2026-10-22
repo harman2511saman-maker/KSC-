@@ -21,7 +21,10 @@ import {
   Gift,
   Send,
   Layers,
-  AlertOctagon
+  AlertOctagon,
+  FileText,
+  Sparkles,
+  Users
 } from 'lucide-react';
 import api, { getUploadUrl } from '../api';
 
@@ -48,6 +51,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
   const [telegramMins, setTelegramMins] = useState(5);
   const [entryCutoffMins, setEntryCutoffMins] = useState(3);
   const [isActive, setIsActive] = useState(true);
+  const [isComingSoon, setIsComingSoon] = useState(false);
 
   // Questions state
   const [questions, setQuestions] = useState([]);
@@ -57,6 +61,10 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
   const [passcodes, setPasscodes] = useState([]);
   const [generateCount, setGenerateCount] = useState(20);
   const [generating, setGenerating] = useState(false);
+  const [savingNames, setSavingNames] = useState(false);
+  const [hasUnsavedNames, setHasUnsavedNames] = useState(false);
+  const [showBatchPasteModal, setShowBatchPasteModal] = useState(false);
+  const [batchNamesText, setBatchNamesText] = useState('');
 
   useEffect(() => {
     fetchAllExamsAndSelect();
@@ -116,7 +124,9 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         setTelegramMins(current.telegram_submission_minutes || 5);
         setEntryCutoffMins(current.entry_cutoff_minutes || 3);
         setIsActive(current.is_active ?? true);
+        setIsComingSoon(Boolean(current.is_coming_soon));
       }
+      setHasUnsavedNames(false);
 
       // Fetch questions
       const qRes = await api.get(`/online-exam/admin/exams/${examId}/questions`);
@@ -149,6 +159,8 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
     setTelegramMins(5);
     setEntryCutoffMins(3);
     setIsActive(true);
+    setIsComingSoon(false);
+    setHasUnsavedNames(false);
     setQuestions([]);
     setPasscodes([]);
     setActiveTab('settings');
@@ -173,7 +185,8 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         telegram_group_url: telegramUrl.trim(),
         telegram_submission_minutes: Number(telegramMins) || 5,
         entry_cutoff_minutes: Number(entryCutoffMins) || 3,
-        is_active: isActive
+        is_active: isActive,
+        is_coming_soon: isComingSoon
       };
 
       if (exam?.id && !isCreatingNew) {
@@ -336,6 +349,278 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
     const text = available.join('\n');
     navigator.clipboard.writeText(text);
     if (onShowToast) onShowToast({ type: 'success', message: `${available.length} پاسوۆردی بەردەست کۆپیکران` });
+  };
+
+  const handleStudentNameChange = (id, newName) => {
+    setPasscodes((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, student_name: newName } : p))
+    );
+    setHasUnsavedNames(true);
+  };
+
+  const handleSavePasscodeNames = async () => {
+    if (!exam?.id) {
+      if (onShowToast) onShowToast({ type: 'error', message: 'سەرەتا تاقیکردنەوە پاشەکەوت بکە' });
+      return;
+    }
+    try {
+      setSavingNames(true);
+      const items = passcodes.map((p) => ({
+        id: p.id,
+        student_name: p.student_name ? p.student_name.trim() : ''
+      }));
+      await api.put(`/online-exam/admin/exams/${exam.id}/passcodes/names`, { items });
+      setHasUnsavedNames(false);
+      if (onShowToast) {
+        onShowToast({ type: 'success', message: 'ناوی قوتابییان بە سەرکەوتوویی پاشەکەوت کران' });
+      }
+    } catch (err) {
+      if (onShowToast) onShowToast({ type: 'error', message: err.message });
+    } finally {
+      setSavingNames(false);
+    }
+  };
+
+  const handleApplyBatchNames = () => {
+    const rawLines = batchNamesText
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    if (rawLines.length === 0) {
+      if (onShowToast) onShowToast({ type: 'warning', message: 'تکایە سەرەتا لیستێکی ناوەکان دابنێ' });
+      return;
+    }
+
+    if (passcodes.length === 0) {
+      if (onShowToast) onShowToast({ type: 'error', message: 'هیچ پاسوۆردێک بەردەست نییە بۆ دابەشکردنی ناوەکان!' });
+      return;
+    }
+
+    const updated = passcodes.map((p, idx) => {
+      if (idx < rawLines.length) {
+        return { ...p, student_name: rawLines[idx] };
+      }
+      return p;
+    });
+
+    setPasscodes(updated);
+    setHasUnsavedNames(true);
+    setShowBatchPasteModal(false);
+    setBatchNamesText('');
+    if (onShowToast) {
+      onShowToast({
+        type: 'success',
+        message: `${Math.min(rawLines.length, passcodes.length)} ناو بە سەرکەوتوویی دابەشکران بەسەر پاسوۆردەکان (پاشەکەوتی بکە)`
+      });
+    }
+  };
+
+  const handleDownloadPdfReport = () => {
+    if (passcodes.length === 0) {
+      if (onShowToast) onShowToast({ type: 'info', message: 'هیچ پاسوۆردێک نییە بۆ دابەزاندن' });
+      return;
+    }
+
+    const examTitle = exam?.title || 'تاقیکردنەوەی ئۆنلاینی KSC';
+    const examDate = exam?.start_time
+      ? new Date(exam.start_time).toLocaleString('ckb', {
+          timeZone: 'Asia/Baghdad',
+          dateStyle: 'full',
+          timeStyle: 'short'
+        })
+      : 'دیاری نەکراوە';
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('تکایە ڕێگە بە پەنجەرەی Pop-up بدە بۆ داگرتنی فایلی PDF');
+      return;
+    }
+
+    const rowsHtml = passcodes
+      .map((p, index) => {
+        const student = p.student_name && p.student_name.trim()
+          ? p.student_name.trim()
+          : '<span style="color:#94a3b8; font-style:italic;">دیاری نەکراوە</span>';
+        const status = p.disqualified
+          ? '<span style="color:#e11d48; font-weight:bold;">دەرکراوە (غەش)</span>'
+          : p.is_used
+          ? '<span style="color:#64748b; font-weight:bold;">بەکارهاتووە</span>'
+          : '<span style="color:#059669; font-weight:bold;">بەردەستە (نوێ)</span>';
+        return `
+          <tr style="border-bottom: 1px solid #e2e8f0; background: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+            <td style="padding: 10px 14px; text-align: center; font-weight: bold; color: #475569; width: 50px;">${index + 1}</td>
+            <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: #0f172a; font-size: 14px;">${student}</td>
+            <td style="padding: 10px 14px; text-align: center; font-family: monospace; font-size: 15px; font-weight: 800; color: #0f172a; letter-spacing: 1px; direction: ltr;">
+              <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px; border: 1px solid #cbd5e1; display: inline-block;">${p.code}</span>
+            </td>
+            <td style="padding: 10px 14px; text-align: center; font-size: 12px;">${status}</td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ckb">
+      <head>
+        <meta charset="utf-8" />
+        <title>KSC Passcodes - ${examTitle}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;900&display=swap" rel="stylesheet">
+        <style>
+          @page {
+            size: A4;
+            margin: 12mm 15mm;
+          }
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          body {
+            font-family: 'Vazirmatn', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #0f172a;
+            background: #ffffff;
+            line-height: 1.5;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 14px;
+            margin-bottom: 16px;
+          }
+          .logo-badge {
+            display: inline-block;
+            background: #0f172a;
+            color: #fbbf24;
+            padding: 4px 14px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+          }
+          h1 {
+            margin: 4px 0 6px 0;
+            font-size: 20px;
+            font-weight: 900;
+            color: #0f172a;
+          }
+          .exam-meta {
+            font-size: 12px;
+            color: #475569;
+            margin-top: 4px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+          }
+          .notice-box {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-right: 4px solid #f59e0b;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            font-size: 12px;
+            color: #334155;
+            line-height: 1.6;
+          }
+          .notice-box strong {
+            color: #b45309;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+          }
+          th {
+            background: #0f172a;
+            color: #ffffff;
+            padding: 10px 14px;
+            font-weight: 800;
+            text-align: right;
+          }
+          th:first-child { border-top-right-radius: 8px; }
+          th:last-child { border-top-left-radius: 8px; }
+          .footer {
+            margin-top: 24px;
+            padding-top: 12px;
+            border-top: 1px dashed #cbd5e1;
+            text-align: center;
+            font-size: 11px;
+            color: #64748b;
+          }
+          @media print {
+            body { padding: 0; }
+            .no-print { display: none !important; }
+            tr { page-break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="no-print" style="margin-bottom: 16px; text-align: center; background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 10px;">
+          <button onclick="window.print()" style="background: #2563eb; color: #fff; border: none; padding: 8px 24px; border-radius: 8px; font-family: inherit; font-size: 14px; font-weight: bold; cursor: pointer;">
+            🖨️ چاپکردن یان دابەزاندن وەک PDF (Save as PDF)
+          </button>
+          <span style="display: block; font-size: 11px; color: #1e40af; margin-top: 6px;">
+            دەتوانیت لە بەشی پەڕەی چاپ 'Destination' بکەیت بە 'Save as PDF' و یەکسەر بینێریتە گرووپی تێلیگرام
+          </span>
+        </div>
+
+        <div class="header">
+          <div class="logo-badge">Kurdish Students Competition (KSC)</div>
+          <h1>لیستی فەرمیی ناوی قوتابییان و کۆدی تایبەتی تاقیکردنەوە</h1>
+          <div class="exam-meta">
+            <span><strong>تاقیکردنەوە:</strong> ${examTitle}</span>
+            <span><strong>کاتی دەستپێکردن:</strong> ${examDate}</span>
+            <span><strong>کۆی بەشداربووان:</strong> ${passcodes.length} قوتابی</span>
+          </div>
+        </div>
+
+        <div class="notice-box">
+          <strong>⚠️ ڕێنمایی گرنگ بۆ بەشداربووان:</strong><br />
+          ١. هەر قوتابییەک تەنها ئەو پاسوۆردە بەکاربهێنێت کە بەرامبەر ناوی خۆی دیاریکراوە.<br />
+          ٢. پاسوۆردەکان تەنها بۆ یەکجارن؛ لەگەڵ چوونەژوورەوە دەسووتێن و بۆ کەسی تر کار ناکەن.<br />
+          ٣. تکایە لە کاتی دیاریکراوی تاقیکردنەوە لە پلاتفۆرمی فەرمیی KSC ئامادە بن.
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 50px; text-align: center;">#</th>
+              <th>ناوی سیانیی قوتابی</th>
+              <th style="text-align: center;">کۆدی پاسوۆرد (Passcode)</th>
+              <th style="text-align: center; width: 120px;">دۆخ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          سیستەمی تاقیکردنەوەی ئۆنلاینی KSC • مێژووی دەرکردن: ${new Date().toLocaleDateString('ckb', { timeZone: 'Asia/Baghdad' })} • کاتژمێر: ${new Date().toLocaleTimeString('ckb', { timeZone: 'Asia/Baghdad' })}
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 400);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   const handleDownloadTxt = () => {
@@ -628,18 +913,34 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                   />
                 </div>
 
-                {/* Active Toggle */}
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800">
-                  <input
-                    type="checkbox"
-                    id="activeToggle"
-                    checked={isActive}
-                    onChange={(e) => setIsActive(e.target.checked)}
-                    className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 bg-slate-900 border-slate-700"
-                  />
-                  <label htmlFor="activeToggle" className="text-xs font-bold text-white cursor-pointer select-none">
-                    تاقیکردنەوەکە کارا بێت لەسەر ماڵپەڕ (Active لە سلايدەر دەربکەوێت)
-                  </label>
+                {/* Active & Coming Soon Toggles */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800">
+                    <input
+                      type="checkbox"
+                      id="activeToggle"
+                      checked={isActive}
+                      onChange={(e) => setIsActive(e.target.checked)}
+                      className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 bg-slate-900 border-slate-700"
+                    />
+                    <label htmlFor="activeToggle" className="text-xs font-bold text-white cursor-pointer select-none">
+                      تاقیکردنەوەکە کارا بێت لەسەر ماڵپەڕ (Active)
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800">
+                    <input
+                      type="checkbox"
+                      id="comingSoonToggle"
+                      checked={isComingSoon}
+                      onChange={(e) => setIsComingSoon(e.target.checked)}
+                      className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 bg-slate-900 border-slate-700"
+                    />
+                    <label htmlFor="comingSoonToggle" className="text-xs font-bold text-amber-300 cursor-pointer select-none flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>دیاریکردن وەک «بەمزوانە - لە ڕێگایە»</span>
+                    </label>
+                  </div>
                 </div>
 
                 <button
@@ -893,8 +1194,8 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                   </div>
                 </div>
 
-                {/* Generator Bar */}
-                <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-800">
+                {/* Generator Bar & Primary Actions */}
+                <div className="flex flex-wrap items-center gap-2.5 pt-2 border-t border-slate-800">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-300">ژمارەی کۆدەکان:</span>
                     <input
@@ -911,32 +1212,75 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                     type="button"
                     onClick={handleGeneratePasscodes}
                     disabled={generating}
-                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md active:scale-95 disabled:opacity-50"
+                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md active:scale-95 disabled:opacity-50"
                   >
                     {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Key className="w-3.5 h-3.5" />}
                     <span>خۆکارانە پاسوۆرد دروست بکە</span>
                   </button>
 
+                  {/* Batch Paste Names Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowBatchPasteModal(true)}
+                    className="px-3.5 py-2 rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white border border-indigo-500/50 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                  >
+                    <ClipboardPaste className="w-3.5 h-3.5 text-indigo-300" />
+                    <span>دابەشکردنی خێرای ناوەکان (Batch Paste)</span>
+                  </button>
+
+                  {/* Save Names Button */}
+                  <button
+                    type="button"
+                    onClick={handleSavePasscodeNames}
+                    disabled={savingNames}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-md active:scale-95 ${
+                      hasUnsavedNames
+                        ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 animate-pulse'
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                    }`}
+                  >
+                    {savingNames ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5" />
+                    )}
+                    <span>{hasUnsavedNames ? '💾 پاشەکەوتکردنی ناوەکان *' : 'پاشەکەوتکردنی ناوەکان'}</span>
+                  </button>
+
+                  {/* Official PDF Report Button */}
+                  <button
+                    type="button"
+                    onClick={handleDownloadPdfReport}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-700/30 active:scale-95"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-emerald-200" />
+                    <span>📄 دابەزاندنی فایلی فەرمیی PDF</span>
+                  </button>
+
                   <div className="flex-1" />
 
-                  {/* Actions: Copy & Download */}
-                  <button
-                    type="button"
-                    onClick={handleCopyAvailableCodes}
-                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
-                  >
-                    <Copy className="w-3.5 h-3.5 text-amber-400" />
-                    <span>کۆپیکردنی بەردەستەکان ({availableCount})</span>
-                  </button>
+                  {/* Actions: Copy & Download TXT */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCopyAvailableCodes}
+                      className="px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                      title="کۆپیکردنی کۆدەکان بۆ تێلێگرام"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-amber-400" />
+                      <span>کۆپیکردن ({availableCount})</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={handleDownloadTxt}
-                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
-                  >
-                    <Download className="w-3.5 h-3.5 text-amber-400" />
-                    <span>دابەزاندنی فایل (TXT)</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={handleDownloadTxt}
+                      className="px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                      title="دابەزاندنی لیستی دەقی TXT"
+                    >
+                      <Download className="w-3.5 h-3.5 text-slate-400" />
+                      <span>TXT</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -949,7 +1293,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                         <th className="p-3">#</th>
                         <th className="p-3">کۆدی پاسوۆرد</th>
                         <th className="p-3">دۆخ</th>
-                        <th className="p-3">بەشداربوو / قوتابی</th>
+                        <th className="p-3">ناوی قوتابی (دەستکاری دەکرێت)</th>
                         <th className="p-3">کردار</th>
                       </tr>
                     </thead>
@@ -976,18 +1320,20 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                             )}
                           </td>
                           <td className="p-3 text-slate-300">
-                            {p.student_name ? (
-                              <div>
-                                <span className="font-bold">{p.student_name}</span>
-                                {p.student_phone && (
-                                  <span className="text-[10px] text-slate-500 block font-mono">
-                                    {p.student_phone}
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-slate-600">-</span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                placeholder="ناوی سیانیی قوتابی لێرە بنووسە..."
+                                value={p.student_name || ''}
+                                onChange={(e) => handleStudentNameChange(p.id, e.target.value)}
+                                className="w-full min-w-[200px] max-w-sm px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700/80 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
+                              />
+                              {p.student_phone && (
+                                <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                                  {p.student_phone}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="p-3">
                             <button
@@ -1060,6 +1406,68 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
               >
                 {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                 <span>سڕینەوە و پاککردنەوە</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Paste Student Names Modal */}
+      {showBatchPasteModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" dir="rtl">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-indigo-500/40 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-indigo-500/20 text-indigo-400">
+                  <ClipboardPaste className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">دابەشکردنی خێرای ناوی قوتابییان</h3>
+                  <span className="text-xs text-slate-400">
+                    ناوەکان لە تێلێگرام یان ئێکسڵ کۆپی بکە و پەیستیان بکە
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBatchPasteModal(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                لیستی ناوی قوتابییان (هەر دێڕێک ناوێکی تێدا بێت):
+              </label>
+              <textarea
+                rows={8}
+                value={batchNamesText}
+                onChange={(e) => setBatchNamesText(e.target.value)}
+                placeholder={"ئەحمەد عەلی حەسەن\nمحەممەد کەریم قادر\nسارا کامەران ڕەئووف\n..."}
+                className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-700 text-xs text-white leading-relaxed font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+              <span className="text-[11px] text-slate-400 block mt-1">
+                سیستەمەکە بە پێی ڕیزبەندی پاسوۆردەکان هەر ناوێک دەبەستێتەوە بە کۆدێکی پاسوۆردەوە.
+              </span>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowBatchPasteModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
+              >
+                پەشیمانبوونەوە
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyBatchNames}
+                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 transition-all active:scale-95"
+              >
+                <Users className="w-4 h-4" />
+                <span>دابەشکردن بەسەر پاسوۆردەکان</span>
               </button>
             </div>
           </div>
