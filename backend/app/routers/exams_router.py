@@ -3,6 +3,7 @@ Exams Management Router.
 Handles Exam CRUD, Duplication, Archival, Status validation, and metadata.
 """
 
+import os
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -16,6 +17,12 @@ from app.models import (
 from app.schemas import ExamCreate, ExamUpdate, ExamOut
 from app.auth import get_current_user
 from app.crud import log_audit
+from app.config import (
+    UPLOADS_ORIGINAL_DIR,
+    UPLOADS_NORMALIZED_DIR,
+    UPLOADS_DEBUG_DIR,
+    UPLOADS_SHEETS_DIR
+)
 
 router = APIRouter(prefix="/api/exams", tags=["Exams"], dependencies=[Depends(get_current_user)])
 
@@ -207,14 +214,37 @@ def delete_exam(
     db.query(Result).filter(Result.exam_id == exam_id).delete(synchronize_session=False)
     
     if page_ids:
+        pages = db.query(ScanPage).filter(ScanPage.id.in_(page_ids)).all()
+        for p in pages:
+            for fname, folder in [
+                (p.original_file, UPLOADS_ORIGINAL_DIR),
+                (p.normalized_file, UPLOADS_NORMALIZED_DIR),
+                (p.debug_file, UPLOADS_DEBUG_DIR),
+            ]:
+                if fname:
+                    fpath = folder / os.path.basename(fname)
+                    if fpath.exists():
+                        try:
+                            fpath.unlink()
+                        except Exception:
+                            pass
         db.query(DetectedAnswer).filter(DetectedAnswer.page_id.in_(page_ids)).delete(synchronize_session=False)
         db.query(ManualReview).filter(ManualReview.page_id.in_(page_ids)).delete(synchronize_session=False)
         db.query(ScanPage).filter(ScanPage.id.in_(page_ids)).delete(synchronize_session=False)
         
+    sheets = db.query(GeneratedSheet).filter(GeneratedSheet.exam_id == exam_id).all()
+    for s in sheets:
+        if s.file_path:
+            fpath = UPLOADS_SHEETS_DIR / os.path.basename(s.file_path)
+            if fpath.exists():
+                try:
+                    fpath.unlink()
+                except Exception:
+                    pass
     db.query(GeneratedSheet).filter(GeneratedSheet.exam_id == exam_id).delete(synchronize_session=False)
     db.query(ExamQuestion).filter(ExamQuestion.exam_id == exam_id).delete(synchronize_session=False)
 
     db.delete(exam)
     db.commit()
     log_audit(db, "EXAM_DELETED", "Exam", str(exam_id), current_user)
-    return {"message": "تاقیکردنەوەکە و سەرجەم داتاکانی بە سەرکەوتوویی سڕانەوە"}
+    return {"message": "تاقیکردنەوەکە و سەرجەم فایل و داتاکانی لە سێرڤەر بە سەرکەوتوویی سڕانەوە"}

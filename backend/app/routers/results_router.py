@@ -3,6 +3,7 @@ Results and Examination Analytics Router.
 Searchable, filterable, and sortable examination results with dashboard analytics.
 """
 
+import os
 from datetime import datetime, date
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -13,6 +14,7 @@ from app.database import get_db
 from app.models import Result, Exam, Student, SchoolClass, ScanPage, DetectedAnswer, ScanJob, User
 from app.schemas import ResultOut, DetectedAnswerOut
 from app.auth import get_current_user
+from app.config import UPLOADS_ORIGINAL_DIR, UPLOADS_NORMALIZED_DIR, UPLOADS_DEBUG_DIR
 
 router = APIRouter(prefix="/api/results", tags=["Results"], dependencies=[Depends(get_current_user)])
 
@@ -204,9 +206,26 @@ def get_result_detail(result_id: int, db: Session = Depends(get_db)):
     )
     return item
 
+def purge_scan_page_files(page: ScanPage):
+    """Physically unlinks original, normalized, and debug scan images from disk to keep server storage fast and clean."""
+    if not page:
+        return
+    for fname, folder in [
+        (page.original_file, UPLOADS_ORIGINAL_DIR),
+        (page.normalized_file, UPLOADS_NORMALIZED_DIR),
+        (page.debug_file, UPLOADS_DEBUG_DIR),
+    ]:
+        if fname:
+            fpath = folder / os.path.basename(fname)
+            if fpath.exists():
+                try:
+                    fpath.unlink()
+                except Exception:
+                    pass
+
 @router.delete("/{result_id}")
 def delete_result(result_id: int, db: Session = Depends(get_db)):
-    """Deletes an examination result and its associated scan page data."""
+    """Deletes an examination result and physically purges its associated scan page images from disk."""
     r = db.query(Result).filter(Result.id == result_id).first()
     if not r:
         raise HTTPException(status_code=404, detail="ئەنجام نەدۆزرایەوە")
@@ -217,10 +236,11 @@ def delete_result(result_id: int, db: Session = Depends(get_db)):
     if page_id:
         page = db.query(ScanPage).filter(ScanPage.id == page_id).first()
         if page:
+            purge_scan_page_files(page)
             db.delete(page)
 
     db.commit()
-    return {"success": True, "message_ku": "ئەنجامەکە بە سەرکەوتوویی سڕایەوە"}
+    return {"success": True, "message_ku": "ئەنجامەکە و سەرجەم فایلە پەیوەندیدارەکانی لە سێرڤەر سڕانەوە"}
 
 @router.delete("/")
 def delete_bulk_results(
@@ -228,7 +248,7 @@ def delete_bulk_results(
     result_ids: Optional[List[int]] = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Deletes multiple results or all results for an exam."""
+    """Deletes multiple results or all results for an exam and purges associated image files from disk."""
     query = db.query(Result)
     if result_ids:
         query = query.filter(Result.id.in_(result_ids))
@@ -248,8 +268,10 @@ def delete_bulk_results(
     if page_ids:
         pages = db.query(ScanPage).filter(ScanPage.id.in_(page_ids)).all()
         for p in pages:
+            purge_scan_page_files(p)
             db.delete(p)
 
     db.commit()
-    return {"success": True, "deleted_count": count, "message_ku": f"{count} ئەنجام سڕانەوە"}
+    return {"success": True, "deleted_count": count, "message_ku": f"{count} ئەنجام و فایلەکانیان لە سێرڤەر بە سەرکەوتوویی سڕانەوە"}
+
 

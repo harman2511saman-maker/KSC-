@@ -15,11 +15,20 @@ import {
   Zap,
   FileText,
   CheckCircle2,
-  ShieldCheck
+  ShieldCheck,
+  Trophy,
+  BookOpen
 } from 'lucide-react';
 import api from '../api';
 
-export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, onShowToast }) {
+export default function OnlineExamBanner({
+  onStartExam,
+  onManageExam,
+  isAdmin,
+  onShowToast,
+  onViewSolutions,
+  onViewLeaderboard
+}) {
   const [exams, setExams] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -356,6 +365,15 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
   }
 
   const handleButtonClick = () => {
+    if (currentExam.is_ended) {
+      if (onViewSolutions) {
+        onViewSolutions(currentExam);
+      } else if (onViewLeaderboard) {
+        onViewLeaderboard(currentExam);
+      }
+      return;
+    }
+
     if (currentExam.is_coming_soon) {
       const msg = '✨ ئەم تاقیکردنەوەیە بەمزوانە لە پلاتفۆرمی KSC بەڕێوەدەچێت! تکایە چاوەڕوان بن.';
       if (onShowToast) {
@@ -444,7 +462,12 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
                 </span>
               )}
 
-              {currentExam.is_coming_soon ? (
+              {currentExam.is_ended ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-black border border-purple-500/40 shadow-inner animate-pulse">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
+                  <span>🏁 تاقیکردنەوە کۆتایی پێهات (Exam Ended)</span>
+                </span>
+              ) : currentExam.is_coming_soon ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/25 via-purple-500/25 to-pink-500/25 text-amber-200 text-xs font-black border border-amber-400/40 shadow-inner animate-pulse">
                   <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                   <span>✨ بەمزوانە (Coming Soon) • لە ڕێگایە</span>
@@ -507,70 +530,112 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
 
           {/* Action & Countdown Side */}
           <div className="flex flex-col sm:flex-row lg:flex-col items-center justify-center gap-3 shrink-0 pt-2 lg:pt-0">
-            {/* Countdown Box (if not started) */}
-            {!timeRemaining.started && (
-              <div className="w-full text-center px-4 py-2.5 rounded-2xl bg-slate-950/80 border border-slate-800 shadow-inner">
-                <span className="text-[11px] font-bold text-slate-400 block mb-1">کاتی ماوە بۆ دەستپێکردن:</span>
-                <div className="flex items-center justify-center gap-2 font-mono text-sm sm:text-base font-black text-amber-300" dir="ltr">
-                  <span className="p-1 rounded bg-slate-900 border border-slate-800 min-w-[32px] text-center">
-                    {String(timeRemaining.hours).padStart(2, '0')}
+            {currentExam.is_ended ? (
+              <div className="w-full flex flex-col gap-2.5 min-w-[240px]">
+                {/* Ended Notice Box */}
+                <div className="w-full text-center px-4 py-2.5 rounded-2xl bg-purple-950/70 border border-purple-500/40 shadow-inner">
+                  <span className="text-xs font-black text-purple-300 block">
+                    🏁 تاقیکردنەوە کۆتایی پێهات
                   </span>
-                  <span>:</span>
-                  <span className="p-1 rounded bg-slate-900 border border-slate-800 min-w-[32px] text-center">
-                    {String(timeRemaining.minutes).padStart(2, '0')}
-                  </span>
-                  <span>:</span>
-                  <span className="p-1 rounded bg-slate-900 border border-slate-800 min-w-[32px] text-center text-amber-400">
-                    {String(timeRemaining.seconds).padStart(2, '0')}
+                  <span className="text-[11px] text-slate-300 font-bold block mt-0.5">
+                    ئەنجامەکان پەسەند کراون و وەڵامە دروستەکان بەردەستن
                   </span>
                 </div>
-                <span className="text-[10px] text-amber-300/90 font-mono block mt-1.5 pt-1 border-t border-slate-800/80">
-                  {new Date(currentExam.start_time).toLocaleTimeString('ckb', {
-                    timeZone: 'Asia/Baghdad',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true
-                  })} (بە کاتی کوردستان)
-                </span>
-              </div>
-            )}
 
-            {/* Launch / Action Button */}
-            <button
-              type="button"
-              onClick={handleButtonClick}
-              className={`w-full sm:w-auto lg:w-full px-6 py-3.5 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2.5 transition-all shadow-xl active:scale-95 ${
-                currentExam.is_coming_soon
-                  ? 'bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 hover:from-amber-500/30 hover:to-purple-500/30 text-amber-200 border border-amber-400/40 shadow-lg shadow-amber-950/30 cursor-pointer'
-                  : !timeRemaining.started
-                  ? 'bg-slate-800/90 hover:bg-slate-800 text-amber-300 border border-amber-500/30'
-                  : timeRemaining.entryClosed
-                  ? 'bg-rose-950/70 hover:bg-rose-900/80 text-rose-300 border border-rose-500/40 shadow-rose-950/40'
-                  : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25 ring-2 ring-emerald-400/50 animate-pulse'
-              }`}
-            >
-              {currentExam.is_coming_soon ? (
-                <>
-                  <Sparkles className="w-4 h-4 text-amber-300 animate-spin" />
-                  <span>✨ بەمزوانە لە پلاتفۆرمی KSC (چاوەڕوان بن)</span>
-                </>
-              ) : !timeRemaining.started ? (
-                <>
-                  <Lock className="w-4 h-4 text-amber-400" />
-                  <span>وادەی دەستپێک ماوە (چاوەڕوانی)</span>
-                </>
-              ) : timeRemaining.entryClosed ? (
-                <>
-                  <Lock className="w-4 h-4 text-rose-400" />
-                  <span>دەرگای بەشداری داخراوە (تاقیکردنەوە دەستی پێکردووە)</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4 fill-current" />
-                  <span>دەستپێکردنی تاقیکردنەوەی ئۆنلاین</span>
-                </>
-              )}
-            </button>
+                <div className="flex flex-col gap-2 w-full">
+                  {/* Button 1: View Leaderboard & Results */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onViewLeaderboard) onViewLeaderboard(currentExam);
+                    }}
+                    className="w-full px-5 py-3.5 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2.5 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 shadow-lg shadow-amber-500/25 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <Trophy className="w-4 h-4 text-slate-950 fill-current shrink-0" />
+                    <span>🏆 بینینی ئەنجام و ڕیزبەندی</span>
+                  </button>
+
+                  {/* Button 2: View Questions & Correct Answers */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onViewSolutions) onViewSolutions(currentExam);
+                    }}
+                    className="w-full px-5 py-3.5 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2.5 bg-slate-800/95 hover:bg-slate-700 text-indigo-200 border border-indigo-500/40 hover:border-indigo-400 shadow-md active:scale-95 transition-all cursor-pointer"
+                  >
+                    <BookOpen className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <span>📖 بینینی پرسیار و وەڵامەکان</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Countdown Box (if not started) */}
+                {!timeRemaining.started && (
+                  <div className="w-full text-center px-4 py-2.5 rounded-2xl bg-slate-950/80 border border-slate-800 shadow-inner">
+                    <span className="text-[11px] font-bold text-slate-400 block mb-1">کاتی ماوە بۆ دەستپێکردن:</span>
+                    <div className="flex items-center justify-center gap-2 font-mono text-sm sm:text-base font-black text-amber-300" dir="ltr">
+                      <span className="p-1 rounded bg-slate-900 border border-slate-800 min-w-[32px] text-center">
+                        {String(timeRemaining.hours).padStart(2, '0')}
+                      </span>
+                      <span>:</span>
+                      <span className="p-1 rounded bg-slate-900 border border-slate-800 min-w-[32px] text-center">
+                        {String(timeRemaining.minutes).padStart(2, '0')}
+                      </span>
+                      <span>:</span>
+                      <span className="p-1 rounded bg-slate-900 border border-slate-800 min-w-[32px] text-center text-amber-400">
+                        {String(timeRemaining.seconds).padStart(2, '0')}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-amber-300/90 font-mono block mt-1.5 pt-1 border-t border-slate-800/80">
+                      {new Date(currentExam.start_time).toLocaleTimeString('ckb', {
+                        timeZone: 'Asia/Baghdad',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      })} (بە کاتی کوردستان)
+                    </span>
+                  </div>
+                )}
+
+                {/* Launch / Action Button */}
+                <button
+                  type="button"
+                  onClick={handleButtonClick}
+                  className={`w-full sm:w-auto lg:w-full px-6 py-3.5 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2.5 transition-all shadow-xl active:scale-95 ${
+                    currentExam.is_coming_soon
+                      ? 'bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 hover:from-amber-500/30 hover:to-purple-500/30 text-amber-200 border border-amber-400/40 shadow-lg shadow-amber-950/30 cursor-pointer'
+                      : !timeRemaining.started
+                      ? 'bg-slate-800/90 hover:bg-slate-800 text-amber-300 border border-amber-500/30'
+                      : timeRemaining.entryClosed
+                      ? 'bg-rose-950/70 hover:bg-rose-900/80 text-rose-300 border border-rose-500/40 shadow-rose-950/40'
+                      : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25 ring-2 ring-emerald-400/50 animate-pulse'
+                  }`}
+                >
+                  {currentExam.is_coming_soon ? (
+                    <>
+                      <Sparkles className="w-4 h-4 text-amber-300 animate-spin" />
+                      <span>✨ بەمزوانە لە پلاتفۆرمی KSC (چاوەڕوان بن)</span>
+                    </>
+                  ) : !timeRemaining.started ? (
+                    <>
+                      <Lock className="w-4 h-4 text-amber-400" />
+                      <span>وادەی دەستپێک ماوە (چاوەڕوانی)</span>
+                    </>
+                  ) : timeRemaining.entryClosed ? (
+                    <>
+                      <Lock className="w-4 h-4 text-rose-400" />
+                      <span>دەرگای بەشداری داخراوە (تاقیکردنەوە دەستی پێکردووە)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 fill-current" />
+                      <span>دەستپێکردنی تاقیکردنەوەی ئۆنلاین</span>
+                    </>
+                  )}
+                </button>
+              </>
+            )}
 
             {/* Admin Management Button */}
             {isAdmin && (

@@ -281,7 +281,14 @@ def get_active_online_exams(db: Session = Depends(get_db)):
             OnlineExamPasscode.exam_id == exam.id,
             OnlineExamPasscode.is_used == True
         ).count()
-        total_duration_minutes = round((questions_count * exam.question_duration_seconds) / 60, 1)
+        now = datetime.utcnow()
+        exam_start = to_utc_naive(exam.start_time)
+        cutoff_m = getattr(exam, 'entry_cutoff_minutes', 3) or 3
+        exam_duration_seconds = (questions_count * exam.question_duration_seconds) + (cutoff_m * 60)
+        seconds_since_start = (now - exam_start).total_seconds()
+        time_ended = seconds_since_start > (exam_duration_seconds + 120) if exam_start <= now else False
+        all_codes_finished = (passcodes_count > 0 and (passcodes_count - used_passcodes_count) == 0)
+        is_ended = (time_ended or all_codes_finished) and not is_coming_soon and exam.is_active
 
         formatted_exams.append({
             "id": exam.id,
@@ -294,9 +301,13 @@ def get_active_online_exams(db: Session = Depends(get_db)):
             "telegram_submission_minutes": exam.telegram_submission_minutes,
             "questions_count": questions_count,
             "total_duration_minutes": total_duration_minutes,
-            "entry_cutoff_minutes": getattr(exam, 'entry_cutoff_minutes', 3) or 3,
+            "entry_cutoff_minutes": cutoff_m,
             "is_active": exam.is_active,
             "is_coming_soon": is_coming_soon,
+            "is_ended": is_ended,
+            "all_codes_finished": all_codes_finished,
+            "passcodes_count": passcodes_count,
+            "used_passcodes_count": used_passcodes_count,
             "allow_screen_selection": getattr(exam, 'allow_screen_selection', False) or False,
             "exam_mode": getattr(exam, 'exam_mode', 'ONLINE') or 'ONLINE',
             "linked_exam_id": getattr(exam, 'linked_exam_id', None),
@@ -309,6 +320,41 @@ def get_active_online_exams(db: Session = Depends(get_db)):
         "exams": formatted_exams,
         "total_active_exams": len(formatted_exams),
         "has_active_exam": len(formatted_exams) > 0
+    }
+
+@router.get("/exams/{exam_id}/public-solutions")
+def get_public_exam_solutions(exam_id: int, db: Session = Depends(get_db)):
+    """
+    Public endpoint to view official questions and correct answer key for completed or active exams.
+    Allows students, teachers, and public visitors to review exam questions and answers.
+    """
+    exam = db.query(OnlineExam).filter(OnlineExam.id == exam_id).first()
+    if not exam:
+        raise HTTPException(status_code=404, detail="تاقیکردنەوە نەدۆزرایەوە")
+
+    questions = db.query(OnlineExamQuestion).filter(
+        OnlineExamQuestion.exam_id == exam.id
+    ).order_by(OnlineExamQuestion.order_num).all()
+
+    return {
+        "exam_id": exam.id,
+        "title": exam.title,
+        "description": exam.description,
+        "linked_exam_id": getattr(exam, 'linked_exam_id', None),
+        "total_questions": len(questions),
+        "questions": [
+            {
+                "order_num": q.order_num,
+                "question_text": q.question_text,
+                "image_url": q.image_url,
+                "option_a": q.option_a,
+                "option_b": q.option_b,
+                "option_c": q.option_c,
+                "option_d": q.option_d,
+                "correct_answer": q.correct_answer
+            }
+            for q in questions
+        ]
     }
 
 @router.get("/check-passcode")

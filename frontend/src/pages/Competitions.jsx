@@ -45,6 +45,7 @@ import OnlineExamBanner from '../components/OnlineExamBanner';
 import OnlineExamPasscodeModal from '../components/OnlineExamPasscodeModal';
 import OnlineExamRoom from '../components/OnlineExamRoom';
 import OnlineExamAdminModal from '../components/OnlineExamAdminModal';
+import PublicExamSolutionsModal from '../components/PublicExamSolutionsModal';
 
 export default function Competitions({ onShowToast }) {
   const { user } = useAuth() || {};
@@ -58,6 +59,7 @@ export default function Competitions({ onShowToast }) {
   const [showOnlineExamPasscodeModal, setShowOnlineExamPasscodeModal] = useState(false);
   const [activeExamSession, setActiveExamSession] = useState(null);
   const [showOnlineExamAdminModal, setShowOnlineExamAdminModal] = useState(false);
+  const [selectedExamForSolutions, setSelectedExamForSolutions] = useState(null);
   const [onlineExamKey, setOnlineExamKey] = useState(0);
 
   // Filters State
@@ -303,7 +305,7 @@ export default function Competitions({ onShowToast }) {
                   <input
                     type="text"
                     required
-                    placeholder="کۆدی قوتابی (وەک 1001)..."
+                    placeholder="کۆدی بەشداریکردن (وەک KSC-XXXX-XX یان 1001)..."
                     value={searchCode}
                     onChange={(e) => setSearchCode(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs font-mono font-bold text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
@@ -313,7 +315,7 @@ export default function Competitions({ onShowToast }) {
                   <input
                     type="text"
                     required
-                    placeholder="ناوی سیانی بنووسە..."
+                    placeholder="ناوی سیانیی قوتابی بنووسە..."
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs font-bold text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
@@ -410,6 +412,19 @@ export default function Competitions({ onShowToast }) {
               onManageExam={() => setShowOnlineExamAdminModal(true)}
               isAdmin={user?.role === 'ADMIN'}
               onShowToast={onShowToast}
+              onViewSolutions={(exam) => setSelectedExamForSolutions(exam)}
+              onViewLeaderboard={(exam) => {
+                if (exam.linked_exam_id) {
+                  setSelectedExamId(String(exam.linked_exam_id));
+                }
+                fetchLeaderboard();
+                setTimeout(() => {
+                  const el = document.getElementById('leaderboard-section');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }, 300);
+              }}
             />
           </div>
         </div>
@@ -1203,6 +1218,27 @@ export default function Competitions({ onShowToast }) {
           onShowToast={onShowToast}
           onExamUpdated={() => {
             setOnlineExamKey((prev) => prev + 1);
+          }}
+        />
+      )}
+
+      {/* Public Exam Solutions Modal (Questions & Correct Answers) */}
+      {selectedExamForSolutions && (
+        <PublicExamSolutionsModal
+          exam={selectedExamForSolutions}
+          onClose={() => setSelectedExamForSolutions(null)}
+          onGoToLeaderboard={(exam) => {
+            setSelectedExamForSolutions(null);
+            if (exam.linked_exam_id) {
+              setSelectedExamId(String(exam.linked_exam_id));
+            }
+            fetchLeaderboard();
+            setTimeout(() => {
+              const el = document.getElementById('leaderboard-section');
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }, 300);
           }}
         />
       )}
