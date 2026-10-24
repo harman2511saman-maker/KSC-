@@ -64,11 +64,9 @@ export default function OnlineExamBanner({
       const res = await api.get('/online-exam/active');
       if (res.data) {
         if (Array.isArray(res.data.exams)) {
-          const validExams = res.data.exams.filter(
-            (e) => e.is_active && (e.questions_count > 0 || e.is_coming_soon)
-          );
+          const validExams = res.data.exams.filter((e) => e.is_active);
           setExams(validExams);
-        } else if (res.data.id && res.data.is_active && (res.data.questions_count > 0 || res.data.is_coming_soon)) {
+        } else if (res.data.id && res.data.is_active) {
           setExams([res.data]);
         } else {
           setExams([]);
@@ -397,6 +395,16 @@ export default function OnlineExamBanner({
         });
       } else {
         alert(`وادەی دەستپێکردنی ئەم تاقیکردنەوەیە ماوە!\nکاتی دەستپێکردن: ${formattedDate} (بە کاتی کوردستان)`);
+      }
+      return;
+    }
+
+    if (currentExam.questions_count === 0) {
+      const msg = 'پرسیارەکانی ئەم تاقیکردنەوەیە لە ئامادەکردندان، تکایە کەمێکی تر سەردان بکەرەوە.';
+      if (onShowToast) {
+        onShowToast({ type: 'info', message: msg });
+      } else {
+        alert(msg);
       }
       return;
     }

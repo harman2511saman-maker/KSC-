@@ -254,16 +254,7 @@ def get_active_online_exams(db: Session = Depends(get_db)):
     Returns public list of active/upcoming online exams for carousel/slider display.
     Questions and passcodes are kept hidden from public.
     """
-    # Clean up any legacy empty auto-generated placeholder exams
     sync_online_classes_and_exams(db)
-    dummy_exams = db.query(OnlineExam).filter(
-        OnlineExam.title == "خولی فەرمیی پێشبڕکێی ئۆنلاینی KSC"
-    ).all()
-    for d in dummy_exams:
-        q_count = db.query(OnlineExamQuestion).filter(OnlineExamQuestion.exam_id == d.id).count()
-        if q_count == 0:
-            db.delete(d)
-    db.commit()
 
     active_exams = db.query(OnlineExam).filter(OnlineExam.is_active == True).order_by(OnlineExam.start_time).all()
 
@@ -271,10 +262,6 @@ def get_active_online_exams(db: Session = Depends(get_db)):
     for exam in active_exams:
         questions_count = db.query(OnlineExamQuestion).filter(OnlineExamQuestion.exam_id == exam.id).count()
         is_coming_soon = getattr(exam, 'is_coming_soon', False) or False
-
-        # If an exam has 0 questions and is not marked 'coming soon', don't present it as an active live exam
-        if questions_count == 0 and not is_coming_soon:
-            continue
 
         passcodes_count = db.query(OnlineExamPasscode).filter(OnlineExamPasscode.exam_id == exam.id).count()
         used_passcodes_count = db.query(OnlineExamPasscode).filter(
@@ -285,10 +272,11 @@ def get_active_online_exams(db: Session = Depends(get_db)):
         exam_start = to_utc_naive(exam.start_time)
         cutoff_m = getattr(exam, 'entry_cutoff_minutes', 3) or 3
         exam_duration_seconds = (questions_count * exam.question_duration_seconds) + (cutoff_m * 60)
+        total_duration_minutes = round(exam_duration_seconds / 60) if exam_duration_seconds > 0 else 0
         seconds_since_start = (now - exam_start).total_seconds()
-        time_ended = seconds_since_start > (exam_duration_seconds + 120) if exam_start <= now else False
+        time_ended = seconds_since_start > (exam_duration_seconds + 120) if (exam_start <= now and questions_count > 0) else False
         all_codes_finished = (passcodes_count > 0 and (passcodes_count - used_passcodes_count) == 0)
-        is_ended = (time_ended or all_codes_finished) and not is_coming_soon and exam.is_active
+        is_ended = (time_ended or all_codes_finished) and not is_coming_soon and exam.is_active and questions_count > 0
 
         formatted_exams.append({
             "id": exam.id,
