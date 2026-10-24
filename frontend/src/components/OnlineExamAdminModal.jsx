@@ -52,6 +52,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
   const [entryCutoffMins, setEntryCutoffMins] = useState(3);
   const [isActive, setIsActive] = useState(true);
   const [isComingSoon, setIsComingSoon] = useState(false);
+  const [allowScreenSelection, setAllowScreenSelection] = useState(false);
 
   // Questions state
   const [questions, setQuestions] = useState([]);
@@ -125,6 +126,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         setEntryCutoffMins(current.entry_cutoff_minutes || 3);
         setIsActive(current.is_active ?? true);
         setIsComingSoon(Boolean(current.is_coming_soon));
+        setAllowScreenSelection(Boolean(current.allow_screen_selection));
       }
       setHasUnsavedNames(false);
 
@@ -160,6 +162,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
     setEntryCutoffMins(3);
     setIsActive(true);
     setIsComingSoon(false);
+    setAllowScreenSelection(false);
     setHasUnsavedNames(false);
     setQuestions([]);
     setPasscodes([]);
@@ -186,7 +189,8 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         telegram_submission_minutes: Number(telegramMins) || 5,
         entry_cutoff_minutes: Number(entryCutoffMins) || 3,
         is_active: isActive,
-        is_coming_soon: isComingSoon
+        is_coming_soon: isComingSoon,
+        allow_screen_selection: allowScreenSelection
       };
 
       if (exam?.id && !isCreatingNew) {
@@ -238,9 +242,52 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
       {
         order_num: questions.length + 1,
         question_text: '',
-        image_url: null
+        image_url: null,
+        option_a: '',
+        option_b: '',
+        option_c: '',
+        option_d: '',
+        correct_answer: ''
       }
     ]);
+  };
+
+  const handlePasteAllOptions = async (index) => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) return;
+      const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+      if (lines.length >= 2) {
+        const cleanLine = (str) => str.replace(/^[A-Da-d1-4][\.\)\-\:]\s*/, '').trim();
+        const updated = [...questions];
+        updated[index] = {
+          ...updated[index],
+          option_a: lines[0] ? cleanLine(lines[0]) : (updated[index].option_a || ''),
+          option_b: lines[1] ? cleanLine(lines[1]) : (updated[index].option_b || ''),
+          option_c: lines[2] ? cleanLine(lines[2]) : (updated[index].option_c || ''),
+          option_d: lines[3] ? cleanLine(lines[3]) : (updated[index].option_d || '')
+        };
+        setQuestions(updated);
+        if (onShowToast) onShowToast({ type: 'success', message: 'هەڵبژاردنەکان بە سەرکەوتوویی دابەشکران' });
+      } else {
+        if (onShowToast) onShowToast({ type: 'info', message: 'تکایە دڵنیابەرەوە کە هەر هەڵبژاردنێک لە دێڕێکی جیاواز بێت' });
+      }
+    } catch (err) {
+      if (onShowToast) onShowToast({ type: 'error', message: 'ڕێگەپێدانی پەیستکردن لە وێبگەڕ نییە' });
+    }
+  };
+
+  const handleClearOptions = (index) => {
+    const updated = [...questions];
+    updated[index] = {
+      ...updated[index],
+      option_a: '',
+      option_b: '',
+      option_c: '',
+      option_d: '',
+      correct_answer: ''
+    };
+    setQuestions(updated);
   };
 
   const handleUpdateQuestion = (index, field, value) => {
@@ -305,7 +352,17 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
     }
     try {
       setSaving(true);
-      await api.put(`/online-exam/admin/exams/${exam.id}/questions`, questions);
+      const payload = questions.map((q, idx) => ({
+        order_num: idx + 1,
+        question_text: q.question_text || '',
+        image_url: q.image_url || null,
+        option_a: q.option_a ? q.option_a.trim() : null,
+        option_b: q.option_b ? q.option_b.trim() : null,
+        option_c: q.option_c ? q.option_c.trim() : null,
+        option_d: q.option_d ? q.option_d.trim() : null,
+        correct_answer: q.correct_answer ? q.correct_answer.trim() : null
+      }));
+      await api.put(`/online-exam/admin/exams/${exam.id}/questions`, payload);
       if (onShowToast) onShowToast({ type: 'success', message: 'سەرجەم پرسیارەکان بە سەرکەوتوویی پاشەکەوت کران' });
       if (onExamUpdated) onExamUpdated();
     } catch (err) {
@@ -943,6 +1000,72 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                   </div>
                 </div>
 
+                {/* Exam Mode: View-Only vs Interactive Selection */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <HelpCircle className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-black text-white">
+                      شێوازی کارکردنی پرسیار و هەڵبژاردنەکان (ABCD) بۆ قوتابی:
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Mode 1: View-only (Default) */}
+                    <div
+                      onClick={() => setAllowScreenSelection(false)}
+                      className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
+                        !allowScreenSelection
+                          ? 'bg-amber-500/15 border-amber-500/50 text-amber-200 shadow-md ring-1 ring-amber-400/40'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        id="viewOnlyModeRadio"
+                        name="screenSelectionMode"
+                        checked={!allowScreenSelection}
+                        onChange={() => setAllowScreenSelection(false)}
+                        className="mt-0.5 text-amber-500 focus:ring-amber-400 bg-slate-900"
+                      />
+                      <label htmlFor="viewOnlyModeRadio" className="cursor-pointer">
+                        <span className="block text-xs font-black text-white">
+                          ١. تەنها پیشاندان (View-Only)
+                        </span>
+                        <span className="block text-[11px] text-slate-400 mt-1 leading-relaxed">
+                          قوتابی تەنها پرسیار و ٤ هەڵبژاردنەکە دەبینێت، هیچ کلیک و دیاریکردنێک لەسەر شاشە ناکرێت و وەڵام تەنها لەسەر پەڕەی سۆما پڕدەکرێتەوە.
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Mode 2: Interactive screen selection */}
+                    <div
+                      onClick={() => setAllowScreenSelection(true)}
+                      className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
+                        allowScreenSelection
+                          ? 'bg-indigo-500/15 border-indigo-500/50 text-indigo-200 shadow-md ring-1 ring-indigo-400/40'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        id="interactiveModeRadio"
+                        name="screenSelectionMode"
+                        checked={allowScreenSelection}
+                        onChange={() => setAllowScreenSelection(true)}
+                        className="mt-0.5 text-indigo-500 focus:ring-indigo-400 bg-slate-900"
+                      />
+                      <label htmlFor="interactiveModeRadio" className="cursor-pointer">
+                        <span className="block text-xs font-black text-white">
+                          ٢. دەستنیشانکردن لەسەر شاشە (Interactive)
+                        </span>
+                        <span className="block text-[11px] text-slate-400 mt-1 leading-relaxed">
+                          قوتابی لەسەر شاشەش دەتوانێت کلیک لەسەر هەڵبژاردنەکە بکات تا ڕەنگاوڕەنگ دیاریبکرێت و لە پڕکردنەوەی پەڕەی سۆما هەڵە نەکات.
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   type="submit"
                   disabled={saving}
@@ -1140,6 +1263,137 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                           </span>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Multiple Choice Options (A, B, C, D) */}
+                    <div className="pt-3 border-t border-slate-800/80 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <label className="text-[11px] font-black text-amber-300 flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
+                            <span>هەڵبژاردنەکانی پرسیار (ABCD):</span>
+                          </label>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            (وەڵامەکان لەسەر شاشەی قوتابی دەردەکەون)
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {/* Paste 4 options from clipboard */}
+                          <button
+                            type="button"
+                            onClick={() => handlePasteAllOptions(idx)}
+                            className="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 text-[10px] font-bold flex items-center gap-1 transition-all"
+                            title="پەیستکردنی چوار هەڵبژاردنەکە پێکەوە لە کلیپبۆرد"
+                          >
+                            <ClipboardPaste className="w-3 h-3 text-indigo-400" />
+                            <span>پەیستی ٤ وەڵامەکە پێکەوە</span>
+                          </button>
+
+                          {/* Clear options */}
+                          {(q.option_a || q.option_b || q.option_c || q.option_d) && (
+                            <button
+                              type="button"
+                              onClick={() => handleClearOptions(idx)}
+                              className="text-[10px] text-slate-400 hover:text-rose-400 transition-colors"
+                            >
+                              پاککردنەوە
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 2x2 Grid for ABCD Choices */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        
+                        {/* Option A */}
+                        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 hover:border-blue-500/50 rounded-xl p-2 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/40 transition-all">
+                          <span className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-mono text-xs font-black shrink-0 shadow-sm">
+                            A
+                          </span>
+                          <input
+                            type="text"
+                            value={q.option_a || ''}
+                            onChange={(e) => handleUpdateQuestion(idx, 'option_a', e.target.value)}
+                            placeholder="هەڵبژاردنی A بنووسە..."
+                            className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none font-medium"
+                          />
+                        </div>
+
+                        {/* Option B */}
+                        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-xl p-2 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/40 transition-all">
+                          <span className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-mono text-xs font-black shrink-0 shadow-sm">
+                            B
+                          </span>
+                          <input
+                            type="text"
+                            value={q.option_b || ''}
+                            onChange={(e) => handleUpdateQuestion(idx, 'option_b', e.target.value)}
+                            placeholder="هەڵبژاردنی B بنووسە..."
+                            className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none font-medium"
+                          />
+                        </div>
+
+                        {/* Option C */}
+                        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-xl p-2 focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500/40 transition-all">
+                          <span className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-mono text-xs font-black shrink-0 shadow-sm">
+                            C
+                          </span>
+                          <input
+                            type="text"
+                            value={q.option_c || ''}
+                            onChange={(e) => handleUpdateQuestion(idx, 'option_c', e.target.value)}
+                            placeholder="هەڵبژاردنی C بنووسە..."
+                            className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none font-medium"
+                          />
+                        </div>
+
+                        {/* Option D */}
+                        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 hover:border-purple-500/50 rounded-xl p-2 focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500/40 transition-all">
+                          <span className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-mono text-xs font-black shrink-0 shadow-sm">
+                            D
+                          </span>
+                          <input
+                            type="text"
+                            value={q.option_d || ''}
+                            onChange={(e) => handleUpdateQuestion(idx, 'option_d', e.target.value)}
+                            placeholder="هەڵبژاردنی D بنووسە..."
+                            className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none font-medium"
+                          />
+                        </div>
+
+                      </div>
+
+                      {/* Correct Answer Selection Bar */}
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                        <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                          <span>دیاریکردنی وەڵامی دروست:</span>
+                          {q.correct_answer ? (
+                            <span className="text-emerald-400 font-mono font-black">({q.correct_answer})</span>
+                          ) : (
+                            <span className="text-slate-500 font-normal text-[10px]">(دیاری نەکراوە)</span>
+                          )}
+                        </span>
+
+                        <div className="flex items-center gap-1.5">
+                          {['A', 'B', 'C', 'D'].map((opt) => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => handleUpdateQuestion(idx, 'correct_answer', q.correct_answer === opt ? '' : opt)}
+                              className={`w-7 h-7 rounded-lg font-mono text-xs font-black transition-all border ${
+                                q.correct_answer === opt
+                                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30 scale-105'
+                                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+                              }`}
+                              title={`دیاریکردنی (${opt}) وەک وەڵامی ڕاست`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                     </div>
 
                   </div>

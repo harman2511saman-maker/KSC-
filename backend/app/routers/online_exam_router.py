@@ -65,6 +65,11 @@ class QuestionItemSchema(BaseModel):
     order_num: int
     question_text: str
     image_url: Optional[str] = None
+    option_a: Optional[str] = None
+    option_b: Optional[str] = None
+    option_c: Optional[str] = None
+    option_d: Optional[str] = None
+    correct_answer: Optional[str] = None
 
 class ExamCreateOrUpdateSchema(BaseModel):
     title: str
@@ -77,6 +82,7 @@ class ExamCreateOrUpdateSchema(BaseModel):
     entry_cutoff_minutes: int = 3
     is_active: bool = True
     is_coming_soon: bool = False
+    allow_screen_selection: bool = False
 
 class PasscodeNameUpdateItem(BaseModel):
     id: int
@@ -186,6 +192,7 @@ def get_active_online_exams(db: Session = Depends(get_db)):
             "entry_cutoff_minutes": getattr(exam, 'entry_cutoff_minutes', 3) or 3,
             "is_active": exam.is_active,
             "is_coming_soon": getattr(exam, 'is_coming_soon', False) or False,
+            "allow_screen_selection": getattr(exam, 'allow_screen_selection', False) or False,
             "available_passcodes_count": passcodes_count - used_passcodes_count
         })
 
@@ -263,8 +270,14 @@ def verify_passcode_and_start_exam(
     # Consume passcode
     passcode.is_used = True
     passcode.used_at = now
-    passcode.student_name = payload.student_name.strip() if payload.student_name else "بەشداربووی KSC"
-    passcode.student_phone = payload.student_phone.strip() if payload.student_phone else None
+    # Preserve pre-assigned student name if candidate logs in with passcode only
+    if payload.student_name and payload.student_name.strip():
+        passcode.student_name = payload.student_name.strip()
+    elif not passcode.student_name:
+        passcode.student_name = "بەشداربووی KSC"
+
+    if payload.student_phone and payload.student_phone.strip():
+        passcode.student_phone = payload.student_phone.strip()
     db.commit()
 
     # Fetch questions ordered by order_num
@@ -292,12 +305,17 @@ def verify_passcode_and_start_exam(
             "question_duration_seconds": exam.question_duration_seconds,
             "telegram_group_url": exam.telegram_group_url,
             "telegram_submission_minutes": exam.telegram_submission_minutes,
+            "allow_screen_selection": getattr(exam, 'allow_screen_selection', False) or False,
             "total_questions": len(questions),
             "questions": [
                 {
                     "order_num": q.order_num,
                     "question_text": q.question_text,
-                    "image_url": q.image_url
+                    "image_url": q.image_url,
+                    "option_a": q.option_a,
+                    "option_b": q.option_b,
+                    "option_c": q.option_c,
+                    "option_d": q.option_d
                 }
                 for q in questions
             ]
@@ -356,6 +374,7 @@ def admin_get_exams(
             "entry_cutoff_minutes": getattr(exam, 'entry_cutoff_minutes', 3) or 3,
             "is_active": exam.is_active,
             "is_coming_soon": getattr(exam, 'is_coming_soon', False) or False,
+            "allow_screen_selection": getattr(exam, 'allow_screen_selection', False) or False,
             "questions_count": q_count,
             "passcodes_count": total_codes,
             "used_passcodes_count": used_codes,
@@ -380,7 +399,8 @@ def admin_create_exam(
         telegram_submission_minutes=payload.telegram_submission_minutes,
         entry_cutoff_minutes=payload.entry_cutoff_minutes,
         is_active=payload.is_active,
-        is_coming_soon=payload.is_coming_soon
+        is_coming_soon=payload.is_coming_soon,
+        allow_screen_selection=payload.allow_screen_selection
     )
     db.add(exam)
     db.commit()
@@ -409,6 +429,7 @@ def admin_update_exam(
     exam.entry_cutoff_minutes = payload.entry_cutoff_minutes
     exam.is_active = payload.is_active
     exam.is_coming_soon = payload.is_coming_soon
+    exam.allow_screen_selection = payload.allow_screen_selection
 
     db.commit()
     return {"message": "تاقیکردنەوە نوێکرایەوە"}
@@ -459,7 +480,12 @@ def admin_get_questions(
             "id": q.id,
             "order_num": q.order_num,
             "question_text": q.question_text,
-            "image_url": q.image_url
+            "image_url": q.image_url,
+            "option_a": q.option_a or "",
+            "option_b": q.option_b or "",
+            "option_c": q.option_c or "",
+            "option_d": q.option_d or "",
+            "correct_answer": q.correct_answer or ""
         }
         for q in questions
     ]
@@ -498,7 +524,12 @@ def admin_save_questions(
             exam_id=exam_id,
             order_num=idx + 1,
             question_text=q_data.question_text,
-            image_url=q_data.image_url
+            image_url=q_data.image_url,
+            option_a=q_data.option_a,
+            option_b=q_data.option_b,
+            option_c=q_data.option_c,
+            option_d=q_data.option_d,
+            correct_answer=q_data.correct_answer
         )
         db.add(new_q)
 

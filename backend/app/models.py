@@ -218,6 +218,7 @@ class OnlineExam(Base):
     entry_cutoff_minutes = Column(Integer, default=3)
     is_active = Column(Boolean, default=True)
     is_coming_soon = Column(Boolean, default=False)
+    allow_screen_selection = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     questions = relationship("OnlineExamQuestion", back_populates="exam", cascade="all, delete-orphan", order_by="OnlineExamQuestion.order_num")
@@ -231,6 +232,11 @@ class OnlineExamQuestion(Base):
     order_num = Column(Integer, nullable=False, default=1)
     question_text = Column(Text, nullable=False)
     image_url = Column(String(512), nullable=True)
+    option_a = Column(Text, nullable=True)
+    option_b = Column(Text, nullable=True)
+    option_c = Column(Text, nullable=True)
+    option_d = Column(Text, nullable=True)
+    correct_answer = Column(String(8), nullable=True)  # "A", "B", "C", "D"
     created_at = Column(DateTime, default=datetime.utcnow)
 
     exam = relationship("OnlineExam", back_populates="questions")

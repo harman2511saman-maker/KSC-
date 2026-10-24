@@ -26,8 +26,8 @@ export default function OnlineExamRoom({ sessionData, onClose, onShowToast }) {
   const [disqualifyReason, setDisqualifyReason] = useState('');
   const [zoomImage, setZoomImage] = useState(null);
 
-  // 5-minute countdown timer for Telegram OMR submission after completion
   const [telegramSeconds, setTelegramSeconds] = useState((exam.telegram_submission_minutes || 5) * 60);
+  const [selectedOption, setSelectedOption] = useState(null);
 
   const hasTriggeredCheat = useRef(false);
 
@@ -124,8 +124,45 @@ export default function OnlineExamRoom({ sessionData, onClose, onShowToast }) {
   const currentQ = questions[currentIndex] || {
     order_num: currentIndex + 1,
     question_text: 'هیچ پرسیارێک بەردەست نییە',
-    image_url: null
+    image_url: null,
+    option_a: null,
+    option_b: null,
+    option_c: null,
+    option_d: null
   };
+
+  const hasOptions = Boolean(
+    (currentQ.option_a && currentQ.option_a.trim()) ||
+    (currentQ.option_b && currentQ.option_b.trim()) ||
+    (currentQ.option_c && currentQ.option_c.trim()) ||
+    (currentQ.option_d && currentQ.option_d.trim())
+  );
+
+  // Reset selected option on question advance
+  useEffect(() => {
+    setSelectedOption(null);
+  }, [currentIndex]);
+
+  const isSelectionAllowed = Boolean(exam?.allow_screen_selection);
+
+  // Keyboard shortcut listener (A, B, C, D or 1, 2, 3, 4) - only active if admin enabled screen selection
+  useEffect(() => {
+    if (isCompleted || isDisqualified || !hasOptions || !isSelectionAllowed) return;
+
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return;
+      const key = e.key.toUpperCase();
+      if (['A', 'B', 'C', 'D'].includes(key)) {
+        setSelectedOption((prev) => (prev === key ? null : key));
+      } else if (e.key === '1') setSelectedOption('A');
+      else if (e.key === '2') setSelectedOption('B');
+      else if (e.key === '3') setSelectedOption('C');
+      else if (e.key === '4') setSelectedOption('D');
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentIndex, isCompleted, isDisqualified, hasOptions, isSelectionAllowed]);
 
   // Timer format helpers
   const timerPercentage = Math.max(0, Math.min(100, (secondsRemaining / (exam.question_duration_seconds || 60)) * 100));
@@ -366,12 +403,124 @@ export default function OnlineExamRoom({ sessionData, onClose, onShowToast }) {
               </div>
             )}
 
-            {/* PAPER OMR ANSWER SHEET NOTICE (EXPLICIT USER REQUIREMENT: NO ON-SCREEN BUTTONS) */}
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-200 text-xs sm:text-sm font-bold flex items-center gap-3">
-              <FileText className="w-5 h-5 text-amber-400 shrink-0" />
-              <span>
-                تکایە وەڵامی ئەم پرسیارە لەسەر پەڕە سۆماکەت (فۆڕمی وەڵام) بازنەکەی دیاریبکە.
-              </span>
+            {/* Multiple Choice Options Grid (ABCD) */}
+            {hasOptions && (
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
+                  <span className="text-xs font-black text-slate-300 flex items-center gap-1.5">
+                    <span>هەڵبژاردنەکان (ABCD):</span>
+                  </span>
+                  {isSelectionAllowed ? (
+                    <span className="text-[11px] text-amber-400 font-bold">
+                      {selectedOption ? `هەڵبژێردراو: (${selectedOption})` : 'دەتوانیت کلیک بکەیت بۆ دیاریکردن لەسەر شاشە'}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      تەنها پیشاندان • لەسەر فۆڕمی سۆما پڕی بکەرەوە
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {[
+                    {
+                      key: 'A',
+                      text: currentQ.option_a,
+                      badgeBg: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+                      activeRing: 'border-blue-400 bg-blue-500/20 shadow-lg shadow-blue-500/20 ring-2 ring-blue-400/50',
+                      hoverBorder: 'hover:border-blue-500/50'
+                    },
+                    {
+                      key: 'B',
+                      text: currentQ.option_b,
+                      badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+                      activeRing: 'border-emerald-400 bg-emerald-500/20 shadow-lg shadow-emerald-500/20 ring-2 ring-emerald-400/50',
+                      hoverBorder: 'hover:border-emerald-500/50'
+                    },
+                    {
+                      key: 'C',
+                      text: currentQ.option_c,
+                      badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+                      activeRing: 'border-amber-400 bg-amber-500/20 shadow-lg shadow-amber-500/20 ring-2 ring-amber-400/50',
+                      hoverBorder: 'hover:border-amber-500/50'
+                    },
+                    {
+                      key: 'D',
+                      text: currentQ.option_d,
+                      badgeBg: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+                      activeRing: 'border-purple-400 bg-purple-500/20 shadow-lg shadow-purple-500/20 ring-2 ring-purple-400/50',
+                      hoverBorder: 'hover:border-purple-500/50'
+                    }
+                  ].map((opt) => {
+                    const isSelected = selectedOption === opt.key;
+
+                    if (!isSelectionAllowed) {
+                      // View-Only Mode: Static, clear viewing cards
+                      return (
+                        <div
+                          key={opt.key}
+                          className="flex items-center gap-3.5 p-3.5 sm:p-4 rounded-2xl border text-right bg-slate-900/80 border-slate-800 shadow-sm select-none"
+                        >
+                          <span
+                            className={`w-9 h-9 rounded-xl border flex items-center justify-center font-mono text-sm font-black shrink-0 ${opt.badgeBg}`}
+                          >
+                            {opt.key}
+                          </span>
+
+                          <span className="flex-1 text-sm sm:text-base font-bold text-slate-100 leading-relaxed break-words">
+                            {opt.text || <span className="text-slate-500 italic">هەڵبژاردنی {opt.key}</span>}
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    // Interactive Mode: Clickable & selectable cards
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setSelectedOption((prev) => (prev === opt.key ? null : opt.key))}
+                        className={`flex items-center gap-3.5 p-3.5 sm:p-4 rounded-2xl border text-right transition-all group active:scale-[0.98] ${
+                          isSelected
+                            ? opt.activeRing
+                            : `bg-slate-950/80 border-slate-800 ${opt.hoverBorder} hover:bg-slate-900`
+                        }`}
+                      >
+                        <span
+                          className={`w-9 h-9 rounded-xl border flex items-center justify-center font-mono text-sm font-black shrink-0 transition-transform ${
+                            isSelected ? 'scale-110' : 'group-hover:scale-105'
+                          } ${opt.badgeBg}`}
+                        >
+                          {opt.key}
+                        </span>
+
+                        <span className="flex-1 text-sm sm:text-base font-bold text-white leading-relaxed break-words">
+                          {opt.text || <span className="text-slate-500 italic">هەڵبژاردنی {opt.key}</span>}
+                        </span>
+
+                        {isSelected && (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 animate-in fade-in zoom-in" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* PAPER OMR ANSWER SHEET NOTICE */}
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-200 text-xs sm:text-sm font-bold flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <FileText className="w-5 h-5 text-amber-400 shrink-0" />
+                <span>
+                  تکایە وەڵامی ئەم پرسیارە لەسەر پەڕە سۆماکەت (فۆڕمی وەڵام) بازنەکەی دیاریبکە و پڕی بکەرەوە.
+                </span>
+              </div>
+              {isSelectionAllowed && selectedOption && (
+                <span className="px-3 py-1 rounded-xl bg-amber-400 text-slate-950 font-black text-xs shrink-0 shadow">
+                  بازنەی ({selectedOption}) پڕبکەرەوە
+                </span>
+              )}
             </div>
 
           </div>

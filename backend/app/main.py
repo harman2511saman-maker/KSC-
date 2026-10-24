@@ -43,6 +43,19 @@ try:
         conn.commit()
 except Exception:
     pass
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE online_exams ADD COLUMN allow_screen_selection BOOLEAN DEFAULT 0"))
+        conn.commit()
+except Exception:
+    pass
+for col in ["option_a", "option_b", "option_c", "option_d", "correct_answer"]:
+    try:
+        with engine.connect() as conn:
+            conn.execute(text(f"ALTER TABLE online_exam_questions ADD COLUMN {col} TEXT"))
+            conn.commit()
+    except Exception:
+        pass
 
 # Seed realistic demo data
 db_session = SessionLocal()
