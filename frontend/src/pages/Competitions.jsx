@@ -956,7 +956,7 @@ export default function Competitions({ onShowToast }) {
       )}
 
       {/* 4. STUDENTS OVERALL RANKING & DIRECTORY (With Advanced Filter Controls) */}
-      <div className="bg-[#080d1a] rounded-3xl border border-slate-800/80 p-5 sm:p-6 shadow-xl space-y-5">
+      <div id="leaderboard-section" className="bg-[#080d1a] rounded-3xl border border-slate-800/80 p-5 sm:p-6 shadow-xl space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
           <div className="flex items-center gap-2.5">
             <GraduationCap className="w-5 h-5 text-amber-400" />
@@ -1178,13 +1178,19 @@ export default function Competitions({ onShowToast }) {
       {activeExamSession && (
         <OnlineExamRoom
           sessionData={activeExamSession}
-          onClose={() => {
-            const linkedId = activeExamSession?.exam?.linked_exam_id;
+          onClose={(result) => {
+            const linkedId = result?.linked_exam_id || activeExamSession?.exam?.linked_exam_id;
             setActiveExamSession(null);
             if (linkedId) {
               setSelectedExamId(String(linkedId));
             }
             fetchLeaderboard();
+            setTimeout(() => {
+              const el = document.getElementById('leaderboard-section');
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }, 350);
           }}
           onShowToast={onShowToast}
         />

@@ -270,7 +270,16 @@ export default function Results({ onShowToast, onOpenReviewForPage }) {
               <tbody className="divide-y divide-slate-100 text-xs font-medium">
                 {results.map((r) => (
                   <tr key={r.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3 px-4 font-bold text-slate-900">{r.student_name || 'نادیار'}</td>
+                    <td className="py-3 px-4 font-bold text-slate-900">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span>{r.student_name || 'نادیار'}</span>
+                        {!r.debug_file && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-200" title="تاقیکردنەوەی ئۆنلاین بەبێ پەڕەی سۆما">
+                            ئۆنلاین (دیجیتاڵی)
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="py-3 px-4 font-mono text-slate-600">{r.student_code || '—'}</td>
                     <td className="py-3 px-4 text-slate-700">{r.exam_name || '—'}</td>
                     <td className="py-3 px-4 text-center text-emerald-600 font-bold">{r.correct_count}</td>
@@ -443,8 +452,8 @@ export default function Results({ onShowToast, onOpenReviewForPage }) {
               </div>
             </div>
 
-            {/* Scanned Image Visualizer */}
-            {detailResult.debug_file && (
+            {/* Scanned Image Visualizer or Digital Online Exam Notice */}
+            {detailResult.debug_file ? (
               <div className="space-y-2">
                 <span className="font-bold text-xs text-slate-800 block">پەڕەی سکانکراو و دیاریکردنی بازنەکان:</span>
                 <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-200 p-2 bg-slate-950 flex items-center justify-center">
@@ -453,6 +462,20 @@ export default function Results({ onShowToast, onOpenReviewForPage }) {
                     alt="پەڕەی شیکاریکراو و بازنەکان"
                     className="w-full max-h-68 object-contain rounded-lg"
                   />
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 font-bold">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h5 className="font-extrabold text-sm text-emerald-950">
+                    تاقیکردنەوەی ئۆنلاینی دیجیتاڵی (ڕاستەوخۆ لەسەر شاشە)
+                  </h5>
+                  <p className="text-xs text-emerald-800 leading-relaxed font-medium">
+                    ئەم تاقیکردنەوەیە بە شێوازی ئەلیکترۆنی و بەبێ پەڕەی سۆما ئەنجامدراوە؛ سەرجەم وەڵامەکان لەسەر شاشە دراونەتەوە و ڕاستەوخۆ لە ئەنجامەکان و پێشبڕکێ و ڕیزبەندی ماڵپەڕ تۆمارکراون.
+                  </p>
                 </div>
               </div>
             )}

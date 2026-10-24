@@ -253,6 +253,40 @@ def get_active_online_exams(db: Session = Depends(get_db)):
         "has_active_exam": len(formatted_exams) > 0
     }
 
+@router.get("/check-passcode")
+def check_passcode_status(
+    exam_id: int,
+    code: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Checks candidate passcode before starting exam:
+    - Verifies whether passcode exists, is valid, is used, or is disqualified
+    - Determines if admin pre-assigned a student name (has_admin_name)
+    - Returns student_name if pre-assigned so client can LOCK it
+    """
+    clean_code = code.strip().upper()
+    passcode = db.query(OnlineExamPasscode).filter(
+        OnlineExamPasscode.exam_id == exam_id,
+        OnlineExamPasscode.code == clean_code
+    ).first()
+
+    if not passcode:
+        return {"valid": False, "found": False, "message": "پاسوۆردەکە هەڵەیە یان بوونی نییە"}
+
+    raw_name = (passcode.student_name or "").strip()
+    has_admin_name = bool(raw_name and raw_name not in ["بەشداربووی KSC", "بەشداربووی ئۆنلاین", "قوتابی"])
+
+    return {
+        "valid": True,
+        "found": True,
+        "is_used": bool(passcode.is_used),
+        "disqualified": bool(passcode.disqualified),
+        "disqualification_reason": passcode.disqualification_reason,
+        "has_admin_name": has_admin_name,
+        "student_name": raw_name if has_admin_name else ""
+    }
+
 @router.post("/verify-passcode")
 def verify_passcode_and_start_exam(
     payload: VerifyPasscodeRequest,
@@ -263,6 +297,7 @@ def verify_passcode_and_start_exam(
     Validates candidate passcode, registers student session,
     and returns full questions for the exam.
     Passcodes are strictly single-use.
+    Locks name if pre-assigned by admin; requires triple name if unassigned.
     """
     exam = db.query(OnlineExam).filter(OnlineExam.id == payload.exam_id).first()
     if not exam or not exam.is_active:
@@ -317,18 +352,61 @@ def verify_passcode_and_start_exam(
             detail="ئەم پاسوۆردە پێشتر بەکارهاتووە! هەر پاسوۆردێک تەنها بۆ یەک بەشداربووە."
         )
 
+    # 4. Strict Admin-Assigned Name Locking vs Required Triple Name Entry
+    raw_existing_name = (passcode.student_name or "").strip()
+    has_admin_name = bool(raw_existing_name and raw_existing_name not in ["بەشداربووی KSC", "بەشداربووی ئۆنلاین", "قوتابی"])
+
+    if has_admin_name:
+        # LOCKED: Keep admin's pre-assigned name strictly
+        passcode.student_name = raw_existing_name
+    else:
+        # If admin did NOT assign a name, participant MUST write their full name
+        submitted_name = (payload.student_name or "").strip()
+        if submitted_name and submitted_name not in ["بەشداربووی KSC", "بەشداربووی ئۆنلاین"]:
+            passcode.student_name = submitted_name
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="تکایە ناوی سیانی خۆت بنووسە بۆ ئەوەی لە ئەنجامەکان و ڕیزبەندی بە ناوی خۆت تۆمار بکرێت."
+            )
+
     # Consume passcode
     passcode.is_used = True
     passcode.used_at = now
-    # Preserve pre-assigned student name if candidate logs in with passcode only
-    if payload.student_name and payload.student_name.strip() and payload.student_name.strip() != "بەشداربووی KSC":
-        passcode.student_name = payload.student_name.strip()
-    elif not passcode.student_name:
-        passcode.student_name = "بەشداربووی KSC"
 
     if payload.student_phone and payload.student_phone.strip():
         passcode.student_phone = payload.student_phone.strip()
     db.commit()
+
+    # Pre-link or create linked base Exam for unified results and leaderboard
+    base_exam = get_or_create_linked_exam(exam, db)
+
+    # Ensure online school class and pre-register Student record
+    online_class = db.query(SchoolClass).filter(SchoolClass.name == "پلاتفۆرمی پێشبڕکێی ئۆنلاینی KSC").first()
+    if not online_class:
+        online_class = SchoolClass(
+            name="پلاتفۆرمی پێشبڕکێی ئۆنلاینی KSC",
+            grade="ئۆنلاین",
+            academic_year="2025-2026"
+        )
+        db.add(online_class)
+        db.commit()
+        db.refresh(online_class)
+
+    student = db.query(Student).filter(Student.student_id == passcode.code).first()
+    if not student:
+        student = Student(
+            student_id=passcode.code,
+            name=passcode.student_name,
+            grade="ئۆنلاین",
+            class_id=online_class.id,
+            academic_year="2025-2026"
+        )
+        db.add(student)
+        db.commit()
+    else:
+        student.name = passcode.student_name
+        db.commit()
 
     # Fetch questions ordered by order_num
     questions = db.query(OnlineExamQuestion).filter(
@@ -359,7 +437,7 @@ def verify_passcode_and_start_exam(
             "telegram_submission_minutes": exam.telegram_submission_minutes,
             "allow_screen_selection": getattr(exam, 'allow_screen_selection', False) or False,
             "exam_mode": getattr(exam, 'exam_mode', 'ONLINE') or 'ONLINE',
-            "linked_exam_id": getattr(exam, 'linked_exam_id', None),
+            "linked_exam_id": base_exam.id,
             "total_questions": len(questions),
             "questions": [
                 {

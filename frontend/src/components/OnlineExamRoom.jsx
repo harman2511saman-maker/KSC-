@@ -477,6 +477,21 @@ export default function OnlineExamRoom({ sessionData, onClose, onShowToast }) {
             </div>
           </div>
 
+          {/* Direct Online Exam Confirmation Banner */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-indigo-500/15 border border-emerald-500/30 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div className="text-right">
+              <div className="text-xs sm:text-sm font-black text-emerald-300">
+                تاقیکردنەوەی ئۆنلاینی تەواو (دیجیتاڵی بەبێ پەڕەی سۆما)
+              </div>
+              <div className="text-[11px] text-slate-300 leading-relaxed font-medium">
+                ئەنجامەکەت بە سەرکەوتوویی و بە شێوازی ئەلیکترۆنی تۆمارکرا؛ پێویست بە هیچ پەڕەیەکی سۆما ناکات و ناو و نمرەکەت یەکسەر چووە ناو بەشی ئەنجامەکان و ڕیزبەندی ماڵپەڕ.
+              </div>
+            </div>
+          </div>
+
           {/* 4 Key Stat Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
             
@@ -748,16 +763,16 @@ export default function OnlineExamRoom({ sessionData, onClose, onShowToast }) {
           <div className="pt-4 pb-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               type="button"
-              onClick={onClose}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-amber-500/25 transition-all active:scale-95"
+              onClick={() => onClose && onClose(submissionResult)}
+              className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-amber-500/25 transition-all active:scale-95 cursor-pointer"
             >
               <Trophy className="w-4 h-4" />
               <span>چوون بۆ خشتەی فەرمیی پێشبڕکێ و ڕیزبەندی ماڵپەڕ</span>
             </button>
             <button
               type="button"
-              onClick={onClose}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-bold text-xs transition-colors border border-slate-800"
+              onClick={() => onClose && onClose(submissionResult)}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-bold text-xs transition-colors border border-slate-800 cursor-pointer"
             >
               داخستنی ئەم پەڕەیە
             </button>
