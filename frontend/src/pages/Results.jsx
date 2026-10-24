@@ -202,9 +202,9 @@ export default function Results({ onShowToast, onOpenReviewForPage }) {
           <select
             value={selectedExamId}
             onChange={(e) => setSelectedExamId(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
           >
-            <option value="">هەموو تاقیکردنەوەکان</option>
+            <option value="">هەموو تاقیکردنەوە و بابەتەکان</option>
             {exams.map((ex) => (
               <option key={ex.id} value={ex.id}>
                 {ex.exam_name}
@@ -217,9 +217,9 @@ export default function Results({ onShowToast, onOpenReviewForPage }) {
           <select
             value={selectedClassId}
             onChange={(e) => setSelectedClassId(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
           >
-            <option value="">هەموو قوتابخانەکان</option>
+            <option value="">هەموو قوتابخانە و بەشەکان</option>
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}

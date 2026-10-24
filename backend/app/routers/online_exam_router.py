@@ -153,25 +153,28 @@ def format_datetime_iso(dt: Optional[datetime]) -> str:
 
 def get_or_create_linked_exam(online_exam: OnlineExam, db: Session) -> Exam:
     """Ensures each OnlineExam has an associated Exam record for results, leaderboard, and filters."""
+    clean_title = (online_exam.title or "").strip()
     if online_exam.linked_exam_id:
         existing = db.query(Exam).filter(Exam.id == online_exam.linked_exam_id).first()
         if existing:
-            if existing.exam_name != online_exam.title:
-                existing.exam_name = online_exam.title
+            if existing.exam_name != clean_title or existing.subject != clean_title:
+                existing.exam_name = clean_title
+                existing.subject = clean_title
                 db.commit()
             return existing
 
-    matched = db.query(Exam).filter(Exam.exam_name == online_exam.title).first()
+    matched = db.query(Exam).filter(Exam.exam_name == clean_title).first()
     if matched:
         online_exam.linked_exam_id = matched.id
+        matched.subject = clean_title
         db.commit()
         return matched
 
     q_count = len(online_exam.questions) if online_exam.questions else 10
     new_exam = Exam(
-        exam_name=online_exam.title,
-        subject="ئۆنلاین (Online)",
-        grade="گشتی",
+        exam_name=clean_title,
+        subject=clean_title,
+        grade="ئۆنلاین",
         academic_year="2025-2026",
         number_of_questions=q_count,
         choices="A,B,C,D",
@@ -187,6 +190,60 @@ def get_or_create_linked_exam(online_exam: OnlineExam, db: Session) -> Exam:
     db.commit()
     return new_exam
 
+def get_or_create_online_class(online_exam: OnlineExam, db: Session) -> SchoolClass:
+    """
+    Creates or returns a dedicated SchoolClass for this specific online exam.
+    Formatted clearly with the subject/exam title: 'ئۆنلاین: {online_exam.title}'.
+    This ensures filters and dropdowns clearly display the exact subject on all devices.
+    """
+    clean_title = (online_exam.title or "").strip()
+    target_name = f"ئۆنلاین: {clean_title}" if clean_title else "پلاتفۆرمی ئۆنلاینی KSC"
+
+    # 1. Match exact name
+    existing = db.query(SchoolClass).filter(SchoolClass.name == target_name).first()
+    if existing:
+        return existing
+
+    # 2. Check if legacy generic class exists and rename it
+    legacy = db.query(SchoolClass).filter(SchoolClass.name == "پلاتفۆرمی پێشبڕکێی ئۆنلاینی KSC").first()
+    if legacy:
+        legacy.name = target_name
+        db.commit()
+        db.refresh(legacy)
+        return legacy
+
+    # 3. Create fresh SchoolClass
+    new_class = SchoolClass(
+        name=target_name,
+        grade="ئۆنلاین",
+        academic_year="2025-2026"
+    )
+    db.add(new_class)
+    db.commit()
+    db.refresh(new_class)
+    return new_class
+
+def sync_online_classes_and_exams(db: Session):
+    """
+    Migrates any generic 'پلاتفۆرمی پێشبڕکێی ئۆنلاینی KSC' classes and ensures all
+    online exams have their own dedicated SchoolClass and linked Exam with the exact subject name.
+    """
+    try:
+        online_exams = db.query(OnlineExam).all()
+        for oe in online_exams:
+            c = get_or_create_online_class(oe, db)
+            get_or_create_linked_exam(oe, db)
+            
+            # Link all students belonging to this online exam's passcodes to this specific class
+            passcodes = db.query(OnlineExamPasscode).filter(OnlineExamPasscode.exam_id == oe.id).all()
+            for p in passcodes:
+                st = db.query(Student).filter(Student.student_id == p.code).first()
+                if st and st.class_id != c.id:
+                    st.class_id = c.id
+        db.commit()
+    except Exception as e:
+        db.rollback()
+
 # -------------------------------------------------------------
 # PUBLIC ENDPOINTS
 # -------------------------------------------------------------
@@ -198,6 +255,7 @@ def get_active_online_exams(db: Session = Depends(get_db)):
     Questions and passcodes are kept hidden from public.
     """
     # Clean up any legacy empty auto-generated placeholder exams
+    sync_online_classes_and_exams(db)
     dummy_exams = db.query(OnlineExam).filter(
         OnlineExam.title == "خولی فەرمیی پێشبڕکێی ئۆنلاینی KSC"
     ).all()
@@ -382,16 +440,7 @@ def verify_passcode_and_start_exam(
     base_exam = get_or_create_linked_exam(exam, db)
 
     # Ensure online school class and pre-register Student record
-    online_class = db.query(SchoolClass).filter(SchoolClass.name == "پلاتفۆرمی پێشبڕکێی ئۆنلاینی KSC").first()
-    if not online_class:
-        online_class = SchoolClass(
-            name="پلاتفۆرمی پێشبڕکێی ئۆنلاینی KSC",
-            grade="ئۆنلاین",
-            academic_year="2025-2026"
-        )
-        db.add(online_class)
-        db.commit()
-        db.refresh(online_class)
+    online_class = get_or_create_online_class(exam, db)
 
     student = db.query(Student).filter(Student.student_id == passcode.code).first()
     if not student:
@@ -406,6 +455,7 @@ def verify_passcode_and_start_exam(
         db.commit()
     else:
         student.name = passcode.student_name
+        student.class_id = online_class.id
         db.commit()
 
     # Fetch questions ordered by order_num
@@ -555,17 +605,8 @@ def submit_online_exam(payload: SubmitOnlineExamRequest, db: Session = Depends(g
     # Ensure linked base Exam exists
     base_exam = get_or_create_linked_exam(exam, db)
 
-    # Ensure online school class exists
-    online_class = db.query(SchoolClass).filter(SchoolClass.name == "پلاتفۆرمی پێشبڕکێی ئۆنلاینی KSC").first()
-    if not online_class:
-        online_class = SchoolClass(
-            name="پلاتفۆرمی پێشبڕکێی ئۆنلاینی KSC",
-            grade="ئۆنلاین",
-            academic_year="2025-2026"
-        )
-        db.add(online_class)
-        db.commit()
-        db.refresh(online_class)
+    # Ensure online school class exists with exact exam title
+    online_class = get_or_create_online_class(exam, db)
 
     # Find or create Student record
     student = db.query(Student).filter(Student.student_id == passcode.code).first()
@@ -581,6 +622,7 @@ def submit_online_exam(payload: SubmitOnlineExamRequest, db: Session = Depends(g
         db.commit()
         db.refresh(student)
     else:
+        student.class_id = online_class.id
         if passcode.student_name and student.name != passcode.student_name:
             student.name = passcode.student_name
             db.commit()
@@ -746,6 +788,7 @@ def admin_create_exam(
     db.commit()
     db.refresh(exam)
     get_or_create_linked_exam(exam, db)
+    get_or_create_online_class(exam, db)
     return {"message": "تاقیکردنەوە بە سەرکەوتوویی دروستکرا", "exam_id": exam.id}
 
 @router.put("/admin/exams/{exam_id}")
@@ -755,12 +798,14 @@ def admin_update_exam(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"]))
 ):
-    """Admin updates existing online exam metadata."""
+    """Admin updates existing online exam metadata and syncs class and exam names."""
     exam = db.query(OnlineExam).filter(OnlineExam.id == exam_id).first()
     if not exam:
         raise HTTPException(status_code=404, detail="تاقیکردنەوە نەدۆزرایەوە")
 
-    exam.title = payload.title
+    old_title = (exam.title or "").strip()
+    clean_title = (payload.title or "").strip()
+    exam.title = clean_title
     exam.description = payload.description
     exam.sponsors_and_prizes = payload.sponsors_and_prizes
     exam.start_time = to_utc_naive(payload.start_time)
@@ -773,7 +818,22 @@ def admin_update_exam(
     exam.allow_screen_selection = payload.allow_screen_selection
     exam.exam_mode = payload.exam_mode or "ONLINE"
 
-    get_or_create_linked_exam(exam, db)
+    base_exam = get_or_create_linked_exam(exam, db)
+    base_exam.exam_name = clean_title
+    base_exam.subject = clean_title
+
+    # Sync corresponding SchoolClass name
+    old_class_name = f"ئۆنلاین: {old_title}"
+    new_class_name = f"ئۆنلاین: {clean_title}"
+    c = db.query(SchoolClass).filter(
+        (SchoolClass.name == old_class_name) | 
+        (SchoolClass.name == "پلاتفۆرمی پێشبڕکێی ئۆنلاینی KSC")
+    ).first()
+    if c:
+        c.name = new_class_name
+    else:
+        get_or_create_online_class(exam, db)
+
     db.commit()
     return {"message": "تاقیکردنەوە نوێکرایەوە"}
 

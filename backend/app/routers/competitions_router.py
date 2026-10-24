@@ -115,6 +115,12 @@ def get_competition_leaderboard(
     """
     Computes school-level and full student-level tournament rankings with flexible filters.
     """
+    try:
+        from app.routers.online_exam_router import sync_online_classes_and_exams
+        sync_online_classes_and_exams(db)
+    except Exception:
+        pass
+
     # Available exams for dropdown filter
     all_exams = db.query(Exam).order_by(desc(Exam.created_at)).all()
     exams_list = [{"id": e.id, "name": e.exam_name, "subject": e.subject, "grade": e.grade} for e in all_exams]

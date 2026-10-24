@@ -322,15 +322,15 @@ export default function Students({ onShowToast }) {
           />
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Filter className="w-3.5 h-3.5 text-slate-400 hidden sm:inline" />
+        <div className="flex items-center gap-3 flex-wrap w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Filter className="w-3.5 h-3.5 text-brand-600 shrink-0" />
             <select
               value={selectedSchoolId}
               onChange={(e) => setSelectedSchoolId(e.target.value)}
-              className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+              className="w-full sm:w-auto min-w-[220px] max-w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
             >
-              <option value="">هەموو قوتابخانەکان ({schools.length})</option>
+              <option value="">هەموو قوتابخانە و بەشەکان ({schools.length})</option>
               {schools.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name} ({s.student_count || 0})
@@ -420,9 +420,9 @@ export default function Students({ onShowToast }) {
                       <h3 className="font-extrabold text-slate-900 text-base leading-snug group-hover:text-brand-700 transition-colors">
                         {s.name}
                       </h3>
-                      <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
-                        <School className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate max-w-[150px]">{s.class_name || 'قوتابخانەی گشتی'}</span>
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-600 mt-1 flex-wrap">
+                        <School className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+                        <span className="font-bold text-slate-800 break-words">{s.class_name || 'قوتابخانەی گشتی'}</span>
                       </div>
                     </div>
                   </div>
