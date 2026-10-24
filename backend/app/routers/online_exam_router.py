@@ -197,26 +197,27 @@ def get_active_online_exams(db: Session = Depends(get_db)):
     Returns public list of active/upcoming online exams for carousel/slider display.
     Questions and passcodes are kept hidden from public.
     """
+    # Clean up any legacy empty auto-generated placeholder exams
+    dummy_exams = db.query(OnlineExam).filter(
+        OnlineExam.title == "خولی فەرمیی پێشبڕکێی ئۆنلاینی KSC"
+    ).all()
+    for d in dummy_exams:
+        q_count = db.query(OnlineExamQuestion).filter(OnlineExamQuestion.exam_id == d.id).count()
+        if q_count == 0:
+            db.delete(d)
+    db.commit()
+
     active_exams = db.query(OnlineExam).filter(OnlineExam.is_active == True).order_by(OnlineExam.start_time).all()
-    if not active_exams:
-        default_exam = OnlineExam(
-            title="خولی فەرمیی پێشبڕکێی ئۆنلاینی KSC",
-            description="تاقیکردنەوەی ڕاستەوخۆ بە شێوازی فۆڕمی وەڵام (پەڕەی سۆما OMR). پرسیارەکان لەسەر شاشە دەردەکەون و لەسەر پەڕەی سۆما بازنەکان پڕدەکرێنەوە.",
-            sponsors_and_prizes="سپۆنسەری فەرمی: پلاتفۆرمی KSC • خەڵاتی شایستە و بڕوانامەی فەرمی بۆ قوتابییە یەکەمەکان",
-            start_time=datetime.utcnow(),
-            question_duration_seconds=60,
-            telegram_group_url="https://t.me/KurdishOMR",
-            telegram_submission_minutes=5,
-            is_active=True
-        )
-        db.add(default_exam)
-        db.commit()
-        db.refresh(default_exam)
-        active_exams = [default_exam]
 
     formatted_exams = []
     for exam in active_exams:
         questions_count = db.query(OnlineExamQuestion).filter(OnlineExamQuestion.exam_id == exam.id).count()
+        is_coming_soon = getattr(exam, 'is_coming_soon', False) or False
+
+        # If an exam has 0 questions and is not marked 'coming soon', don't present it as an active live exam
+        if questions_count == 0 and not is_coming_soon:
+            continue
+
         passcodes_count = db.query(OnlineExamPasscode).filter(OnlineExamPasscode.exam_id == exam.id).count()
         used_passcodes_count = db.query(OnlineExamPasscode).filter(
             OnlineExamPasscode.exam_id == exam.id,
@@ -237,7 +238,7 @@ def get_active_online_exams(db: Session = Depends(get_db)):
             "total_duration_minutes": total_duration_minutes,
             "entry_cutoff_minutes": getattr(exam, 'entry_cutoff_minutes', 3) or 3,
             "is_active": exam.is_active,
-            "is_coming_soon": getattr(exam, 'is_coming_soon', False) or False,
+            "is_coming_soon": is_coming_soon,
             "allow_screen_selection": getattr(exam, 'allow_screen_selection', False) or False,
             "exam_mode": getattr(exam, 'exam_mode', 'ONLINE') or 'ONLINE',
             "linked_exam_id": getattr(exam, 'linked_exam_id', None),
@@ -248,7 +249,8 @@ def get_active_online_exams(db: Session = Depends(get_db)):
     return {
         **primary,
         "exams": formatted_exams,
-        "total_active_exams": len(formatted_exams)
+        "total_active_exams": len(formatted_exams),
+        "has_active_exam": len(formatted_exams) > 0
     }
 
 @router.post("/verify-passcode")

@@ -11,7 +11,11 @@ import {
   Lock,
   Timer,
   Layers,
-  Sparkles
+  Sparkles,
+  Zap,
+  FileText,
+  CheckCircle2,
+  ShieldCheck
 } from 'lucide-react';
 import api from '../api';
 
@@ -50,9 +54,12 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
       setLoading(true);
       const res = await api.get('/online-exam/active');
       if (res.data) {
-        if (Array.isArray(res.data.exams) && res.data.exams.length > 0) {
-          setExams(res.data.exams);
-        } else if (res.data.id && res.data.is_active) {
+        if (Array.isArray(res.data.exams)) {
+          const validExams = res.data.exams.filter(
+            (e) => e.is_active && (e.questions_count > 0 || e.is_coming_soon)
+          );
+          setExams(validExams);
+        } else if (res.data.id && res.data.is_active && (res.data.questions_count > 0 || res.data.is_coming_soon)) {
           setExams([res.data]);
         } else {
           setExams([]);
@@ -196,7 +203,157 @@ export default function OnlineExamBanner({ onStartExam, onManageExam, isAdmin, o
     return () => clearInterval(interval);
   }, [currentExam?.id, currentExam?.start_time, currentExam?.entry_cutoff_minutes]);
 
-  if (loading || exams.length === 0 || !currentExam) return null;
+  if (loading) return null;
+
+  // -------------------------------------------------------------
+  // VIEW: NO ACTIVE EXAMS -> COMING SOON & EXAM MODES OVERVIEW
+  // -------------------------------------------------------------
+  if (exams.length === 0 || !currentExam) {
+    return (
+      <div className="relative w-full my-4 select-none" dir="rtl">
+        <div className="relative rounded-3xl p-5 sm:p-8 bg-gradient-to-br from-slate-900 via-indigo-950/70 to-slate-950 border border-indigo-500/30 shadow-2xl overflow-hidden space-y-6">
+          
+          {/* Ambient Lighting */}
+          <div className="absolute top-0 right-1/4 w-80 h-40 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/4 w-80 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Header Row */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4 relative z-10">
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 text-amber-300 text-xs font-black border border-amber-400/30 shadow-inner">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-spin" />
+                  <span>بەمزووانە (Coming Soon) • پلاتفۆرمی تاقیکردنەوەی KSC</span>
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[11px] font-bold border border-slate-700">
+                  خولی نوێ لە ئامادەکاریدایە
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-snug">
+                خولی داهاتووی تاقیکردنەوە و پێشبڕکێی ئۆنلاین بەمزووانە ڕادەگەیەنرێت
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
+                لە ئێستادا هیچ تاقیکردنەوەیەکی چالاک نییە. لەگەڵ دیاریکردنی وادەی تاقیکردنەوە، کاتژمێری پێچەوانە دەستپێدەکات. دەتوانیت لە خوارەوە زانیاری دەربارەی هەردوو شێوازی تاقیکردنەوە بخوێنیتەوە:
+              </p>
+            </div>
+
+            {/* Admin Management Button (Always visible to Admin even when no exams exist) */}
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={onManageExam}
+                className="shrink-0 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 border border-amber-400/40 text-amber-300 hover:text-white text-xs font-black flex items-center gap-2 shadow-lg transition-all active:scale-95"
+              >
+                <Settings className="w-4 h-4 text-amber-400" />
+                <span>دانانی تاقیکردنەوەی نوێ (Admin)</span>
+              </button>
+            )}
+          </div>
+
+          {/* Two Comparison Cards for Exam Modes (SOMA vs ONLINE) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+            
+            {/* Mode 1: Pure Digital Online (بەبێ پەڕەی سۆما) */}
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-950/30 via-slate-900 to-slate-950 border border-emerald-500/30 shadow-lg space-y-3.5 hover:border-emerald-500/50 transition-all">
+              <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-bold">
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-black text-white">
+                      ١. تاقیکردنەوەی ئۆنلاین (بەبێ پەڕەی سۆما)
+                    </h3>
+                    <span className="text-[11px] text-emerald-400 font-bold">
+                      دیجیتاڵی ڕاستەوخۆ لەسەر شاشە
+                    </span>
+                  </div>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+                  Online Mode
+                </span>
+              </div>
+
+              <ul className="space-y-2 text-xs text-slate-300 pr-1">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <span><strong>وەڵامدانەوەی ڕاستەوخۆ:</strong> پرسیار و هەڵبژاردنەکان (A, B, C, D) لەسەر شاشەن، بە یەک کلیک وەڵامەکە دیاری دەکرێت.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <span><strong>تێپەڕبوونی خێرا:</strong> هەر کە کلیک لە وەڵامەکە دەکەیت، دەستبەجێ دەچێتە پرسیاری دواتر.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <span><strong>ئەنجامی دەستبەجێ:</strong> لە کۆتاییدا یەکسەر نمرە، ڕێژەی سەدی، و هەڵە و ڕاستەکانت بە پێداچوونەوە پیشان دەدات.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <span><strong>چوونە ناو ڕیزبەندی:</strong> ناوت ڕاستەوخۆ لە فلتەری تاقیکردنەوەکەدا دەچێتە ناو خشتەی ڕیزبەندی پێشبڕکێی ماڵپەڕ.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Mode 2: Paper OMR (بە پەڕەی سۆما) */}
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-950/30 via-slate-900 to-slate-950 border border-indigo-500/30 shadow-lg space-y-3.5 hover:border-indigo-500/50 transition-all">
+              <div className="flex items-center justify-between border-b border-indigo-500/20 pb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center font-bold">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-black text-white">
+                      ٢. تاقیکردنەوەی فۆڕمی سۆما (Paper OMR)
+                    </h3>
+                    <span className="text-[11px] text-indigo-300 font-bold">
+                      شاشە + فۆڕمی کاغەز و تێلیگرام
+                    </span>
+                  </div>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 text-[10px] font-bold border border-indigo-500/30">
+                  Paper OMR
+                </span>
+              </div>
+
+              <ul className="space-y-2 text-xs text-slate-300 pr-1">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <span><strong>پرسیار لەسەر شاشە:</strong> پرسیارەکان یەک لە دوای یەک بە کاتی دیاریکراو لەسەر شاشەی مۆبایل یان کۆمپیوتەر دەردەکەون.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <span><strong>پڕکردنەوەی فۆڕمی سۆما:</strong> قوتابی لەسەر پەڕە سۆماکەی بە قەڵەمی جاف بازنەکان پڕدەکاتەوە.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <span><strong>ناردنی وێنە:</strong> لە کۆتایی تاقیکردنەوەکەدا ٥ خولەک مۆڵەت هەیە وێنەی فۆڕمەکە بە فایل بنێرێت بۆ تێلیگرام.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <span><strong>پشکنینی OMR:</strong> ئەدمین بە سیستەمی زیرەکی دەستکردی KSC فۆڕمەکان دەخوێنێتەوە و نمرەکان دەردەهێنێت.</span>
+                </li>
+              </ul>
+            </div>
+
+          </div>
+
+          {/* Quick Preparation Guidelines for Candidates */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 flex flex-wrap items-center justify-between gap-3 relative z-10">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="font-bold text-amber-300">ڕێنمایی بۆ بەشداریکردن:</span>
+              <span className="hidden sm:inline text-slate-400">•</span>
+              <span className="text-[11px] sm:text-xs">پێویستە کۆدی تایبەت (پاسوۆرد) لە مامۆستا یان ئەدمین وەربگریت، و لە کاتی تاقیکردنەوەدا تاب مەگۆڕە.</span>
+            </div>
+            <div className="text-[11px] font-mono text-slate-500">
+              KSC Online Examination System
+            </div>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
 
   const handleButtonClick = () => {
     if (currentExam.is_coming_soon) {
