@@ -92,13 +92,15 @@ export default function Competitions({ onShowToast }) {
   // Image preview modal
   const [previewImage, setPreviewImage] = useState(null);
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = async (overrideExamId, overrideSchoolId) => {
     try {
       setLoading(true);
+      const examIdToUse = overrideExamId !== undefined ? overrideExamId : selectedExamId;
+      const schoolIdToUse = overrideSchoolId !== undefined ? overrideSchoolId : selectedSchoolId;
       const res = await api.get('/competitions/leaderboard', {
         params: {
-          exam_id: selectedExamId || undefined,
-          class_id: selectedSchoolId || undefined
+          exam_id: examIdToUse || undefined,
+          class_id: schoolIdToUse || undefined
         }
       });
       setLeaderboard(res.data);
@@ -414,16 +416,22 @@ export default function Competitions({ onShowToast }) {
               onShowToast={onShowToast}
               onViewSolutions={(exam) => setSelectedExamForSolutions(exam)}
               onViewLeaderboard={(exam) => {
-                if (exam.linked_exam_id) {
-                  setSelectedExamId(String(exam.linked_exam_id));
+                let targetExamId = exam?.linked_exam_id;
+                if (!targetExamId && exams?.length > 0) {
+                  const match = exams.find(e => e.exam_name === exam?.title || e.subject === exam?.title);
+                  if (match) targetExamId = match.id;
                 }
-                fetchLeaderboard();
+                if (targetExamId) {
+                  setSelectedExamId(String(targetExamId));
+                }
+                setSelectedSchoolId('');
+                fetchLeaderboard(targetExamId ? String(targetExamId) : undefined, '');
                 setTimeout(() => {
                   const el = document.getElementById('leaderboard-section');
                   if (el) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }
-                }, 300);
+                }, 150);
               }}
             />
           </div>
@@ -1194,18 +1202,24 @@ export default function Competitions({ onShowToast }) {
         <OnlineExamRoom
           sessionData={activeExamSession}
           onClose={(result) => {
-            const linkedId = result?.linked_exam_id || activeExamSession?.exam?.linked_exam_id;
+            let linkedId = result?.linked_exam_id || activeExamSession?.exam?.linked_exam_id;
+            if (!linkedId && exams?.length > 0) {
+              const examTitle = result?.exam_title || activeExamSession?.exam?.title;
+              const match = exams.find(e => e.exam_name === examTitle || e.subject === examTitle);
+              if (match) linkedId = match.id;
+            }
             setActiveExamSession(null);
             if (linkedId) {
               setSelectedExamId(String(linkedId));
             }
-            fetchLeaderboard();
+            setSelectedSchoolId('');
+            fetchLeaderboard(linkedId ? String(linkedId) : undefined, '');
             setTimeout(() => {
               const el = document.getElementById('leaderboard-section');
               if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }
-            }, 350);
+            }, 300);
           }}
           onShowToast={onShowToast}
         />

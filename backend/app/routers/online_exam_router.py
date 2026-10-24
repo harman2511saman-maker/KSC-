@@ -154,12 +154,20 @@ def format_datetime_iso(dt: Optional[datetime]) -> str:
 def get_or_create_linked_exam(online_exam: OnlineExam, db: Session) -> Exam:
     """Ensures each OnlineExam has an associated Exam record for results, leaderboard, and filters."""
     clean_title = (online_exam.title or "").strip()
+    online_class = get_or_create_online_class(online_exam, db)
+
     if online_exam.linked_exam_id:
         existing = db.query(Exam).filter(Exam.id == online_exam.linked_exam_id).first()
         if existing:
+            changed = False
             if existing.exam_name != clean_title or existing.subject != clean_title:
                 existing.exam_name = clean_title
                 existing.subject = clean_title
+                changed = True
+            if existing.class_id != online_class.id:
+                existing.class_id = online_class.id
+                changed = True
+            if changed:
                 db.commit()
             return existing
 
@@ -167,6 +175,8 @@ def get_or_create_linked_exam(online_exam: OnlineExam, db: Session) -> Exam:
     if matched:
         online_exam.linked_exam_id = matched.id
         matched.subject = clean_title
+        if matched.class_id != online_class.id:
+            matched.class_id = online_class.id
         db.commit()
         return matched
 
@@ -175,6 +185,7 @@ def get_or_create_linked_exam(online_exam: OnlineExam, db: Session) -> Exam:
         exam_name=clean_title,
         subject=clean_title,
         grade="ئۆنلاین",
+        class_id=online_class.id,
         academic_year="2025-2026",
         number_of_questions=q_count,
         choices="A,B,C,D",
@@ -227,19 +238,89 @@ def sync_online_classes_and_exams(db: Session):
     """
     Migrates any generic 'پلاتفۆرمی پێشبڕکێی ئۆنلاینی KSC' classes and ensures all
     online exams have their own dedicated SchoolClass and linked Exam with the exact subject name.
+    Syncs students and auto-backfills Result records for any passcodes that were completed.
     """
     try:
         online_exams = db.query(OnlineExam).all()
         for oe in online_exams:
             c = get_or_create_online_class(oe, db)
-            get_or_create_linked_exam(oe, db)
-            
+            base_e = get_or_create_linked_exam(oe, db)
+            if base_e.class_id != c.id:
+                base_e.class_id = c.id
+                db.commit()
+
             # Link all students belonging to this online exam's passcodes to this specific class
             passcodes = db.query(OnlineExamPasscode).filter(OnlineExamPasscode.exam_id == oe.id).all()
             for p in passcodes:
                 st = db.query(Student).filter(Student.student_id == p.code).first()
-                if st and st.class_id != c.id:
-                    st.class_id = c.id
+                if not st and (p.is_used or p.student_name):
+                    st = Student(
+                        student_id=p.code,
+                        name=p.student_name or "بەشداربووی ئۆنلاین",
+                        grade="ئۆنلاین",
+                        class_id=c.id,
+                        academic_year="2025-2026"
+                    )
+                    db.add(st)
+                    db.commit()
+                    db.refresh(st)
+                elif st:
+                    if st.class_id != c.id:
+                        st.class_id = c.id
+                    if p.student_name and st.name != p.student_name and p.student_name not in ["بەشداربووی KSC", "بەشداربووی ئۆنلاین"]:
+                        st.name = p.student_name
+
+                # Backfill Result if passcode has score or was submitted or has answers
+                if st and (p.score is not None or p.submitted_at is not None or p.answers_json):
+                    job_id = f"ONLINE_JOB_{base_e.id}_{p.id}"
+                    job = db.query(ScanJob).filter(ScanJob.id == job_id).first()
+                    if not job:
+                        job = ScanJob(
+                            id=job_id,
+                            total_pages=1,
+                            processed_pages=1,
+                            status="COMPLETED"
+                        )
+                        db.add(job)
+                        db.commit()
+
+                    page = db.query(ScanPage).filter(ScanPage.job_id == job.id).first()
+                    if not page:
+                        page = ScanPage(
+                            job_id=job.id,
+                            page_index=1,
+                            status="COMPLETED",
+                            confidence_score=1.0
+                        )
+                        db.add(page)
+                        db.commit()
+                        db.refresh(page)
+
+                    existing_res = db.query(Result).filter(Result.page_id == page.id).first()
+                    if not existing_res:
+                        score_val = p.score if p.score is not None else 0.0
+                        perc_val = p.percentage if p.percentage is not None else score_val
+                        status_val = "PASSED" if perc_val >= 50.0 else "FAILED"
+                        questions_count = base_e.number_of_questions or 10
+                        correct_count = round((perc_val / 100.0) * questions_count)
+                        incorrect_count = max(0, questions_count - correct_count)
+                        existing_res = Result(
+                            page_id=page.id,
+                            exam_id=base_e.id,
+                            student_id=st.id,
+                            total_score=score_val,
+                            max_score=100.0,
+                            percentage=perc_val,
+                            correct_count=correct_count,
+                            incorrect_count=incorrect_count,
+                            blank_count=0,
+                            multiple_count=0,
+                            uncertain_count=0,
+                            status=status_val
+                        )
+                        db.add(existing_res)
+                        db.commit()
+
         db.commit()
     except Exception as e:
         db.rollback()
@@ -636,11 +717,14 @@ def submit_online_exam(payload: SubmitOnlineExamRequest, db: Session = Depends(g
     passcode.submitted_at = datetime.utcnow()
     passcode.answers_json = json.dumps(payload.answers, ensure_ascii=False)
 
-    # Ensure linked base Exam exists
-    base_exam = get_or_create_linked_exam(exam, db)
-
     # Ensure online school class exists with exact exam title
     online_class = get_or_create_online_class(exam, db)
+
+    # Ensure linked base Exam exists and is synced with class
+    base_exam = get_or_create_linked_exam(exam, db)
+    if base_exam.class_id != online_class.id:
+        base_exam.class_id = online_class.id
+        db.commit()
 
     # Find or create Student record
     student = db.query(Student).filter(Student.student_id == passcode.code).first()
@@ -667,7 +751,6 @@ def submit_online_exam(payload: SubmitOnlineExamRequest, db: Session = Depends(g
     if not job:
         job = ScanJob(
             id=job_id,
-            exam_id=base_exam.id,
             total_pages=1,
             processed_pages=1,
             status="COMPLETED"

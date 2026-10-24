@@ -32,6 +32,12 @@ def list_exams(
     class_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
+    try:
+        from app.routers.online_exam_router import sync_online_classes_and_exams
+        sync_online_classes_and_exams(db)
+    except Exception:
+        pass
+
     query = db.query(Exam)
     if status_filter:
         query = query.filter(Exam.status == status_filter)
