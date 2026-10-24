@@ -24,7 +24,9 @@ import {
   AlertOctagon,
   FileText,
   Sparkles,
-  Users
+  Users,
+  ArrowLeft,
+  ArrowRight
 } from 'lucide-react';
 import api, { getUploadUrl } from '../api';
 
@@ -67,6 +69,8 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
   const [hasUnsavedNames, setHasUnsavedNames] = useState(false);
   const [showBatchPasteModal, setShowBatchPasteModal] = useState(false);
   const [batchNamesText, setBatchNamesText] = useState('');
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     fetchAllExamsAndSelect();
@@ -81,25 +85,38 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
 
       if (examsList.length > 0) {
         const targetId = preferredExamId || (examsList.find((e) => e.id === selectedExamId)?.id) || examsList[0].id;
-        await loadExamDetails(targetId);
+        await loadExamDetails(targetId, examsList);
+        return targetId;
       } else {
         // No exams exist yet, set to creation mode
         resetFormForNewExam();
+        return null;
       }
     } catch (err) {
       if (onShowToast) onShowToast({ type: 'error', message: err.message });
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
-  const loadExamDetails = async (examId) => {
+  const loadExamDetails = async (examId, sourceList = null) => {
     try {
       setSelectedExamId(examId);
       setIsCreatingNew(false);
 
-      // Find exam info
-      const current = allExams.find((e) => e.id === examId);
+      // Find exam info from sourceList or state
+      const listToSearch = sourceList || allExams;
+      let current = listToSearch.find((e) => e.id === examId);
+      
+      // If still not found in list, fetch fresh list directly
+      if (!current) {
+        const directRes = await api.get('/online-exam/admin/exams');
+        const freshList = directRes.data || [];
+        setAllExams(freshList);
+        current = freshList.find((e) => e.id === examId);
+      }
+
       setExam(current || null);
       if (current) {
         setTitle(current.title || '');
@@ -173,11 +190,11 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
   };
 
   // 1. SAVE EXAM SETTINGS (Create or Update)
-  const handleSaveSettings = async (e) => {
-    e.preventDefault();
+  const handleSaveSettings = async (e = null) => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!title.trim()) {
-      if (onShowToast) onShowToast({ type: 'error', message: 'ناوی تاقیکردنەوە پێویستە' });
-      return;
+      if (onShowToast) onShowToast({ type: 'error', message: 'ناوی تاقیکردنەوە پێویستە بنووسیت' });
+      return null;
     }
 
     try {
@@ -197,21 +214,92 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         exam_mode: examMode
       };
 
-      if (exam?.id && !isCreatingNew) {
-        await api.put(`/online-exam/admin/exams/${exam.id}`, payload);
+      let savedExamId = exam?.id;
+      if (savedExamId && !isCreatingNew) {
+        await api.put(`/online-exam/admin/exams/${savedExamId}`, payload);
         if (onShowToast) onShowToast({ type: 'success', message: 'ڕێکخستنەکانی تاقیکردنەوە نوێکرانەوە' });
-        await fetchAllExamsAndSelect(exam.id);
       } else {
         const res = await api.post('/online-exam/admin/exams', payload);
-        if (onShowToast) onShowToast({ type: 'success', message: 'تاقیکردنەوەی نوێ بە سەرکەوتوویی دروستکرا' });
-        await fetchAllExamsAndSelect(res.data?.exam_id);
+        savedExamId = res.data?.exam_id;
+        if (onShowToast) onShowToast({ type: 'success', message: 'تاقیکردنەوەی نوێ دروستکرا' });
       }
 
+      if (savedExamId) {
+        await fetchAllExamsAndSelect(savedExamId);
+      }
       if (onExamUpdated) onExamUpdated();
+      return savedExamId;
     } catch (err) {
-      if (onShowToast) onShowToast({ type: 'error', message: err.message });
+      if (onShowToast) onShowToast({ type: 'error', message: err.response?.data?.detail || err.message });
+      return null;
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ADVANCE FROM TAB 1 (SETTINGS) TO TAB 2 (QUESTIONS)
+  const handleNextFromSettings = async () => {
+    const savedId = await handleSaveSettings();
+    if (savedId) {
+      setActiveTab('questions');
+    }
+  };
+
+  // ADVANCE FROM TAB 2 (QUESTIONS) TO TAB 3 (PASSCODES)
+  const handleNextFromQuestions = async () => {
+    let currentExamId = exam?.id || selectedExamId;
+    if (!currentExamId) {
+      currentExamId = await handleSaveSettings();
+      if (!currentExamId) return;
+    }
+    await handleSaveQuestions();
+    setActiveTab('passcodes');
+  };
+
+  // PUBLISH EXAM CONFIRMATION ACTION
+  const handlePublishExam = async () => {
+    let currentExamId = exam?.id || selectedExamId;
+    if (!currentExamId) {
+      currentExamId = await handleSaveSettings();
+      if (!currentExamId) return;
+    }
+
+    try {
+      setPublishing(true);
+      if (hasUnsavedNames && passcodes.length > 0) {
+        await handleSavePasscodeNames();
+      }
+
+      const payload = {
+        title: title.trim(),
+        description: description.trim(),
+        sponsors_and_prizes: sponsorsAndPrizes.trim(),
+        start_time: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
+        question_duration_seconds: Number(questionDuration) || 60,
+        telegram_group_url: telegramUrl.trim(),
+        telegram_submission_minutes: Number(telegramMins) || 5,
+        entry_cutoff_minutes: Number(entryCutoffMins) || 3,
+        is_active: true,
+        is_coming_soon: isComingSoon,
+        allow_screen_selection: allowScreenSelection,
+        exam_mode: examMode
+      };
+      await api.put(`/online-exam/admin/exams/${currentExamId}`, payload);
+      setIsActive(true);
+      setShowPublishModal(false);
+
+      if (onShowToast) {
+        onShowToast({
+          type: 'success',
+          message: '🎉 تاقیکردنەوەکە بە فەرمی بڵاوکرایەوە و ئێستا بۆ قوتابییان بەردەستە'
+        });
+      }
+      if (onExamUpdated) onExamUpdated();
+      onClose();
+    } catch (err) {
+      if (onShowToast) onShowToast({ type: 'error', message: err.response?.data?.detail || err.message });
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -350,9 +438,10 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
   };
 
   const handleSaveQuestions = async () => {
-    if (!exam?.id) {
-      if (onShowToast) onShowToast({ type: 'error', message: 'سەرەتا تاقیکردنەوە پاشەکەوت بکە' });
-      return;
+    let currentExamId = exam?.id || selectedExamId;
+    if (!currentExamId) {
+      currentExamId = await handleSaveSettings();
+      if (!currentExamId) return;
     }
     try {
       setSaving(true);
@@ -366,7 +455,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         option_d: q.option_d ? q.option_d.trim() : null,
         correct_answer: q.correct_answer ? q.correct_answer.trim() : null
       }));
-      await api.put(`/online-exam/admin/exams/${exam.id}/questions`, payload);
+      await api.put(`/online-exam/admin/exams/${currentExamId}/questions`, payload);
       if (onShowToast) onShowToast({ type: 'success', message: 'سەرجەم پرسیارەکان بە سەرکەوتوویی پاشەکەوت کران' });
       if (onExamUpdated) onExamUpdated();
     } catch (err) {
@@ -378,20 +467,21 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
 
   // 3. PASSCODES ACTIONS
   const handleGeneratePasscodes = async () => {
-    if (!exam?.id) {
-      if (onShowToast) onShowToast({ type: 'error', message: 'سەرەتا تاقیکردنەوە پاشەکەوت بکە' });
-      return;
+    let currentExamId = exam?.id || selectedExamId;
+    if (!currentExamId) {
+      currentExamId = await handleSaveSettings();
+      if (!currentExamId) return;
     }
     try {
       setGenerating(true);
-      const res = await api.post(`/online-exam/admin/exams/${exam.id}/generate-passcodes`, {
+      const res = await api.post(`/online-exam/admin/exams/${currentExamId}/generate-passcodes`, {
         count: Number(generateCount) || 20
       });
 
       if (onShowToast) onShowToast({ type: 'success', message: res.data?.message_ku || 'پاسوۆردەکان دروستکران' });
 
       // Refresh passcodes
-      const pRes = await api.get(`/online-exam/admin/exams/${exam.id}/passcodes`);
+      const pRes = await api.get(`/online-exam/admin/exams/${currentExamId}/passcodes`);
       setPasscodes(pRes.data || []);
       if (onExamUpdated) onExamUpdated();
     } catch (err) {
@@ -420,9 +510,10 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
   };
 
   const handleSavePasscodeNames = async () => {
-    if (!exam?.id) {
-      if (onShowToast) onShowToast({ type: 'error', message: 'سەرەتا تاقیکردنەوە پاشەکەوت بکە' });
-      return;
+    let currentExamId = exam?.id || selectedExamId;
+    if (!currentExamId) {
+      currentExamId = await handleSaveSettings();
+      if (!currentExamId) return;
     }
     try {
       setSavingNames(true);
@@ -430,7 +521,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         id: p.id,
         student_name: p.student_name ? p.student_name.trim() : ''
       }));
-      await api.put(`/online-exam/admin/exams/${exam.id}/passcodes/names`, { items });
+      await api.put(`/online-exam/admin/exams/${currentExamId}/passcodes/names`, { items });
       setHasUnsavedNames(false);
       if (onShowToast) {
         onShowToast({ type: 'success', message: 'ناوی قوتابییان بە سەرکەوتوویی پاشەکەوت کران' });
@@ -810,9 +901,14 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
 
           <button
             type="button"
-            disabled={isCreatingNew}
-            onClick={() => setActiveTab('questions')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed ${
+            onClick={async () => {
+              if (!exam?.id || isCreatingNew) {
+                await handleNextFromSettings();
+              } else {
+                setActiveTab('questions');
+              }
+            }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border ${
               activeTab === 'questions'
                 ? 'bg-amber-500 text-slate-950 border-amber-400 shadow font-black'
                 : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
@@ -824,9 +920,13 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
 
           <button
             type="button"
-            disabled={isCreatingNew}
-            onClick={() => setActiveTab('passcodes')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed ${
+            onClick={async () => {
+              if (!exam?.id || isCreatingNew) {
+                await handleNextFromSettings();
+              }
+              setActiveTab('passcodes');
+            }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border ${
               activeTab === 'passcodes'
                 ? 'bg-amber-500 text-slate-950 border-amber-400 shadow font-black'
                 : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
@@ -1079,14 +1179,26 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 active:scale-95 disabled:opacity-50"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin text-slate-950" /> : <Save className="w-4 h-4" />}
-                  <span>{isCreatingNew ? 'دروستکردنی تاقیکردنەوە' : 'پاشەکەوتکردنی ڕێکخستنەکان'}</span>
-                </button>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4" />}
+                    <span>پاشەکەوتکردنی ڕێکخستنەکان</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleNextFromSettings}
+                    disabled={saving}
+                    className="w-full sm:flex-1 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    <span>دواتر: هەنگاوی دانانی پرسیارەکان</span>
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                </div>
               </form>
 
               {/* Danger Zone: DELETE EXAM & DISK CLEANUP */}
@@ -1428,6 +1540,40 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                 )}
               </div>
 
+              {/* Tab 2 Footer Navigation (Back to Settings & Next to Passcodes) */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 mt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('settings')}
+                  className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                  <span>گەڕانەوە بۆ ڕێکخستنەکان</span>
+                </button>
+
+                <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={handleSaveQuestions}
+                    disabled={saving}
+                    className="flex-1 sm:flex-none px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4" />}
+                    <span>پاشەکەوتکردنی پرسیارەکان</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleNextFromQuestions}
+                    disabled={saving}
+                    className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    <span>دواتر: دروستکردنی پاسوۆرد</span>
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
             </div>
           )}
 
@@ -1627,6 +1773,41 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                 </div>
               </div>
 
+              {/* Tab 3 Footer Navigation (Back to Questions & Official Publish) */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('questions')}
+                  className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                  <span>گەڕانەوە بۆ پرسیارەکان</span>
+                </button>
+
+                <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                  {hasUnsavedNames && (
+                    <button
+                      type="button"
+                      onClick={handleSavePasscodeNames}
+                      disabled={savingNames}
+                      className="px-4 py-3 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 transition-all"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>پاشەکەوتکردنی ناوەکان</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPublishModal(true)}
+                    className="flex-1 sm:flex-none px-7 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/25 transition-all active:scale-95"
+                  >
+                    <Sparkles className="w-4 h-4 fill-current" />
+                    <span>تەواوکردن و بڵاوکردنەوەی فەرمی (Publish Exam) ✨</span>
+                  </button>
+                </div>
+              </div>
+
             </div>
           )}
 
@@ -1735,6 +1916,75 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
               >
                 <Users className="w-4 h-4" />
                 <span>دابەشکردن بەسەر پاسوۆردەکان</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Official Exam Publish Confirmation Modal */}
+      {showPublishModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md" dir="rtl">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border-2 border-emerald-500/40 p-6 sm:p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shadow-inner">
+                <Sparkles className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-white">ئایا دڵنیایت لە بڵاوکردنەوەی ئەم تاقیکردنەوەیە؟</h3>
+                <span className="text-xs text-emerald-400 font-bold">بڵاوکردنەوە لەسەر پەڕەی سەرەکی بۆ هەموو قوتابییان</span>
+              </div>
+            </div>
+
+            {/* Exam Summary Details */}
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                <span className="text-slate-400 font-bold">ناوی تاقیکردنەوە:</span>
+                <span className="text-white font-black">{title || 'تاقیکردنەوە'}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                <span className="text-slate-400 font-bold">شێوازی تاقیکردنەوە:</span>
+                <span className="text-amber-400 font-black">
+                  {examMode === 'ONLINE' ? 'ئۆنلاینی تەواو (دیجیتاڵی بەبێ سۆما)' : 'فۆڕمی سۆما (Paper OMR)'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                <span className="text-slate-400 font-bold">ژمارەی پرسیارەکان:</span>
+                <span className="text-indigo-300 font-mono font-black">{questions.length} پرسیار</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                <span className="text-slate-400 font-bold">ژمارەی پاسوۆردەکان:</span>
+                <span className="text-emerald-400 font-mono font-black">{passcodes.length} قوتابی</span>
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-slate-400 font-bold">کاتی دەستپێکردن:</span>
+                <span className="text-slate-200 font-mono font-bold">
+                  {startTime ? new Date(startTime).toLocaleString('ckb') : 'دەستبەجێ'}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              بە کلیک لەسەر «بەڵێ، ئێستا بڵاوی بکەرەوە»، تاقیکردنەوەکە دەبێتە Active و لەسەر پەڕەی پێشبڕکێ و ڕیزبەندی ماڵپەڕ کاتژمێری پێچەوانە دەستپێدەکات.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowPublishModal(false)}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors"
+              >
+                پێداچوونەوە و گەڕانەوە
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePublishExam}
+                disabled={publishing}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-95 disabled:opacity-50"
+              >
+                {publishing ? <Loader2 className="w-4 h-4 animate-spin text-slate-950" /> : <CheckCircle2 className="w-4 h-4" />}
+                <span>بەڵێ، ئێستا بڵاوی بکەرەوە (Publish Now)</span>
               </button>
             </div>
           </div>
