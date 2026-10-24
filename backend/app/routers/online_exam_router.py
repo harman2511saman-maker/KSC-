@@ -22,12 +22,16 @@ from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Body, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+import json
 from sqlalchemy import desc
 from PIL import Image
 
 from app.config import UPLOADS_ONLINE_EXAMS_DIR
 from app.database import get_db
-from app.models import OnlineExam, OnlineExamQuestion, OnlineExamPasscode, User
+from app.models import (
+    OnlineExam, OnlineExamQuestion, OnlineExamPasscode, User,
+    Exam, ExamQuestion, Student, SchoolClass, ScanJob, ScanPage, DetectedAnswer, Result
+)
 from app.auth import get_current_user, require_role, create_access_token
 
 router = APIRouter(prefix="/api/online-exam", tags=["Online Exam"])
@@ -83,6 +87,12 @@ class ExamCreateOrUpdateSchema(BaseModel):
     is_active: bool = True
     is_coming_soon: bool = False
     allow_screen_selection: bool = False
+    exam_mode: Optional[str] = "ONLINE"
+
+class SubmitOnlineExamRequest(BaseModel):
+    exam_id: int
+    code: str
+    answers: Dict[str, Optional[str]] = {}
 
 class PasscodeNameUpdateItem(BaseModel):
     id: int
@@ -141,6 +151,42 @@ def format_datetime_iso(dt: Optional[datetime]) -> str:
         return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
+def get_or_create_linked_exam(online_exam: OnlineExam, db: Session) -> Exam:
+    """Ensures each OnlineExam has an associated Exam record for results, leaderboard, and filters."""
+    if online_exam.linked_exam_id:
+        existing = db.query(Exam).filter(Exam.id == online_exam.linked_exam_id).first()
+        if existing:
+            if existing.exam_name != online_exam.title:
+                existing.exam_name = online_exam.title
+                db.commit()
+            return existing
+
+    matched = db.query(Exam).filter(Exam.exam_name == online_exam.title).first()
+    if matched:
+        online_exam.linked_exam_id = matched.id
+        db.commit()
+        return matched
+
+    q_count = len(online_exam.questions) if online_exam.questions else 10
+    new_exam = Exam(
+        exam_name=online_exam.title,
+        subject="ئۆنلاین (Online)",
+        grade="گشتی",
+        academic_year="2025-2026",
+        number_of_questions=q_count,
+        choices="A,B,C,D",
+        total_marks=100.0,
+        pass_mark=50.0,
+        status="ACTIVE",
+        template_version="ONLINE"
+    )
+    db.add(new_exam)
+    db.commit()
+    db.refresh(new_exam)
+    online_exam.linked_exam_id = new_exam.id
+    db.commit()
+    return new_exam
+
 # -------------------------------------------------------------
 # PUBLIC ENDPOINTS
 # -------------------------------------------------------------
@@ -193,6 +239,8 @@ def get_active_online_exams(db: Session = Depends(get_db)):
             "is_active": exam.is_active,
             "is_coming_soon": getattr(exam, 'is_coming_soon', False) or False,
             "allow_screen_selection": getattr(exam, 'allow_screen_selection', False) or False,
+            "exam_mode": getattr(exam, 'exam_mode', 'ONLINE') or 'ONLINE',
+            "linked_exam_id": getattr(exam, 'linked_exam_id', None),
             "available_passcodes_count": passcodes_count - used_passcodes_count
         })
 
@@ -271,7 +319,7 @@ def verify_passcode_and_start_exam(
     passcode.is_used = True
     passcode.used_at = now
     # Preserve pre-assigned student name if candidate logs in with passcode only
-    if payload.student_name and payload.student_name.strip():
+    if payload.student_name and payload.student_name.strip() and payload.student_name.strip() != "بەشداربووی KSC":
         passcode.student_name = payload.student_name.strip()
     elif not passcode.student_name:
         passcode.student_name = "بەشداربووی KSC"
@@ -299,6 +347,8 @@ def verify_passcode_and_start_exam(
         "session_token": token,
         "student_name": passcode.student_name,
         "passcode_id": passcode.id,
+        "passcode_code": passcode.code,
+        "code": passcode.code,
         "exam": {
             "id": exam.id,
             "title": exam.title,
@@ -306,6 +356,8 @@ def verify_passcode_and_start_exam(
             "telegram_group_url": exam.telegram_group_url,
             "telegram_submission_minutes": exam.telegram_submission_minutes,
             "allow_screen_selection": getattr(exam, 'allow_screen_selection', False) or False,
+            "exam_mode": getattr(exam, 'exam_mode', 'ONLINE') or 'ONLINE',
+            "linked_exam_id": getattr(exam, 'linked_exam_id', None),
             "total_questions": len(questions),
             "questions": [
                 {
@@ -329,9 +381,10 @@ def report_cheating_violation(payload: ReportCheatRequest, db: Session = Depends
     Immediately disqualifies the candidate passcode permanently.
     """
     clean_code = payload.code.strip().upper()
+    code_id = int(clean_code) if clean_code.isdigit() else -1
     passcode = db.query(OnlineExamPasscode).filter(
         OnlineExamPasscode.exam_id == payload.exam_id,
-        OnlineExamPasscode.code == clean_code
+        (OnlineExamPasscode.code == clean_code) | (OnlineExamPasscode.id == code_id)
     ).first()
 
     if passcode:
@@ -342,6 +395,210 @@ def report_cheating_violation(payload: ReportCheatRequest, db: Session = Depends
     return {
         "disqualified": True,
         "message_ku": "ببورە بەهۆی غەشکردن لە تاقیکردنەوە دەرکرای"
+    }
+
+@router.post("/submit")
+def submit_online_exam(payload: SubmitOnlineExamRequest, db: Session = Depends(get_db)):
+    """
+    Submits student online exam answers, instantly grades them,
+    and records results into the unified Result & Competitions Leaderboard.
+    """
+    exam = db.query(OnlineExam).filter(OnlineExam.id == payload.exam_id).first()
+    if not exam or not exam.is_active:
+        raise HTTPException(status_code=404, detail="تاقیکردنەوە نەدۆزرایەوە یان ناچالاکە")
+
+    clean_code = payload.code.strip().upper()
+    code_id = int(clean_code) if clean_code.isdigit() else -1
+    passcode = db.query(OnlineExamPasscode).filter(
+        OnlineExamPasscode.exam_id == exam.id,
+        (OnlineExamPasscode.code == clean_code) | (OnlineExamPasscode.id == code_id)
+    ).first()
+
+    if not passcode:
+        raise HTTPException(status_code=404, detail="کۆدی پاسوۆرد نەدۆزرایەوە")
+
+    if passcode.disqualified:
+        raise HTTPException(
+            status_code=403,
+            detail=f"ئەم هەژمارە لە تاقیکردنەوە دەرکراوە: {passcode.disqualification_reason or 'غەشکردن'}"
+        )
+
+    questions = db.query(OnlineExamQuestion).filter(
+        OnlineExamQuestion.exam_id == exam.id
+    ).order_by(OnlineExamQuestion.order_num).all()
+
+    total_q = len(questions) if len(questions) > 0 else 1
+    points_per_q = 100.0 / total_q
+
+    correct_count = 0
+    incorrect_count = 0
+    blank_count = 0
+    question_details = []
+
+    for q in questions:
+        user_choice = payload.answers.get(str(q.order_num)) or payload.answers.get(q.order_num)
+        clean_choice = user_choice.strip().upper() if user_choice and user_choice.strip() else None
+        correct_ans = q.correct_answer.strip().upper() if q.correct_answer and q.correct_answer.strip() else None
+
+        is_correct = False
+        if not clean_choice:
+            blank_count += 1
+        elif correct_ans and clean_choice == correct_ans:
+            is_correct = True
+            correct_count += 1
+        else:
+            incorrect_count += 1
+
+        question_details.append({
+            "order_num": q.order_num,
+            "question_text": q.question_text,
+            "image_url": q.image_url,
+            "option_a": q.option_a,
+            "option_b": q.option_b,
+            "option_c": q.option_c,
+            "option_d": q.option_d,
+            "selected_answer": clean_choice,
+            "correct_answer": correct_ans,
+            "is_correct": is_correct
+        })
+
+    total_score = round(correct_count * points_per_q, 1)
+    percentage = round((correct_count / total_q) * 100.0, 1)
+    exam_status = "PASSED" if percentage >= 50.0 else "FAILED"
+
+    # Save to passcode record
+    passcode.score = total_score
+    passcode.percentage = percentage
+    passcode.submitted_at = datetime.utcnow()
+    passcode.answers_json = json.dumps(payload.answers, ensure_ascii=False)
+
+    # Ensure linked base Exam exists
+    base_exam = get_or_create_linked_exam(exam, db)
+
+    # Ensure online school class exists
+    online_class = db.query(SchoolClass).filter(SchoolClass.name == "پلاتفۆرمی پێشبڕکێی ئۆنلاینی KSC").first()
+    if not online_class:
+        online_class = SchoolClass(
+            name="پلاتفۆرمی پێشبڕکێی ئۆنلاینی KSC",
+            grade="ئۆنلاین",
+            academic_year="2025-2026"
+        )
+        db.add(online_class)
+        db.commit()
+        db.refresh(online_class)
+
+    # Find or create Student record
+    student = db.query(Student).filter(Student.student_id == passcode.code).first()
+    if not student:
+        student = Student(
+            student_id=passcode.code,
+            name=passcode.student_name or "بەشداربووی ئۆنلاین",
+            grade="ئۆنلاین",
+            class_id=online_class.id,
+            academic_year="2025-2026"
+        )
+        db.add(student)
+        db.commit()
+        db.refresh(student)
+    else:
+        if passcode.student_name and student.name != passcode.student_name:
+            student.name = passcode.student_name
+            db.commit()
+
+    # Ensure ScanJob & ScanPage exist for the Result relation
+    job_id = f"ONLINE_JOB_{base_exam.id}_{passcode.id}"
+    job = db.query(ScanJob).filter(ScanJob.id == job_id).first()
+    if not job:
+        job = ScanJob(
+            id=job_id,
+            exam_id=base_exam.id,
+            total_pages=1,
+            processed_pages=1,
+            status="COMPLETED"
+        )
+        db.add(job)
+        db.commit()
+
+    page = db.query(ScanPage).filter(ScanPage.job_id == job.id).first()
+    if not page:
+        page = ScanPage(
+            job_id=job.id,
+            page_index=1,
+            status="COMPLETED",
+            confidence_score=1.0
+        )
+        db.add(page)
+        db.commit()
+        db.refresh(page)
+
+    # Record DetectedAnswers for admin result inspection
+    db.query(DetectedAnswer).filter(DetectedAnswer.page_id == page.id).delete()
+    for q in questions:
+        user_choice = payload.answers.get(str(q.order_num)) or payload.answers.get(q.order_num)
+        clean_choice = user_choice.strip().upper() if user_choice and user_choice.strip() else None
+        db.add(DetectedAnswer(
+            page_id=page.id,
+            question_num=q.order_num,
+            machine_answer=clean_choice,
+            final_answer=clean_choice,
+            confidence=1.0,
+            review_status="AUTO_ACCEPTED"
+        ))
+
+    # Create or update Result record
+    result = db.query(Result).filter(Result.page_id == page.id).first()
+    if not result:
+        result = Result(
+            page_id=page.id,
+            exam_id=base_exam.id,
+            student_id=student.id,
+            total_score=total_score,
+            max_score=100.0,
+            percentage=percentage,
+            correct_count=correct_count,
+            incorrect_count=incorrect_count,
+            blank_count=blank_count,
+            multiple_count=0,
+            uncertain_count=0,
+            status=exam_status
+        )
+        db.add(result)
+    else:
+        result.total_score = total_score
+        result.percentage = percentage
+        result.correct_count = correct_count
+        result.incorrect_count = incorrect_count
+        result.blank_count = blank_count
+        result.status = exam_status
+
+    db.commit()
+
+    # Calculate real-time rank of student in this exam
+    higher_count = db.query(Result).filter(
+        Result.exam_id == base_exam.id,
+        Result.percentage > percentage
+    ).count()
+    rank = higher_count + 1
+    total_participants = db.query(Result).filter(Result.exam_id == base_exam.id).count()
+
+    return {
+        "success": True,
+        "message": "تاقیکردنەوەکەت بە سەرکەوتوویی تەواو کرا و نمرەکەت تۆمار کرا",
+        "exam_title": exam.title,
+        "linked_exam_id": base_exam.id,
+        "student_name": passcode.student_name,
+        "student_code": passcode.code,
+        "score": total_score,
+        "max_score": 100.0,
+        "percentage": percentage,
+        "correct_count": correct_count,
+        "incorrect_count": incorrect_count,
+        "blank_count": blank_count,
+        "total_questions": len(questions),
+        "status": exam_status,
+        "rank": rank,
+        "total_participants": total_participants,
+        "questions_details": question_details
     }
 
 # -------------------------------------------------------------
@@ -375,6 +632,8 @@ def admin_get_exams(
             "is_active": exam.is_active,
             "is_coming_soon": getattr(exam, 'is_coming_soon', False) or False,
             "allow_screen_selection": getattr(exam, 'allow_screen_selection', False) or False,
+            "exam_mode": getattr(exam, 'exam_mode', 'ONLINE') or 'ONLINE',
+            "linked_exam_id": getattr(exam, 'linked_exam_id', None),
             "questions_count": q_count,
             "passcodes_count": total_codes,
             "used_passcodes_count": used_codes,
@@ -400,11 +659,13 @@ def admin_create_exam(
         entry_cutoff_minutes=payload.entry_cutoff_minutes,
         is_active=payload.is_active,
         is_coming_soon=payload.is_coming_soon,
-        allow_screen_selection=payload.allow_screen_selection
+        allow_screen_selection=payload.allow_screen_selection,
+        exam_mode=payload.exam_mode or "ONLINE"
     )
     db.add(exam)
     db.commit()
     db.refresh(exam)
+    get_or_create_linked_exam(exam, db)
     return {"message": "تاقیکردنەوە بە سەرکەوتوویی دروستکرا", "exam_id": exam.id}
 
 @router.put("/admin/exams/{exam_id}")
@@ -430,7 +691,9 @@ def admin_update_exam(
     exam.is_active = payload.is_active
     exam.is_coming_soon = payload.is_coming_soon
     exam.allow_screen_selection = payload.allow_screen_selection
+    exam.exam_mode = payload.exam_mode or "ONLINE"
 
+    get_or_create_linked_exam(exam, db)
     db.commit()
     return {"message": "تاقیکردنەوە نوێکرایەوە"}
 
@@ -532,6 +795,19 @@ def admin_save_questions(
             correct_answer=q_data.correct_answer
         )
         db.add(new_q)
+
+    # Sync base exam questions for unified leaderboard and results
+    base_exam = get_or_create_linked_exam(exam, db)
+    base_exam.number_of_questions = len(questions_list)
+    db.query(ExamQuestion).filter(ExamQuestion.exam_id == base_exam.id).delete()
+    mark_per_q = round(100.0 / max(1, len(questions_list)), 2)
+    for idx, q_data in enumerate(questions_list):
+        db.add(ExamQuestion(
+            exam_id=base_exam.id,
+            question_num=idx + 1,
+            correct_answer=q_data.correct_answer.upper().strip() if q_data.correct_answer else "A",
+            marks=mark_per_q
+        ))
 
     db.commit()
     return {"message": "پرسیارەکان بە سەرکەوتوویی پاشەکەوت کران", "count": len(questions_list)}

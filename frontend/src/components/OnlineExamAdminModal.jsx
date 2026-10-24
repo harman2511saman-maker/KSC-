@@ -52,7 +52,8 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
   const [entryCutoffMins, setEntryCutoffMins] = useState(3);
   const [isActive, setIsActive] = useState(true);
   const [isComingSoon, setIsComingSoon] = useState(false);
-  const [allowScreenSelection, setAllowScreenSelection] = useState(false);
+  const [allowScreenSelection, setAllowScreenSelection] = useState(true);
+  const [examMode, setExamMode] = useState('ONLINE'); // 'ONLINE' or 'SOMA'
 
   // Questions state
   const [questions, setQuestions] = useState([]);
@@ -127,6 +128,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         setIsActive(current.is_active ?? true);
         setIsComingSoon(Boolean(current.is_coming_soon));
         setAllowScreenSelection(Boolean(current.allow_screen_selection));
+        setExamMode(current.exam_mode || 'ONLINE');
       }
       setHasUnsavedNames(false);
 
@@ -162,7 +164,8 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
     setEntryCutoffMins(3);
     setIsActive(true);
     setIsComingSoon(false);
-    setAllowScreenSelection(false);
+    setAllowScreenSelection(true);
+    setExamMode('ONLINE');
     setHasUnsavedNames(false);
     setQuestions([]);
     setPasscodes([]);
@@ -190,7 +193,8 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         entry_cutoff_minutes: Number(entryCutoffMins) || 3,
         is_active: isActive,
         is_coming_soon: isComingSoon,
-        allow_screen_selection: allowScreenSelection
+        allow_screen_selection: allowScreenSelection,
+        exam_mode: examMode
       };
 
       if (exam?.id && !isCreatingNew) {
@@ -1000,66 +1004,75 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                   </div>
                 </div>
 
-                {/* Exam Mode: View-Only vs Interactive Selection */}
+                {/* Exam Mode: Digital Online Exam vs Paper Soma Exam */}
                 <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
                   <div className="flex items-center gap-2">
-                    <HelpCircle className="w-4 h-4 text-amber-400" />
+                    <Sparkles className="w-4 h-4 text-amber-400" />
                     <span className="text-xs font-black text-white">
-                      شێوازی کارکردنی پرسیار و هەڵبژاردنەکان (ABCD) بۆ قوتابی:
+                      شێوازی تاقیکردنەوە و هەڵسەنگاندن (Exam Mode):
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Mode 1: View-only (Default) */}
+                    {/* Mode 1: Digital Online Exam (No Soma, Instant Results) */}
                     <div
-                      onClick={() => setAllowScreenSelection(false)}
+                      onClick={() => {
+                        setExamMode('ONLINE');
+                        setAllowScreenSelection(true);
+                      }}
                       className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
-                        !allowScreenSelection
-                          ? 'bg-amber-500/15 border-amber-500/50 text-amber-200 shadow-md ring-1 ring-amber-400/40'
+                        examMode === 'ONLINE'
+                          ? 'bg-emerald-500/15 border-emerald-500/60 text-emerald-200 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-400/50'
                           : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
                       }`}
                     >
                       <input
                         type="radio"
-                        id="viewOnlyModeRadio"
-                        name="screenSelectionMode"
-                        checked={!allowScreenSelection}
-                        onChange={() => setAllowScreenSelection(false)}
-                        className="mt-0.5 text-amber-500 focus:ring-amber-400 bg-slate-900"
+                        id="digitalOnlineModeRadio"
+                        name="examModeGroup"
+                        checked={examMode === 'ONLINE'}
+                        onChange={() => {
+                          setExamMode('ONLINE');
+                          setAllowScreenSelection(true);
+                        }}
+                        className="mt-0.5 text-emerald-500 focus:ring-emerald-400 bg-slate-900"
                       />
-                      <label htmlFor="viewOnlyModeRadio" className="cursor-pointer">
-                        <span className="block text-xs font-black text-white">
-                          ١. تەنها پیشاندان (View-Only)
+                      <label htmlFor="digitalOnlineModeRadio" className="cursor-pointer">
+                        <span className="block text-xs font-black text-white flex items-center gap-1.5">
+                          <span>١. تاقیکردنەوەی ئۆنلاین (بەبێ سۆما)</span>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                            پێشنیارکراو
+                          </span>
                         </span>
                         <span className="block text-[11px] text-slate-400 mt-1 leading-relaxed">
-                          قوتابی تەنها پرسیار و ٤ هەڵبژاردنەکە دەبینێت، هیچ کلیک و دیاریکردنێک لەسەر شاشە ناکرێت و وەڵام تەنها لەسەر پەڕەی سۆما پڕدەکرێتەوە.
+                          قوتابی لەسەر شاشە کلیک لە وەڵامەکان دەکات و یەکسەر دەچێتە پرسیاری دواتر • ئەنجامەکان دەستبەجێ بە ناوی ئەم تاقیکردنەوەیە دەچنە ناو بەشی ئەنجامەکان و پێشبڕکێ و ڕیزبەندی ماڵپەڕ • لە کۆتاییدا نمرە و هەڵسەنگاندنی وەڵامە دروست و هەڵەکانی خۆی دەبینێت.
                         </span>
                       </label>
                     </div>
 
-                    {/* Mode 2: Interactive screen selection */}
+                    {/* Mode 2: Paper OMR Exam (Soma + Telegram) */}
                     <div
-                      onClick={() => setAllowScreenSelection(true)}
+                      onClick={() => setExamMode('SOMA')}
                       className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
-                        allowScreenSelection
-                          ? 'bg-indigo-500/15 border-indigo-500/50 text-indigo-200 shadow-md ring-1 ring-indigo-400/40'
+                        examMode === 'SOMA'
+                          ? 'bg-amber-500/15 border-amber-500/60 text-amber-200 shadow-lg shadow-amber-500/10 ring-1 ring-amber-400/50'
                           : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
                       }`}
                     >
                       <input
                         type="radio"
-                        id="interactiveModeRadio"
-                        name="screenSelectionMode"
-                        checked={allowScreenSelection}
-                        onChange={() => setAllowScreenSelection(true)}
-                        className="mt-0.5 text-indigo-500 focus:ring-indigo-400 bg-slate-900"
+                        id="paperSomaModeRadio"
+                        name="examModeGroup"
+                        checked={examMode === 'SOMA'}
+                        onChange={() => setExamMode('SOMA')}
+                        className="mt-0.5 text-amber-500 focus:ring-amber-400 bg-slate-900"
                       />
-                      <label htmlFor="interactiveModeRadio" className="cursor-pointer">
+                      <label htmlFor="paperSomaModeRadio" className="cursor-pointer">
                         <span className="block text-xs font-black text-white">
-                          ٢. دەستنیشانکردن لەسەر شاشە (Interactive)
+                          ٢. تاقیکردنەوە بە پەڕەی سۆما (Paper OMR)
                         </span>
                         <span className="block text-[11px] text-slate-400 mt-1 leading-relaxed">
-                          قوتابی لەسەر شاشەش دەتوانێت کلیک لەسەر هەڵبژاردنەکە بکات تا ڕەنگاوڕەنگ دیاریبکرێت و لە پڕکردنەوەی پەڕەی سۆما هەڵە نەکات.
+                          پرسیارەکان لەسەر شاشە دەردەکەون، قوتابی لەسەر پەڕەی سۆما بازنەکان پڕدەکاتەوە و لە کۆتاییدا بە وێنە بۆ گرووپی تێلیگرام دەنێردرێت.
                         </span>
                       </label>
                     </div>

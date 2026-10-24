@@ -49,10 +49,29 @@ try:
         conn.commit()
 except Exception:
     pass
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE online_exams ADD COLUMN exam_mode TEXT DEFAULT 'ONLINE'"))
+        conn.commit()
+except Exception:
+    pass
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE online_exams ADD COLUMN linked_exam_id INTEGER"))
+        conn.commit()
+except Exception:
+    pass
 for col in ["option_a", "option_b", "option_c", "option_d", "correct_answer"]:
     try:
         with engine.connect() as conn:
             conn.execute(text(f"ALTER TABLE online_exam_questions ADD COLUMN {col} TEXT"))
+            conn.commit()
+    except Exception:
+        pass
+for col_def in [("score", "REAL"), ("percentage", "REAL"), ("submitted_at", "DATETIME"), ("answers_json", "TEXT")]:
+    try:
+        with engine.connect() as conn:
+            conn.execute(text(f"ALTER TABLE online_exam_passcodes ADD COLUMN {col_def[0]} {col_def[1]}"))
             conn.commit()
     except Exception:
         pass

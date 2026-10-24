@@ -1178,7 +1178,14 @@ export default function Competitions({ onShowToast }) {
       {activeExamSession && (
         <OnlineExamRoom
           sessionData={activeExamSession}
-          onClose={() => setActiveExamSession(null)}
+          onClose={() => {
+            const linkedId = activeExamSession?.exam?.linked_exam_id;
+            setActiveExamSession(null);
+            if (linkedId) {
+              setSelectedExamId(String(linkedId));
+            }
+            fetchLeaderboard();
+          }}
           onShowToast={onShowToast}
         />
       )}

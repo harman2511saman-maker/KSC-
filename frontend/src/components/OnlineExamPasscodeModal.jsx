@@ -13,10 +13,12 @@ import api from '../api';
 
 export default function OnlineExamPasscodeModal({ exam, onClose, onSuccess, onShowToast }) {
   const [passcode, setPasscode] = useState('');
+  const [studentName, setStudentName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const cutoffMins = exam.entry_cutoff_minutes || 3;
+  const isOnlineMode = exam?.exam_mode !== 'SOMA';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,17 +31,22 @@ export default function OnlineExamPasscodeModal({ exam, onClose, onSuccess, onSh
 
     try {
       setSubmitting(true);
+      const cleanCode = passcode.trim().toUpperCase();
       const res = await api.post('/online-exam/verify-passcode', {
         exam_id: exam.id,
-        code: passcode.trim(),
-        student_name: 'بەشداربووی KSC'
+        code: cleanCode,
+        student_name: studentName.trim() || undefined
       });
 
       if (res.data?.success) {
         if (onShowToast) {
           onShowToast({ type: 'success', message: 'بە سەرکەوتوویی چوویە ناو تاقیکردنەوە' });
         }
-        onSuccess(res.data);
+        onSuccess({
+          ...res.data,
+          code: cleanCode,
+          passcode_code: cleanCode
+        });
       }
     } catch (err) {
       const detail = err.response?.data?.detail || err.message || 'پاسوۆردەکە هەڵەیە یان بەکارهاتووە';
@@ -112,10 +119,26 @@ export default function OnlineExamPasscodeModal({ exam, onClose, onSuccess, onSh
               className="w-full px-4 py-3.5 rounded-xl bg-slate-900 border-2 border-amber-500/40 text-lg font-mono font-black text-amber-300 tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 uppercase placeholder:text-slate-600"
               dir="ltr"
             />
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 pt-1">
-              <FileText className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-              <span>پێویست بە ناوی خۆت ناکات؛ ناوی خۆت لەسەر پەڕەی سۆما دەنووسیت.</span>
-            </div>
+          </div>
+
+          {/* Optional Student Name input */}
+          <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
+            <label className="block text-xs font-black text-slate-300 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-indigo-400" />
+              <span>ناوی چوارینەی قوتابی (ئارەزوومەندانە):</span>
+            </label>
+            <input
+              type="text"
+              value={studentName}
+              onChange={(e) => setStudentName(e.target.value)}
+              placeholder="ئەگەر کۆدەکەت ناوی لەسەر نەبێت لێرە ناوت بنووسە"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm font-bold text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400"
+            />
+            <p className="text-[11px] text-slate-400">
+              {isOnlineMode
+                ? 'لە تاقیکردنەوەی ئۆنلاین ئەم ناوە یەکسەر دەخرێتە سەر کارتی ئەنجام و ڕیزبەندی.'
+                : 'لە تاقیکردنەوەی سۆما ناوی خۆت لەسەر پەڕەی سۆماش دەنووسیت.'}
+            </p>
           </div>
 
           {/* Time Window Notice */}
@@ -133,7 +156,17 @@ export default function OnlineExamPasscodeModal({ exam, onClose, onSuccess, onSh
               <span>یاساکانی بەشداریکردن و ڕێگری لە قۆپیەکردن:</span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-300 pr-1">
-              <li>پەڕەی سۆمای چاپکراو (فۆڕمی وەڵام) و قەڵەمی جاف لە بەردەمتدا ئامادە بکە.</li>
+              {isOnlineMode ? (
+                <>
+                  <li>کلیک لە هەر هەڵبژاردنێک بکەیت ڕاستەوخۆ دیاری دەکرێت و دەچێتە پرسیاری دواتر.</li>
+                  <li>لە کۆتاییدا یەکسەر نمرە و هەڵە و ڕاستەکانت دەبینیت و دەچیتە ناو ڕیزبەندی.</li>
+                </>
+              ) : (
+                <>
+                  <li>پەڕەی سۆمای چاپکراو (فۆڕمی وەڵام) و قەڵەمی جاف لە بەردەمتدا ئامادە بکە.</li>
+                  <li>دوای تەواوبوون، وێنەی پەڕەی سۆماکەت بە فایل دەنێریت بۆ تێلیگرام.</li>
+                </>
+              )}
               <li>پرسیارەکان چرکەیان هەیە و ناگەڕێتەوە بۆ پرسیاری پێشوو.</li>
               <li className="text-rose-300 font-bold">گۆڕینی تاب، بەجێهێشتنی پلاتفۆرم، یان کردنەوەی بەرنامەی تر دەستبەجێ بە غەشکردن هەژمار دەکرێت و لە تاقیکردنەوە دەردەکرێیت.</li>
             </ul>

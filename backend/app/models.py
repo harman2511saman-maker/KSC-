@@ -219,10 +219,13 @@ class OnlineExam(Base):
     is_active = Column(Boolean, default=True)
     is_coming_soon = Column(Boolean, default=False)
     allow_screen_selection = Column(Boolean, default=False)
+    exam_mode = Column(String(32), default="ONLINE")  # "ONLINE" (digital instant grading) or "SOMA" (paper OMR)
+    linked_exam_id = Column(Integer, ForeignKey("exams.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     questions = relationship("OnlineExamQuestion", back_populates="exam", cascade="all, delete-orphan", order_by="OnlineExamQuestion.order_num")
     passcodes = relationship("OnlineExamPasscode", back_populates="exam", cascade="all, delete-orphan")
+    linked_exam = relationship("Exam", foreign_keys=[linked_exam_id])
 
 class OnlineExamQuestion(Base):
     __tablename__ = "online_exam_questions"
@@ -253,6 +256,10 @@ class OnlineExamPasscode(Base):
     student_phone = Column(String(64), nullable=True)
     disqualified = Column(Boolean, default=False)
     disqualification_reason = Column(String(255), nullable=True)
+    score = Column(Float, nullable=True)
+    percentage = Column(Float, nullable=True)
+    submitted_at = Column(DateTime, nullable=True)
+    answers_json = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     exam = relationship("OnlineExam", back_populates="passcodes")
