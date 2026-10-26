@@ -30,20 +30,55 @@
     <meta name="twitter:description" content="سەکۆی نیشتمانی بۆ ڕیزبەندی و ئەنجامی تاقیکردنەوەکان لە هەرێمی کوردستان." />
     <meta name="twitter:image" content="https://ksciq.com/logo.png" />
 
-    <!-- Structured Data (JSON-LD) for Google Rich Results -->
+    <!-- Structured Data (JSON-LD) for Google Rich Results & AI Engines -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "EducationalOrganization",
-      "name": "پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان (KSC)",
-      "alternateName": ["KSC", "Kurdistan Students Competition"],
-      "url": "https://ksciq.com/",
-      "logo": "https://ksciq.com/logo.png",
-      "description": "سەکۆی نیشتمانی بۆ ڕیزبەندی، سکانی فۆڕم و ئەنجامی تاقیکردنەوەکانی قوتابییانی کوردستان",
-      "sameAs": [
-        "https://t.me/KurdishOMR",
-        "https://www.instagram.com/kurdistanstudentchamption",
-        "https://www.tiktok.com/@ksc7813"
+      "@graph": [
+        {
+          "@type": "EducationalOrganization",
+          "@id": "https://ksciq.com/#organization",
+          "name": "پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان (KSC)",
+          "alternateName": ["KSC", "Kurdistan Students Competition", "ksciq"],
+          "url": "https://ksciq.com/",
+          "logo": "https://ksciq.com/logo.png",
+          "description": "سەکۆی نیشتمانی بۆ ڕیزبەندی، سکانی فۆڕم و ئەنجامی تاقیکردنەوەکانی قوتابییانی کوردستان",
+          "sameAs": [
+            "https://t.me/KurdishOMR",
+            "https://www.instagram.com/kurdistanstudentchamption",
+            "https://www.tiktok.com/@ksc7813"
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://ksciq.com/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "KSC چییە؟",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "KSC کورتکراوەی Kurdistan Students Competition (پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان)ە. سەکۆیەکی نیشتمانیی باوەڕپێکراوە لە هەرێمی کوردستان بۆ بەڕێوەبردنی پێشبڕکێی زانستی، خوێندنەوەی فۆڕمی OMR، ڕیزبەندیی قوتابخانەکان، ڕاگەیاندنی فەرمیی ئەنجامی تاقیکردنەوەکان و پێدانی بڕوانامە لە ڕێگەی وێبسایتی https://ksciq.com."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What is KSC?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "KSC stands for Kurdistan Students Competition, the official educational platform in the Kurdistan Region of Iraq for school competitions, automated OMR exam scanning, nationwide student performance rankings, and verified digital certificates available at https://ksciq.com."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "چۆن ئەنجامی تاقیکردنەوەکان لە KSC وەربگرمەوە؟",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "قوتابییان و قوتابخانەکان دەتوانن لە ڕێگەی ماڵپەڕی فەرمیی https://ksciq.com و لە بەشی ئەنجامەکان، بە کۆدی تایبەتی قوتابی یان ناوی قوتابخانە سەیری نمرە و پلەبەندی بکەن و کارتی نمرە و بڕوانامە دابەزێنن."
+              }
+            }
+          ]
+        }
       ]
     }
     </script>
