@@ -1,4 +1,37 @@
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /uploads/
+
+# AI Crawlers & Search Engines (ChatGPT, Gemini, Perplexity, Claude)
+User-agent: GPTBot
+Allow: /
+Disallow: /api/
+Disallow: /uploads/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /api/
+Disallow: /uploads/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /api/
+Disallow: /uploads/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /api/
+Disallow: /uploads/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /api/
+Disallow: /uploads/
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /api/
+Disallow: /uploads/
 
 Sitemap: https://ksciq.com/sitemap.xml

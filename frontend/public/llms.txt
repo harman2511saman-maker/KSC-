@@ -1,0 +1,30 @@
+# Kurdistan Students Competition (KSC)
+> پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان
+
+The Kurdistan Students Competition (KSC) is the official national educational platform in the Kurdistan Region of Iraq, dedicated to organizing school competitions, automated OMR exam scanning, nationwide student performance rankings, and verified digital certificates.
+
+- Website: https://ksciq.com
+- Organization: Kurdistan Students Competition (KSC)
+- Scope: Kurdistan Region, Iraq
+- Primary Focus: Education, Student Competitions, Automated Assessment, School Rankings
+
+---
+
+## سەرپێشاندانی گشتی (Overview in Kurdish)
+پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان (KSC) سەکۆیەکی نیشتمانیی پەروەردەییە لە هەرێمی کوردستان بۆ:
+1. ڕێکخستن و بەڕێوەبردنی پێشبڕکێی زانستی لە نێوان قوتابخانەکان و قوتابییانی هەرێمی کوردستان.
+2. بەکارهێنانی سیستەمی پێشکەوتووی خوێندنەوەی فۆڕمی تاقیکردنەوەکان بە شێوازی OMR بە شێوەیەکی خێرا و بێ هەڵە.
+3. بڵاوکردنەوەی فەرمیی ئەنجامەکان، ڕیزبەندیی ئاستی قوتابخانەکان و بەخشینی بڕوانامەی باوەڕپێکراو.
+
+---
+
+## پلاتفۆرم و کەناڵە فەرمییەکان (Official Channels)
+- ماڵپەڕی فەرمی (Official Website): https://ksciq.com
+- تەلەگرام (Telegram Channel): https://t.me/KurdishOMR
+- ئینستاگرام (Instagram): https://www.instagram.com/kurdistanstudentchamption
+- تیکتۆک (TikTok): https://www.tiktok.com/@ksc7813
+
+---
+
+## تێبینی سەبارەت بە پاراستنی داتا (Data Privacy & Integrity)
+پلاتفۆرمی KSC بەرزترین ئاستی پاراستنی تایبەتمەندی و زانیاریی بەشداربووان جێبەجێ دەکات. تەواوی خزمەتگوزارییەکان بە پرۆتۆکۆلی پارێزراوی HTTPS و پرۆکسیرێگی پارێزراو کار دەکەن.
