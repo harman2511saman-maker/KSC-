@@ -105,7 +105,7 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
     <>
       {/* 1. TOP STICKY HEADER (KRG Official Portal Style Layout) */}
       <header
-        className={`sticky top-0 z-40 w-full max-w-full px-3 sm:px-8 py-3.5 sm:py-5 min-h-[66px] sm:min-h-[80px] flex items-center justify-between border-b backdrop-blur-md transition-colors duration-300 ${
+        className={`sticky top-0 z-40 w-full max-w-full px-3 sm:px-8 h-16 sm:h-20 min-h-[64px] flex items-center justify-between border-b backdrop-blur-md transition-colors duration-300 ${
           isDark
             ? 'bg-[#060a16]/98 border-slate-800/80 shadow-2xl text-white'
             : 'bg-white/98 border-slate-200/90 shadow-sm text-black'
@@ -119,53 +119,55 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
             type="button"
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
             aria-label="Toggle Navigation Menu"
-            className={`w-9.5 h-9.5 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
+            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
               isDark
                 ? 'bg-[#0b1329] hover:bg-[#131d3b] border-slate-700/80 hover:border-amber-400/50'
                 : 'bg-slate-100 hover:bg-slate-200 border-slate-300 hover:border-amber-500 shadow-sm'
             }`}
           >
-            <div className="flex flex-col justify-center items-center gap-1 sm:gap-1.5 w-4.5 sm:w-6">
+            <div className="flex flex-col justify-center items-center gap-1 sm:gap-1.5 w-5 sm:w-6">
               <span
-                className={`w-4.5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
+                className={`w-5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
                   isDrawerOpen ? 'rotate-45 translate-y-[6.5px] sm:translate-y-[7.5px]' : ''
                 }`}
               />
               <span
-                className={`w-4.5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
+                className={`w-5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
                   isDrawerOpen ? 'opacity-0' : ''
                 }`}
               />
               <span
-                className={`w-4.5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
+                className={`w-5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
                   isDrawerOpen ? '-rotate-45 -translate-y-[6.5px] sm:-translate-y-[7.5px]' : ''
                 }`}
               />
             </div>
           </button>
 
-          {/* Official KSC Logo */}
+          {/* Official KSC Logo in Golden Circular Badge */}
           <div
             onClick={onSecretLogoClick}
-            className="relative shrink-0 cursor-pointer"
+            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-amber-400 p-0.5 flex items-center justify-center shrink-0 cursor-pointer overflow-hidden shadow-md active:scale-95 transition-transform ${
+              isDark ? 'bg-[#0b1329]' : 'bg-white'
+            }`}
             title={t('kscEmblem')}
           >
             <img
               src="/logo.png"
               alt="KSC Logo"
-              className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300 select-none"
+              className="w-full h-full object-contain select-none"
             />
           </div>
 
           {/* Clean Non-Breaking Title */}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 overflow-hidden">
             {lang === 'en' ? (
-              <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap select-none">
-                <span className="font-black text-amber-500 text-xs sm:text-base md:text-lg lg:text-xl tracking-tight">
+              <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap select-none truncate">
+                <span className="font-black text-amber-500 text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl tracking-tight">
                   Kurdistan
                 </span>
                 <span
-                  className={`font-black text-xs sm:text-base md:text-lg lg:text-xl tracking-tight transition-colors ${
+                  className={`font-black text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl tracking-tight transition-colors ${
                     isDark ? 'text-white' : 'text-slate-900'
                   }`}
                 >
@@ -174,7 +176,7 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
               </div>
             ) : (
               <span
-                className={`block font-black leading-tight select-none whitespace-nowrap text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl tracking-tight transition-colors ${
+                className={`block font-black leading-tight select-none whitespace-nowrap truncate text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl tracking-tight transition-colors ${
                   isDark ? 'text-white' : 'text-black'
                 }`}
               >
@@ -192,16 +194,16 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
             onClick={toggleTheme}
             title={isDark ? t('switchToLight') : t('switchToDark')}
             aria-label="Toggle Theme"
-            className={`w-9.5 h-9.5 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
+            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
               isDark
                 ? 'bg-[#0b1329] hover:bg-[#131d3b] border-slate-700/80 hover:border-amber-400/50 text-amber-400'
                 : 'bg-slate-100 hover:bg-slate-200 border-slate-300 hover:border-amber-500 text-slate-800 shadow-sm'
             }`}
           >
             {isDark ? (
-              <Sun className="w-4.5 h-4.5 sm:w-6 sm:h-6 text-amber-400 transition-transform duration-300 hover:rotate-45" />
+              <Sun className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 transition-transform duration-300 hover:rotate-45" />
             ) : (
-              <Moon className="w-4.5 h-4.5 sm:w-6 sm:h-6 text-slate-700 transition-transform duration-300 hover:-rotate-12" />
+              <Moon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-700 transition-transform duration-300 hover:-rotate-12" />
             )}
           </button>
 

@@ -700,7 +700,23 @@ export function translateExamName(examName, lang = 'ku') {
 // 9. Promo & General Dynamic Text Translation
 const DYNAMIC_PHRASES = {
   // Sponsors
+  'سپۆنسەری سەرەکی': { en: 'Main Sponsor', ar: 'الراعي الرئيسي' },
   'سپۆنسەری فەرمی': { en: 'Official Sponsor', ar: 'الراعي الرسمي' },
+  'سپۆنسەری': { en: 'Sponsor', ar: 'الراعي' },
+  'پۆستی کوڕێک': { en: 'Posti Kwrek', ar: 'بوستي كوريك' },
+  'پۆستی': { en: 'Posti', ar: 'بوستي' },
+  'کوڕێک': { en: 'Kwrek', ar: 'كوريك' },
+  'قوتابیان': { en: 'Students', ar: 'الطلاب' },
+  'قوتابییان': { en: 'Students', ar: 'الطلاب' },
+  'پاڵپشتی فەرمیی': { en: 'Official Partner of', ar: 'الشريك الرسمي لـ' },
+  'پاڵپشتی فەرمی': { en: 'Official Partner', ar: 'الشريك الرسمي' },
+  'پاڵپشتی': { en: 'Partner', ar: 'شريك' },
+  'پلاتفۆرمی پێشبڕکێی قوتابیانی کوردستان': { en: 'Kurdistan Competition Platform', ar: 'منصة مسابقة كوردستان' },
+  'پلاتفۆرمی پێشبڕکێی قوتابییانی کوردستان': { en: 'Kurdistan Competition Platform', ar: 'منصة مسابقة كوردستان' },
+  'پلاتفۆرمی پێشبڕکێی قوتابخانەکانی کوردستان': { en: 'Kurdistan Competition Platform', ar: 'منصة مسابقة كوردستان' },
+  'پێشبڕکێی قوتابخانەکانی کوردستان': { en: 'Kurdistan Competition', ar: 'مسابقة كوردستان' },
+  'پێشبڕکێی قوتابیانی کوردستان': { en: 'Kurdistan Students Competition', ar: 'مسابقة طلاب كوردستان' },
+  'پێشبڕکێی قوتابییانی کوردستان': { en: 'Kurdistan Students Competition', ar: 'مسابقة طلاب كوردستان' },
   'پاڵپشتی فەرمیی پێشبڕکێی قوتابییانی کوردستان (KSC)': {
     en: 'Official Partner of Kurdistan Schools Competition (KSC)',
     ar: 'الداعم الرسمي لمسابقة طلاب كوردستان (KSC)'
@@ -781,10 +797,11 @@ export function translateDynamic(text, lang = 'ku') {
     return DYNAMIC_PHRASES[clean][lang];
   }
 
-  // Check partial phrase matching for announcements or promo texts
+  // Check partial phrase matching for announcements or promo texts (longest phrases first)
   if (lang === 'en' || lang === 'ar') {
     let result = text;
-    for (const [key, mapping] of Object.entries(DYNAMIC_PHRASES)) {
+    const sortedEntries = Object.entries(DYNAMIC_PHRASES).sort((a, b) => b[0].length - a[0].length);
+    for (const [key, mapping] of sortedEntries) {
       if (mapping[lang] && result.includes(key)) {
         result = result.split(key).join(mapping[lang]);
       }
