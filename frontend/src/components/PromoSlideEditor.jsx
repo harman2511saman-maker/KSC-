@@ -142,6 +142,7 @@ const normalizeSlides = (rawSlides) => {
 export default function PromoSlideEditor({ onShowToast, onPublished }) {
   const [slides, setSlides] = useState([]);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [slideLang, setSlideLang] = useState('ku'); // 'ku' | 'en' | 'ar'
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -602,19 +603,65 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
           </div>
         </div>
 
+        {/* Language Tabs for Multilingual Slides */}
+        <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-slate-950 border border-slate-800">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black text-amber-400">زمانی نووسین / Language:</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSlideLang('ku')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  slideLang === 'ku'
+                    ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                    : 'bg-slate-800 text-slate-300 hover:text-white'
+                }`}
+              >
+                کوردى (بنەڕەت)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSlideLang('en')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  slideLang === 'en'
+                    ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                    : 'bg-slate-800 text-slate-300 hover:text-white'
+                }`}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                onClick={() => setSlideLang('ar')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  slideLang === 'ar'
+                    ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                    : 'bg-slate-800 text-slate-300 hover:text-white'
+                }`}
+              >
+                عربي
+              </button>
+            </div>
+          </div>
+          <span className="text-[11px] text-slate-400">
+            {slideLang === 'ku' ? 'نووسینی کوردی بۆ بینەرانی کوردی' : slideLang === 'en' ? 'English text for visitors when English is chosen' : 'النص العربي للزوار عند اختيار اللغة العربية'}
+          </span>
+        </div>
+
         {/* Inputs Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Badge */}
           <div>
             <label className="block text-xs font-bold text-slate-300 mb-1.5">
-              نیشانەی سەرەوە (Badge / دەقی ئاگاداری):
+              نیشانەی سەرەوە (Badge / {slideLang === 'ku' ? 'کوردی' : slideLang === 'en' ? 'English' : 'عربي'}):
             </label>
             <input
               type="text"
-              value={currentSlide.badge || ''}
-              onChange={(e) => updateCurrentSlide('badge', e.target.value)}
-              placeholder="نموونە: ڕێنمایی تاقیکردنەوە، سپۆنسەری فەرمی، ئاگاداری"
+              value={slideLang === 'ku' ? (currentSlide.badge || '') : (currentSlide['badge_' + slideLang] || '')}
+              onChange={(e) => updateCurrentSlide(slideLang === 'ku' ? 'badge' : 'badge_' + slideLang, e.target.value)}
+              placeholder={slideLang === 'ku' ? 'نموونە: ڕێنمایی تاقیکردنەوە، سپۆنسەری فەرمی' : slideLang === 'en' ? 'e.g. Official Sponsor, Exam Guide' : 'مثال: الراعي الرسمي، إرشادات الامتحان'}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+              dir={slideLang === 'en' ? 'ltr' : 'rtl'}
             />
           </div>
 
@@ -637,28 +684,30 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
         {/* Title */}
         <div>
           <label className="block text-xs font-bold text-slate-300 mb-1.5">
-            ناونیشانی سەرەکیی سلاید (Main Title):
+            ناونیشانی سەرەکیی سلاید (Main Title / {slideLang === 'ku' ? 'کوردی' : slideLang === 'en' ? 'English' : 'عربي'}):
           </label>
           <textarea
             rows={1}
-            value={currentSlide.title || ''}
-            onChange={(e) => updateCurrentSlide('title', e.target.value)}
-            placeholder="ناونیشانی سەرەکی سلاید لێرە بنووسە..."
+            value={slideLang === 'ku' ? (currentSlide.title || '') : (currentSlide['title_' + slideLang] || '')}
+            onChange={(e) => updateCurrentSlide(slideLang === 'ku' ? 'title' : 'title_' + slideLang, e.target.value)}
+            placeholder={slideLang === 'ku' ? 'ناونیشانی سەرەکی سلاید لێرە بنووسە...' : slideLang === 'en' ? 'Enter slide main title in English...' : 'اكتب العنوان الرئيسي للشريحة بالعربية...'}
             className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm font-black text-white focus:outline-none focus:ring-2 focus:ring-amber-400 leading-snug resize-y"
+            dir={slideLang === 'en' ? 'ltr' : 'rtl'}
           />
         </div>
 
         {/* Description */}
         <div>
           <label className="block text-xs font-bold text-slate-300 mb-1.5">
-            دەقی ڕوونکردنەوە و زانیاری (Description):
+            دەقی ڕوونکردنەوە و زانیاری (Description / {slideLang === 'ku' ? 'کوردی' : slideLang === 'en' ? 'English' : 'عربي'}):
           </label>
           <textarea
             rows={3}
-            value={currentSlide.description || ''}
-            onChange={(e) => updateCurrentSlide('description', e.target.value)}
-            placeholder="ڕوونکردنەوەی تەواو لێرە بنووسە (دەتوانیت بە دوگمەی Enter بچیتە لاینی دواتر)..."
+            value={slideLang === 'ku' ? (currentSlide.description || '') : (currentSlide['description_' + slideLang] || '')}
+            onChange={(e) => updateCurrentSlide(slideLang === 'ku' ? 'description' : 'description_' + slideLang, e.target.value)}
+            placeholder={slideLang === 'ku' ? 'ڕوونکردنەوەی تەواو لێرە بنووسە...' : slideLang === 'en' ? 'Enter detailed description in English...' : 'اكتب الوصف الكامل والتفاصيل بالعربية...'}
             className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-400 resize-y"
+            dir={slideLang === 'en' ? 'ltr' : 'rtl'}
           />
         </div>
 
@@ -876,10 +925,11 @@ export default function PromoSlideEditor({ onShowToast, onPublished }) {
                   <div className="w-full sm:w-1/3">
                     <input
                       type="text"
-                      value={linkItem.title || ''}
-                      onChange={(e) => handleUpdateLinkItem(lIdx, 'title', e.target.value)}
-                      placeholder="دەقی دوگمە (وەتسئاپ / تێلیگرام)"
+                      value={slideLang === 'ku' ? (linkItem.title || '') : (linkItem['title_' + slideLang] || '')}
+                      onChange={(e) => handleUpdateLinkItem(lIdx, slideLang === 'ku' ? 'title' : 'title_' + slideLang, e.target.value)}
+                      placeholder={slideLang === 'ku' ? 'دەقی دوگمە (وەتسئاپ / تێلیگرام)' : slideLang === 'en' ? 'Button Label (e.g. WhatsApp)' : 'نص الزر (مثال: تيليجرام)'}
                       className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-amber-400"
+                      dir={slideLang === 'en' ? 'ltr' : 'rtl'}
                     />
                   </div>
 

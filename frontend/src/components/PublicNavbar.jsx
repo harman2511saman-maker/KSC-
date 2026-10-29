@@ -112,32 +112,32 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
         }`}
         dir={isRTL ? 'rtl' : 'ltr'}
       >
-        {/* Right side (RTL start): Hamburger Button + Logo + Title */}
+        {/* Right side (RTL start / LTR start): Hamburger Button + Logo + Title */}
         <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
           {/* Hamburger Menu Toggle Button with 3 golden horizontal bars */}
           <button
             type="button"
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
             aria-label="Toggle Navigation Menu"
-            className={`w-11 h-11 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
+            className={`w-9.5 h-9.5 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
               isDark
                 ? 'bg-[#0b1329] hover:bg-[#131d3b] border-slate-700/80 hover:border-amber-400/50'
                 : 'bg-slate-100 hover:bg-slate-200 border-slate-300 hover:border-amber-500 shadow-sm'
             }`}
           >
-            <div className="flex flex-col justify-center items-center gap-1 sm:gap-1.5 w-5 sm:w-6">
+            <div className="flex flex-col justify-center items-center gap-1 sm:gap-1.5 w-4.5 sm:w-6">
               <span
-                className={`w-5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
+                className={`w-4.5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
                   isDrawerOpen ? 'rotate-45 translate-y-[6.5px] sm:translate-y-[7.5px]' : ''
                 }`}
               />
               <span
-                className={`w-5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
+                className={`w-4.5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
                   isDrawerOpen ? 'opacity-0' : ''
                 }`}
               />
               <span
-                className={`w-5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
+                className={`w-4.5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
                   isDrawerOpen ? '-rotate-45 -translate-y-[6.5px] sm:-translate-y-[7.5px]' : ''
                 }`}
               />
@@ -153,40 +153,55 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
             <img
               src="/logo.png"
               alt="KSC Logo"
-              className="h-9 sm:h-11 md:h-13 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300 select-none"
+              className="h-8.5 sm:h-11 md:h-13 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300 select-none"
             />
           </div>
 
           {/* Clean Non-Breaking Title */}
-          <div className="min-w-0 flex-1 overflow-hidden">
-            <span
-              className={`block font-black leading-tight select-none truncate text-sm sm:text-base md:text-lg lg:text-xl tracking-tight transition-colors ${
-                isDark ? 'text-white' : 'text-black'
-              }`}
-            >
-              {t('kscEmblem')}
-            </span>
+          <div className="min-w-0 flex-1">
+            {lang === 'en' ? (
+              <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap select-none">
+                <span className="font-black text-amber-500 text-xs sm:text-base md:text-lg lg:text-xl tracking-tight">
+                  Kurdistan
+                </span>
+                <span
+                  className={`font-black text-xs sm:text-base md:text-lg lg:text-xl tracking-tight transition-colors ${
+                    isDark ? 'text-white' : 'text-slate-900'
+                  }`}
+                >
+                  Competition
+                </span>
+              </div>
+            ) : (
+              <span
+                className={`block font-black leading-tight select-none whitespace-nowrap text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl tracking-tight transition-colors ${
+                  isDark ? 'text-white' : 'text-black'
+                }`}
+              >
+                {t('kscEmblem')}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Left side (RTL end): Sun/Moon Button + Language Pill */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Left side (RTL end / LTR end): Sun/Moon Button + Language Pill */}
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Sun / Moon Theme Toggle Button */}
           <button
             type="button"
             onClick={toggleTheme}
             title={isDark ? t('switchToLight') : t('switchToDark')}
             aria-label="Toggle Theme"
-            className={`w-11 h-11 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
+            className={`w-9.5 h-9.5 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
               isDark
                 ? 'bg-[#0b1329] hover:bg-[#131d3b] border-slate-700/80 hover:border-amber-400/50 text-amber-400'
                 : 'bg-slate-100 hover:bg-slate-200 border-slate-300 hover:border-amber-500 text-slate-800 shadow-sm'
             }`}
           >
             {isDark ? (
-              <Sun className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 transition-transform duration-300 hover:rotate-45" />
+              <Sun className="w-4.5 h-4.5 sm:w-6 sm:h-6 text-amber-400 transition-transform duration-300 hover:rotate-45" />
             ) : (
-              <Moon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-700 transition-transform duration-300 hover:-rotate-12" />
+              <Moon className="w-4.5 h-4.5 sm:w-6 sm:h-6 text-slate-700 transition-transform duration-300 hover:-rotate-12" />
             )}
           </button>
 

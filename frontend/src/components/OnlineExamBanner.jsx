@@ -37,7 +37,7 @@ export default function OnlineExamBanner({
   const [isPaused, setIsPaused] = useState(false);
   const [touchOffset, setTouchOffset] = useState(0);
   const { isDark } = useTheme();
-  const { isRTL, translateExam, translateDyn } = useLanguage();
+  const { isRTL, t, lang, translateExam, translateDyn } = useLanguage();
 
   // Countdown state for currently visible slide
   const [timeRemaining, setTimeRemaining] = useState({
@@ -253,14 +253,14 @@ export default function OnlineExamBanner({
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />
-                  <span>بەمزووانە (Coming Soon) • پلاتفۆرمی تاقیکردنەوەی KSC</span>
+                  <span>{t('comingSoonBadge')} • {t('kscOfficialOnlineExam')}</span>
                 </span>
                 <span
                   className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
                     isDark ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-300'
                   }`}
                 >
-                  خولی نوێ لە ئامادەکاریدایە
+                  {t('noActiveExamTitle')}
                 </span>
               </div>
               <h2
@@ -268,14 +268,14 @@ export default function OnlineExamBanner({
                   isDark ? 'text-white' : 'text-black'
                 }`}
               >
-                خولی داهاتووی تاقیکردنەوە و پێشبڕکێی ئۆنلاین بەمزووانە ڕادەگەیەنرێت
+                {t('noActiveExamDesc')}
               </h2>
               <p
                 className={`text-xs sm:text-sm leading-relaxed max-w-3xl ${
                   isDark ? 'text-slate-300' : 'text-slate-800'
                 }`}
               >
-                لە ئێستادا هیچ تاقیکردنەوەیەکی چالاک نییە. لەگەڵ دیاریکردنی وادەی تاقیکردنەوە، کاتژمێری پێچەوانە دەستپێدەکات. دەتوانیت لە خوارەوە زانیاری دەربارەی هەردوو شێوازی تاقیکردنەوە بخوێنیتەوە:
+                {t('examModesExplainer')}
               </p>
             </div>
 
@@ -287,7 +287,7 @@ export default function OnlineExamBanner({
                 className="shrink-0 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 border border-amber-400/40 text-amber-400 hover:text-amber-500 text-xs font-black flex items-center gap-2 shadow-lg transition-all active:scale-95"
               >
                 <Settings className="w-4 h-4 text-amber-500" />
-                <span>دانانی تاقیکردنەوەی نوێ (Admin)</span>
+                <span>{t('manageExamAdmin')}</span>
               </button>
             )}
           </div>
@@ -295,7 +295,7 @@ export default function OnlineExamBanner({
           {/* Two Comparison Cards for Exam Modes (SOMA vs ONLINE) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
             
-            {/* Mode 1: Pure Digital Online (بەبێ پەڕەی سۆما) */}
+            {/* Mode 1: Pure Digital Online */}
             <div
               className={`p-5 rounded-2xl border shadow-lg space-y-3.5 transition-all ${
                 isDark
@@ -314,10 +314,10 @@ export default function OnlineExamBanner({
                   </div>
                   <div>
                     <h3 className={`text-sm sm:text-base font-black ${isDark ? 'text-white' : 'text-black'}`}>
-                      ١. تاقیکردنەوەی ئۆنلاین (بەبێ پەڕەی سۆما)
+                      {t('digitalModeTitle')}
                     </h3>
                     <span className="text-[11px] text-emerald-600 font-bold">
-                      دیجیتاڵی ڕاستەوخۆ لەسەر شاشە
+                      {t('digitalModeSubtitle')}
                     </span>
                   </div>
                 </div>
@@ -329,24 +329,24 @@ export default function OnlineExamBanner({
               <ul className={`space-y-2 text-xs pr-1 ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>وەڵامدانەوەی ڕاستەوخۆ:</strong> پرسیار و هەڵبژاردنەکان (A, B, C, D) لەسەر شاشەن، بە یەک کلیک وەڵامەکە دیاری دەکرێت.</span>
+                  <span>{t('digitalFeature1')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>تێپەڕبوونی خێرا:</strong> هەر کە کلیک لە وەڵامەکە دەکەیت، دەستبەجێ دەچێتە پرسیاری دواتر.</span>
+                  <span>{t('digitalFeature2')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>ئەنجامی دەستبەجێ:</strong> لە کۆتاییدا یەکسەر نمرە، ڕێژەی سەدی، و هەڵە و ڕاستەکانت بە پێداچوونەوە پیشان دەدات.</span>
+                  <span>{t('digitalFeature3')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>چوونە ناو ڕیزبەندی:</strong> ناوت ڕاستەوخۆ لە فلتەری تاقیکردنەوەکەدا دەچێتە ناو خشتەی ڕیزبەندی پێشبڕکێی ماڵپەڕ.</span>
+                  <span>{t('digitalFeature4')}</span>
                 </li>
               </ul>
             </div>
 
-            {/* Mode 2: Paper OMR (بە پەڕەی سۆما) */}
+            {/* Mode 2: Paper OMR */}
             <div
               className={`p-5 rounded-2xl border shadow-lg space-y-3.5 transition-all ${
                 isDark
@@ -365,10 +365,10 @@ export default function OnlineExamBanner({
                   </div>
                   <div>
                     <h3 className={`text-sm sm:text-base font-black ${isDark ? 'text-white' : 'text-black'}`}>
-                      ٢. تاقیکردنەوەی فۆڕمی سۆما (Paper OMR)
+                      {t('paperModeTitle')}
                     </h3>
                     <span className="text-[11px] text-indigo-600 font-bold">
-                      شاشە + فۆڕمی کاغەز و تێلیگرام
+                      {t('paperModeSubtitle')}
                     </span>
                   </div>
                 </div>
@@ -380,19 +380,19 @@ export default function OnlineExamBanner({
               <ul className={`space-y-2 text-xs pr-1 ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                  <span><strong>پرسیار لەسەر شاشە:</strong> پرسیارەکان یەک لە دوای یەک بە کاتی دیاریکراو لەسەر شاشەی مۆبایل یان کۆمپیوتەر دەردەکەون.</span>
+                  <span>{t('paperFeature1')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                  <span><strong>پڕکردنەوەی فۆڕمی سۆما:</strong> قوتابی لەسەر پەڕە سۆماکەی بە قەڵەمی جاف بازنەکان پڕدەکاتەوە.</span>
+                  <span>{t('paperFeature2')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                  <span><strong>ناردنی وێنە:</strong> لە کۆتایی تاقیکردنەوەکەدا ٥ خولەک مۆڵەت هەیە وێنەی فۆڕمەکە بە فایل بنێرێت بۆ تێلیگرام.</span>
+                  <span>{t('paperFeature3')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                  <span><strong>پشکنینی OMR:</strong> ئەدمین بە سیستەمی زیرەکی دەستکردی KSC فۆڕمەکان دەخوێنێتەوە و نمرەکان دەردەهێنێت.</span>
+                  <span>{t('paperFeature4')}</span>
                 </li>
               </ul>
             </div>
@@ -407,9 +407,9 @@ export default function OnlineExamBanner({
           >
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
-              <span className="font-bold text-amber-700">ڕێنمایی بۆ بەشداریکردن:</span>
+              <span className="font-bold text-amber-700">{t('entryGuidelinesTitle')}</span>
               <span className="hidden sm:inline text-slate-400">•</span>
-              <span className="text-[11px] sm:text-xs">پێویستە کۆدی تایبەت (پاسوۆرد) لە مامۆستا یان ئەدمین وەربگریت، و لە کاتی تاقیکردنەوەدا تاب مەگۆڕە.</span>
+              <span className="text-[11px] sm:text-xs">{t('entryGuidelinesDesc')}</span>
             </div>
             <div className={`text-[11px] font-mono ${isDark ? 'text-slate-500' : 'text-slate-600 font-bold'}`}>
               KSC Online Examination System
@@ -531,7 +531,7 @@ export default function OnlineExamBanner({
                   isDark ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' : 'bg-indigo-100 text-indigo-950 border-indigo-300'
                 }`}
               >
-                <span>تاقیکردنەوەی ئۆنلاینی فەرمیی KSC</span>
+                <span>{t('kscOfficialOnlineExam')}</span>
               </span>
 
               {exams.length > 1 && (
@@ -541,29 +541,29 @@ export default function OnlineExamBanner({
                   }`}
                 >
                   <Layers className="w-3 h-3 text-amber-500" />
-                  <span>{currentIndex + 1} لە {exams.length} تاقیکردنەوە</span>
+                  <span>{currentIndex + 1} {t('examOfTotal')} {exams.length} {t('examsCount')}</span>
                 </span>
               )}
 
               {currentExam.is_ended ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-600 text-xs font-black border border-purple-500/40 shadow-inner animate-pulse">
                   <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
-                  <span>🏁 تاقیکردنەوە کۆتایی پێهات (Exam Ended)</span>
+                  <span>{t('examEndedBadge')}</span>
                 </span>
               ) : currentExam.is_coming_soon ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/25 via-purple-500/25 to-pink-500/25 text-amber-700 text-xs font-black border border-amber-400/40 shadow-inner animate-pulse">
                   <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                  <span>✨ بەمزوانە (Coming Soon) • لە ڕێگایە</span>
+                  <span>{t('comingSoonBadge')}</span>
                 </span>
               ) : timeRemaining.started ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-700 text-xs font-bold border border-emerald-500/40">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  <span>ئێستا بەردەستە (Live Now)</span>
+                  <span>{t('liveNowBadge')}</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-800 text-xs font-bold border border-amber-500/30">
                   <Clock className="w-3.5 h-3.5 text-amber-600" />
-                  <span>وادەی دەستپێکردن نزیکە</span>
+                  <span>{t('startingSoonBadge')}</span>
                 </span>
               )}
             </div>
@@ -604,21 +604,21 @@ export default function OnlineExamBanner({
             <div className={`flex flex-wrap items-center gap-1.5 sm:gap-2 pt-1 text-[11px] sm:text-xs ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>
               <span className={`px-2.5 sm:px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 shrink-0 ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
                 <HelpCircle className="w-3.5 h-3.5 text-indigo-500" />
-                <span>ژمارەی پرسیار: {currentExam.questions_count ?? 0} پرسیار</span>
+                <span>{t('questionsCountLabel')} {currentExam.questions_count ?? 0} {t('questionsUnit')}</span>
               </span>
               <span className={`px-2.5 sm:px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 shrink-0 ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
                 <Timer className="w-3.5 h-3.5 text-amber-500" />
-                <span>کاتی هەر پرسیارێک: {currentExam.question_duration_seconds} چرکە</span>
+                <span>{t('questionDurationLabel')} {currentExam.question_duration_seconds} {t('secondsUnit')}</span>
               </span>
               {currentExam.total_duration_minutes > 0 && (
                 <span className={`px-2.5 sm:px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 shrink-0 ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
                   <Clock className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>کاتی گشتی: {currentExam.total_duration_minutes} خولەک</span>
+                  <span>{t('totalDurationLabel')} {currentExam.total_duration_minutes} {t('minutesUnit')}</span>
                 </span>
               )}
               <span className={`px-2.5 sm:px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 shrink-0 ${isDark ? 'bg-slate-800/80 border-slate-700 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
                 <Clock className="w-3.5 h-3.5 text-amber-500" />
-                <span>مۆڵەتی چوونەژوورەوە: {currentExam.entry_cutoff_minutes || 3} خولەک</span>
+                <span>{t('entryCutoffLabel')} {currentExam.entry_cutoff_minutes || 3} {t('minutesUnit')}</span>
               </span>
             </div>
           </div>
@@ -630,10 +630,10 @@ export default function OnlineExamBanner({
                 {/* Ended Notice Box */}
                 <div className="w-full text-center px-4 py-2.5 rounded-2xl bg-purple-950/70 border border-purple-500/40 shadow-inner">
                   <span className="text-xs font-black text-purple-300 block">
-                    🏁 تاقیکردنەوە کۆتایی پێهات
+                    {t('examEndedBadge')}
                   </span>
                   <span className="text-[11px] text-slate-300 font-bold block mt-0.5">
-                    ئەنجامەکان پەسەند کراون و وەڵامە دروستەکان بەردەستن
+                    {t('examEndedDesc')}
                   </span>
                 </div>
 
@@ -647,7 +647,7 @@ export default function OnlineExamBanner({
                     className="w-full px-5 py-3.5 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2.5 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 shadow-lg shadow-amber-500/25 active:scale-95 transition-all cursor-pointer"
                   >
                     <Trophy className="w-4 h-4 text-slate-950 fill-current shrink-0" />
-                    <span>🏆 بینینی ئەنجام و ڕیزبەندی</span>
+                    <span>{t('viewResultsBtn')}</span>
                   </button>
 
                   {/* Button 2: View Questions & Correct Answers */}
@@ -659,7 +659,7 @@ export default function OnlineExamBanner({
                     className="w-full px-5 py-3.5 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2.5 bg-slate-800/95 hover:bg-slate-700 text-indigo-200 border border-indigo-500/40 hover:border-indigo-400 shadow-md active:scale-95 transition-all cursor-pointer"
                   >
                     <BookOpen className="w-4 h-4 text-indigo-400 shrink-0" />
-                    <span>📖 بینینی پرسیار و وەڵامەکان</span>
+                    <span>{t('viewSolutionsBtn')}</span>
                   </button>
                 </div>
               </div>
@@ -673,7 +673,7 @@ export default function OnlineExamBanner({
                     }`}
                   >
                     <span className={`text-[11px] font-bold block mb-1 ${isDark ? 'text-slate-400' : 'text-slate-800'}`}>
-                      کاتی ماوە بۆ دەستپێکردن:
+                      {t('timeRemainingStart')}
                     </span>
                     <div
                       className={`flex items-center justify-center gap-2 font-mono text-sm sm:text-base font-black ${
@@ -710,12 +710,12 @@ export default function OnlineExamBanner({
                         isDark ? 'text-amber-300/90 border-slate-800/80' : 'text-amber-800 border-slate-200'
                       }`}
                     >
-                      {new Date(currentExam.start_time).toLocaleTimeString('ckb', {
+                      {new Date(currentExam.start_time).toLocaleTimeString(lang === 'en' ? 'en-US' : lang === 'ar' ? 'ar-IQ' : 'ckb', {
                         timeZone: 'Asia/Baghdad',
                         hour: '2-digit',
                         minute: '2-digit',
                         hour12: true
-                      })} (بە کاتی کوردستان)
+                      })} ({t('kurdistanTime')})
                     </span>
                   </div>
                 )}
@@ -737,22 +737,22 @@ export default function OnlineExamBanner({
                   {currentExam.is_coming_soon ? (
                     <>
                       <Sparkles className="w-4 h-4 text-amber-300 animate-spin" />
-                      <span>✨ بەمزوانە لە پلاتفۆرمی KSC (چاوەڕوان بن)</span>
+                      <span>{t('comingSoonBtn')}</span>
                     </>
                   ) : !timeRemaining.started ? (
                     <>
                       <Lock className="w-4 h-4 text-amber-400" />
-                      <span>وادەی دەستپێک ماوە (چاوەڕوانی)</span>
+                      <span>{t('waitingForStart')}</span>
                     </>
                   ) : timeRemaining.entryClosed ? (
                     <>
                       <Lock className="w-4 h-4 text-rose-400" />
-                      <span>دەرگای بەشداری داخراوە (تاقیکردنەوە دەستی پێکردووە)</span>
+                      <span>{t('entryClosed')}</span>
                     </>
                   ) : (
                     <>
                       <Play className="w-4 h-4 fill-current" />
-                      <span>دەستپێکردنی تاقیکردنەوەی ئۆنلاین</span>
+                      <span>{t('startOnlineExamBtn')}</span>
                     </>
                   )}
                 </button>
@@ -767,7 +767,7 @@ export default function OnlineExamBanner({
                 className="w-full sm:w-auto lg:w-full px-4 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
               >
                 <Settings className="w-3.5 h-3.5 text-indigo-400" />
-                <span>بەڕێوەبردنی تاقیکردنەوە (Admin)</span>
+                <span>{t('manageExamAdmin')}</span>
               </button>
             )}
           </div>
@@ -783,7 +783,7 @@ export default function OnlineExamBanner({
                 e.stopPropagation();
                 goToPrev();
               }}
-              aria-label="تاقیکردنەوەی پێشوو"
+              aria-label={t('prevBtn')}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-white/10 text-white/80 hover:text-white backdrop-blur-md opacity-75 sm:opacity-0 group-hover:opacity-100 transition-all duration-200 z-20 shadow-lg"
             >
               <ChevronRight className="w-5 h-5" />
@@ -795,7 +795,7 @@ export default function OnlineExamBanner({
                 e.stopPropagation();
                 goToNext();
               }}
-              aria-label="تاقیکردنەوەی دواتر"
+              aria-label={t('nextBtn')}
               className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-white/10 text-white/80 hover:text-white backdrop-blur-md opacity-75 sm:opacity-0 group-hover:opacity-100 transition-all duration-200 z-20 shadow-lg"
             >
               <ChevronLeft className="w-5 h-5" />

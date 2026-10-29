@@ -455,7 +455,7 @@ export default function Competitions({ onShowToast }) {
         {/* Quick Demo Test Chips */}
         {leaderboard?.top_students?.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 mt-6 pt-4 border-t border-slate-800/80 text-xs">
-            <span className="text-slate-400 text-[11px] font-bold">تاقیکردنەوەی خێرای نموونە بۆ قوتابی:</span>
+            <span className="text-slate-400 text-[11px] font-bold">{t('sampleExamQuickTest')}</span>
             {leaderboard.top_students.slice(0, 4).map((st) => (
               <button
                 key={st.student_code}
@@ -535,14 +535,14 @@ export default function Competitions({ onShowToast }) {
                     setSchoolSearchTerm('');
                   }}
                   className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl text-xs transition-colors"
-                  title="پاککردنەوەی فلتەر"
+                  title={t('cleanFiltersTitle')}
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
               )}
 
               <span className="text-xs text-slate-400 font-bold px-2.5 py-1 bg-slate-800/80 rounded-xl shrink-0">
-                {displayedSchools.length} قوتابخانە
+                {displayedSchools.length} {t('totalSchoolsCount')}
               </span>
             </div>
           </div>
@@ -550,7 +550,7 @@ export default function Competitions({ onShowToast }) {
           {/* Quick Exam Filter Tabs */}
           {exams.length > 1 && (
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-              <span className="text-[11px] text-slate-400 font-bold shrink-0">فلتەری خێرا:</span>
+              <span className="text-[11px] text-slate-400 font-bold shrink-0">{t('quickFilter')}</span>
               <button
                 onClick={() => setSelectedExamId('')}
                 className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 ${
@@ -559,7 +559,7 @@ export default function Competitions({ onShowToast }) {
                     : 'bg-slate-900/90 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800'
                 }`}
               >
-                گشت تاقیکردنەوەکان
+                {t('allExams')}
               </button>
               {exams.map((ex) => (
                 <button
@@ -580,7 +580,7 @@ export default function Competitions({ onShowToast }) {
           {loading ? (
             <div className="text-center py-12 text-slate-400">
               <div className="animate-spin w-8 h-8 border-3 border-amber-400 border-t-transparent rounded-full mx-auto mb-2" />
-              لە بارکردندایە...
+              {t('loading')}
             </div>
           ) : displayedSchools.length === 0 ? (
             <div className="text-center py-10 text-slate-500 text-xs">
@@ -640,7 +640,7 @@ export default function Competitions({ onShowToast }) {
           <div className="flex items-center justify-between pb-2 border-b border-slate-800">
             <span className="text-xs font-black text-amber-400 bg-amber-400/10 border border-amber-400/30 px-3 py-1 rounded-full flex items-center gap-1.5">
               <Trophy className="w-3.5 h-3.5" />
-              <span>سکۆی شەرەف</span>
+              <span>{t('honorPodium')}</span>
             </span>
 
             <h3 className="text-base sm:text-lg font-black text-white">
@@ -650,7 +650,7 @@ export default function Competitions({ onShowToast }) {
 
           {top3.length === 0 ? (
             <div className="text-center py-16 text-slate-500 text-xs">
-              پاش پشکنینی فۆڕمەکان، ٣ پێشەنگەکە لێرە دەردەکەون
+              {t('podiumEmpty')}
             </div>
           ) : (
             <div className="flex items-end justify-center gap-2 sm:gap-3 pt-4">
@@ -669,8 +669,8 @@ export default function Competitions({ onShowToast }) {
                   </div>
 
                   <div className="text-[10px] text-slate-400 border-t border-slate-700/60 pt-1.5 space-y-0.5">
-                    <div>{top3[1].students_participated} قوتابی • {top3[1].passed_students} دەرچوو</div>
-                    <div className="font-black text-cyan-300 text-xs">تێکڕای {top3[1].average_percentage}%</div>
+                    <div>{top3[1].students_participated} {t('studentsUnit')} • {top3[1].passed_students} {t('passedUnit')}</div>
+                    <div className="font-black text-cyan-300 text-xs">{t('thAverage')} {top3[1].average_percentage}%</div>
                     <div className="text-slate-300 font-bold">{t('secondPlaceSilver')}</div>
                     <button
                       onClick={(e) => {
@@ -705,8 +705,8 @@ export default function Competitions({ onShowToast }) {
                   </div>
 
                   <div className="text-[10px] text-slate-300 border-t border-amber-400/30 pt-1.5 space-y-0.5">
-                    <div>{top3[0].students_participated} قوتابی • {top3[0].passed_students} دەرچوو</div>
-                    <div className="font-black text-amber-400 text-sm">تێکڕای {top3[0].average_percentage}% نمرە</div>
+                    <div>{top3[0].students_participated} {t('studentsUnit')} • {top3[0].passed_students} {t('passedUnit')}</div>
+                    <div className="font-black text-amber-400 text-sm">{t('thAverage')} {top3[0].average_percentage}% {t('scoreUnit')}</div>
                     <div className="text-amber-300 font-black">{t('firstPlaceGold')} 🥇</div>
                     <button
                       onClick={(e) => {
@@ -737,8 +737,8 @@ export default function Competitions({ onShowToast }) {
                   </div>
 
                   <div className="text-[10px] text-slate-400 border-t border-slate-700/60 pt-1.5 space-y-0.5">
-                    <div>{top3[2].students_participated} قوتابی • {top3[2].passed_students} دەرچوو</div>
-                    <div className="font-black text-cyan-300 text-xs">تێکڕای {top3[2].average_percentage}%</div>
+                    <div>{top3[2].students_participated} {t('studentsUnit')} • {top3[2].passed_students} {t('passedUnit')}</div>
+                    <div className="font-black text-cyan-300 text-xs">{t('thAverage')} {top3[2].average_percentage}%</div>
                     <div className="text-amber-500 font-bold">{t('thirdPlaceBronze')}</div>
                     <button
                       onClick={(e) => {
@@ -771,7 +771,7 @@ export default function Competitions({ onShowToast }) {
           <div className="flex items-center justify-between pb-3 border-b border-slate-800">
             <div className="flex items-center gap-2.5 text-amber-400 font-bold text-sm">
               <Users className="w-5 h-5 text-amber-400 shrink-0" />
-              <span>چەند قوتابییەک بەم ناوەوە دۆزرانەوە، تکایە قوتابخانەکەت هەڵبژێرە:</span>
+              <span>{t('multipleFoundSchoolsNotice')}</span>
             </div>
             <span className="text-xs text-slate-400 font-mono">({multipleMatches.length} قوتابی)</span>
           </div>
@@ -799,8 +799,8 @@ export default function Competitions({ onShowToast }) {
                   {t('thSchool')}: <strong className="text-amber-300">{translateSchool(m.school_name)}</strong>
                 </p>
                 <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">
-                  <span>پۆل: {m.grade || 'گشتی'}</span>
-                  <span className="text-emerald-400 font-bold group-hover:underline">کلیک بکە بۆ ئەنجام ←</span>
+                  <span>{t('gradeLabel')} {m.grade ? translateDynamic(m.grade) : 'All'}</span>
+                  <span className="text-emerald-400 font-bold group-hover:underline">{t('clickForResults')}</span>
                 </div>
               </button>
             ))}
@@ -832,7 +832,7 @@ export default function Competitions({ onShowToast }) {
                     className="text-xs text-slate-400 hover:text-white flex items-center gap-1 font-mono"
                   >
                     <Copy className="w-3.5 h-3.5" />
-                    <span>{copiedCode ? 'کۆپیکرا!' : searchResult.student_code}</span>
+                    <span>{copiedCode ? t('codeCopied') : searchResult.student_code}</span>
                   </button>
                 </div>
 
@@ -842,7 +842,7 @@ export default function Competitions({ onShowToast }) {
                 <p className="text-xs text-slate-300 flex items-center gap-2 flex-wrap">
                   <span>{t('thSchool')}: <strong className="text-amber-300">{translateSchool(searchResult.school_name)}</strong></span>
                   <span>•</span>
-                  <span>پۆل: <strong className="text-amber-300">{searchResult.grade || 'گشتی'}</strong></span>
+                  <span>{t('gradeLabel')} <strong className="text-amber-300">{searchResult.grade ? translateDynamic(searchResult.grade) : 'All'}</strong></span>
                 </p>
               </div>
             </div>
@@ -854,7 +854,7 @@ export default function Competitions({ onShowToast }) {
                   className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-amber-500/30 transition-transform active:scale-95"
                 >
                   <Award className="w-4 h-4 text-slate-950" />
-                  <span>🎓 داگرتنی بڕوانامەی فەرمی</span>
+                  <span>🎓 {t('officialCertificate')}</span>
                 </button>
               )}
 
@@ -863,7 +863,7 @@ export default function Competitions({ onShowToast }) {
                 className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-700 transition-colors shadow-md"
               >
                 <Printer className="w-4 h-4" />
-                <span>چاپکردن</span>
+                <span>{t('printBtn')}</span>
               </button>
               <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 flex items-center justify-center font-bold shrink-0">
                 <CheckCircle2 className="w-6 h-6" />
@@ -879,13 +879,13 @@ export default function Competitions({ onShowToast }) {
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/20 via-slate-900 to-amber-950/20 border border-amber-400/60 shadow-lg text-center space-y-1">
                   <span className="text-xs font-black text-amber-300 flex items-center justify-center gap-1">
                     <Crown className="w-4 h-4 text-amber-400" />
-                    <span>ڕیزبەندی لەسەر ئاستی کوردستان</span>
+                    <span>{t('rankInKurdistan')}</span>
                   </span>
                   <div className="text-3xl sm:text-4xl font-black text-white">
-                    پلەی #{res.overall_rank}
+                    {t('thRank')} #{res.overall_rank}
                   </div>
                   <span className="text-[11px] text-slate-400 block">
-                    لە کۆی {res.total_participants} قوتابی کوردستان
+                    {t('ofLabel')} {res.total_participants} {t('outOfStudentsKurdistan')}
                   </span>
                 </div>
 
@@ -893,13 +893,13 @@ export default function Competitions({ onShowToast }) {
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-brand-500/20 via-slate-900 to-brand-950/20 border border-brand-400/60 shadow-lg text-center space-y-1">
                   <span className="text-xs font-black text-brand-300 flex items-center justify-center gap-1">
                     <Building2 className="w-4 h-4 text-brand-400" />
-                    <span>ڕیزبەندی لە قوتابخانەکەتدا</span>
+                    <span>{t('rankInSchool')}</span>
                   </span>
                   <div className="text-3xl sm:text-4xl font-black text-white">
-                    پلەی #{res.school_rank}
+                    {t('thRank')} #{res.school_rank}
                   </div>
                   <span className="text-[11px] text-slate-400 block">
-                    لە کۆی {res.total_in_school} قوتابی لە قوتابخانەکەت
+                    {t('ofLabel')} {res.total_in_school} {t('outOfStudentsSchool')}
                   </span>
                 </div>
 
@@ -907,13 +907,13 @@ export default function Competitions({ onShowToast }) {
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-slate-900 to-emerald-950/20 border border-emerald-400/60 shadow-lg text-center space-y-1">
                   <span className="text-xs font-black text-emerald-300 flex items-center justify-center gap-1">
                     <TrendingUp className="w-4 h-4 text-emerald-400" />
-                    <span>ئاستی باڵا (Percentile)</span>
+                    <span>{t('percentileLabel')}</span>
                   </span>
                   <div className="text-3xl sm:text-4xl font-black text-emerald-400">
                     {res.percentile}%
                   </div>
                   <span className="text-[11px] text-slate-400 block">
-                    لە پێشەوەی سەرجەم بەشداربووانیت
+                    {t('percentileDesc')}
                   </span>
                 </div>
               </div>
@@ -923,12 +923,12 @@ export default function Competitions({ onShowToast }) {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
                   <div>
                     <h4 className="font-extrabold text-base text-white">{translateExam(res.exam_name)}</h4>
-                    <span className="text-xs text-slate-400">بابەت: {translateSubj(res.subject || 'گشتی')}</span>
+                    <span className="text-xs text-slate-400">{t('subjectLabel')} {translateSubj(res.subject || 'General')}</span>
                   </div>
 
                   <div className="flex items-center gap-3">
                     <div className="px-4 py-2 bg-slate-800 rounded-xl border border-slate-700 text-center">
-                      <span className="text-[10px] text-slate-400 block font-bold">کۆی نمرە</span>
+                      <span className="text-[10px] text-slate-400 block font-bold">{t('rawScore')}</span>
                       <span className="text-lg font-black text-white">{res.total_score} / {res.max_score}</span>
                     </div>
                     <div className={`px-5 py-2.5 rounded-xl font-black text-xl ${
@@ -943,19 +943,19 @@ export default function Competitions({ onShowToast }) {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs">
                   <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
                     <span className="font-black text-lg block">{res.correct_count}</span>
-                    <span>وەڵامی دروست</span>
+                    <span>{t('correctAnswers')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-rose-500/10 text-rose-300 border border-rose-500/20">
                     <span className="font-black text-lg block">{res.incorrect_count}</span>
-                    <span>وەڵامی هەڵە</span>
+                    <span>{t('wrongAnswers')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-800 text-slate-300 border border-slate-700">
                     <span className="font-black text-lg block">{res.blank_count}</span>
-                    <span>بەتاڵ</span>
+                    <span>{t('blankAnswers')}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-amber-500/10 text-amber-300 border border-amber-500/20">
                     <span className="font-black text-lg block">{res.multiple_count || 0}</span>
-                    <span>دوو وەڵام</span>
+                    <span>{t('doubleMarked')}</span>
                   </div>
                 </div>
 
@@ -965,13 +965,13 @@ export default function Competitions({ onShowToast }) {
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-xs text-slate-300 flex items-center gap-1.5">
                         <Eye className="w-4 h-4 text-amber-400" />
-                        پەڕەی وەڵامی سکانکراوی OMR:
+                        {t('scannedOMRSheet')}
                       </span>
                       <button
                         onClick={() => setPreviewImage(getUploadUrl(`/uploads/debug/${res.debug_file}`))}
                         className="text-xs text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
                       >
-                        <span>بینینی گەورەکراو</span>
+                        <span>{t('zoomView')}</span>
                         <ExternalLink className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -1140,7 +1140,7 @@ export default function Competitions({ onShowToast }) {
         {totalPages > 1 && (
           <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-xs">
             <span className="text-slate-400">
-              پەڕەی {currentPage} لە {totalPages}
+              {t('pageLabel')} {currentPage} {t('ofLabel')} {totalPages}
             </span>
 
             <div className="flex items-center gap-1.5">
@@ -1149,14 +1149,14 @@ export default function Competitions({ onShowToast }) {
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 disabled:opacity-30"
               >
-                پێشتر
+                {t('prevBtn')}
               </button>
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 disabled:opacity-30"
               >
-                دواتر
+                {t('nextBtn')}
               </button>
             </div>
           </div>
@@ -1171,12 +1171,12 @@ export default function Competitions({ onShowToast }) {
         >
           <div className="relative max-w-4xl w-full max-h-[90vh] bg-slate-900 rounded-3xl p-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between pb-3 px-2 text-white">
-              <span className="text-xs font-bold">پەڕەی وەڵامی سکانکراو</span>
+              <span className="text-xs font-bold">{t('scannedOMRSheet')}</span>
               <button
                 onClick={() => setPreviewImage(null)}
                 className="px-3 py-1 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-bold"
               >
-                داخستن
+                {t('closeBtn')}
               </button>
             </div>
             <div className="overflow-auto max-h-[80vh] flex items-center justify-center">

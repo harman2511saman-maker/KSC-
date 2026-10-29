@@ -6,7 +6,7 @@ export default function Footer() {
   const { t, isRTL } = useLanguage();
   const socialLinks = [
     {
-      name: 'تیلیگرام',
+      name: t('socialTelegram'),
       sub: 'KurdishOMR',
       url: 'https://t.me/KurdishOMR',
       color: 'from-sky-500/20 to-blue-600/20 border-sky-500/30 text-sky-400 hover:border-sky-400',
@@ -17,7 +17,7 @@ export default function Footer() {
       ),
     },
     {
-      name: 'وەتسئاپ',
+      name: t('socialWhatsapp'),
       sub: 'HarmanGaraway',
       url: 'https://wa.me/HarmanGaraway?s=p',
       color: 'from-emerald-500/20 to-teal-600/20 border-emerald-500/30 text-emerald-400 hover:border-emerald-400',
@@ -28,7 +28,7 @@ export default function Footer() {
       ),
     },
     {
-      name: 'ئینستاگرام',
+      name: t('socialInstagram'),
       sub: '@kurdistanstudentchamption',
       url: 'https://www.instagram.com/kurdistanstudentchamption?exln=MXF5OTNqc2kyOXMxNA%3D%3D&utm_source=qr',
       color: 'from-pink-500/20 to-purple-600/20 border-pink-500/30 text-pink-400 hover:border-pink-400',
@@ -39,7 +39,7 @@ export default function Footer() {
       ),
     },
     {
-      name: 'تیکتۆک',
+      name: t('socialTiktok'),
       sub: '@ksc7813',
       url: 'https://www.tiktok.com/@ksc7813?_r=1&_t=ZS-9Ah4ZDSHRA4',
       color: 'from-cyan-500/20 to-rose-600/20 border-cyan-500/30 text-cyan-300 hover:border-cyan-400',
@@ -50,7 +50,7 @@ export default function Footer() {
       ),
     },
     {
-      name: 'سناپچات',
+      name: t('socialSnapchat'),
       sub: '@ksc_edu',
       url: 'https://www.snapchat.com',
       color: 'from-yellow-400/20 to-amber-500/20 border-yellow-400/30 text-yellow-300 hover:border-yellow-400',
@@ -61,7 +61,7 @@ export default function Footer() {
       ),
     },
     {
-      name: 'ئیمەیڵی فەرمی',
+      name: t('socialEmail'),
       sub: 'studentchamption@gmail.com',
       url: 'mailto:studentchamption@gmail.com',
       color: 'from-amber-500/20 to-orange-600/20 border-amber-500/30 text-amber-400 hover:border-amber-400',
@@ -78,19 +78,19 @@ export default function Footer() {
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
               <Headphones className="w-4 h-4 text-amber-400" />
-              <span>تیمی پشتگیری و پەیوەندی</span>
+              <span>{t('supportTeamTitle')}</span>
             </div>
             <h3 className="text-lg sm:text-xl font-black text-white">
-              لەگەڵ ئێمە لە پەیوەندیدا بن بۆ هەر پرسیار و هاوکارییەک
+              {t('supportTeamHeading')}
             </h3>
             <p className="text-xs text-slate-400 max-w-xl">
-              تیمی تەکنیکی و کارگێڕیی پڕۆژەی KSC بەردەوام ئامادەن بۆ وەڵامدانەوەی سەرجەم داواکاری و ڕێنماییەکان.
+              {t('supportTeamDesc')}
             </p>
           </div>
 
           <div className="flex items-center gap-2 text-xs font-mono text-slate-400 bg-slate-900/80 border border-slate-800 px-3.5 py-1.5 rounded-full">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>پشتگیری بەردەستە (24/7 Support)</span>
+            <span>{t('support247')}</span>
           </div>
         </div>
 
@@ -122,10 +122,10 @@ export default function Footer() {
 
         {/* Copyright & Disclaimer (No visible admin links) */}
         <div className="pt-6 border-t border-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان (KSC) • هەموو مافەکان پارێزراون</p>
+          <p>© {new Date().getFullYear()} {t('allRightsReserved')}</p>
           <div className="flex items-center gap-2 text-slate-400">
             <Shield className="w-4 h-4 text-emerald-400" />
-            <span>سیستەمی پارێزراوی نیشتمانی بۆ هەڵسەنگاندنی ئەنجامەکان</span>
+            <span>{t('systemBadge')}</span>
           </div>
         </div>
 

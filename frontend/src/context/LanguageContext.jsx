@@ -5,7 +5,8 @@ import {
   translateSchoolName,
   translateExamName,
   translateSubject,
-  translateDynamic
+  translateDynamic,
+  getSlideLocalized
 } from '../utils/transliterate';
 
 const LanguageContext = createContext(null);
@@ -60,6 +61,7 @@ export const LanguageProvider = ({ children }) => {
   const translateExam = useCallback((name) => translateExamName(name, lang), [lang]);
   const translateSubj = useCallback((subj) => translateSubject(subj, lang), [lang]);
   const translateDyn = useCallback((text) => translateDynamic(text, lang), [lang]);
+  const getSlideText = useCallback((slide, field) => getSlideLocalized(slide, field, lang), [lang]);
 
   return (
     <LanguageContext.Provider
@@ -73,7 +75,8 @@ export const LanguageProvider = ({ children }) => {
         translateSchool,
         translateExam,
         translateSubj,
-        translateDyn
+        translateDyn,
+        getSlideText
       }}
     >
       {children}
@@ -94,7 +97,8 @@ export const useLanguage = () => {
       translateSchool: (n) => n,
       translateExam: (n) => n,
       translateSubj: (n) => n,
-      translateDyn: (n) => n
+      translateDyn: (n) => n,
+      getSlideText: (s, f) => s?.[f] || ''
     };
   }
   return context;

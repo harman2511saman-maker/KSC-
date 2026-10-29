@@ -640,9 +640,36 @@ const EXAM_TERMS_AR = {
 
 export function translateExamName(examName, lang = 'ku') {
   if (!examName || typeof examName !== 'string') return examName;
+
+  const raw = examName.trim();
+
+  // 1. Check for ||| delimited multilingual string (Kurdish ||| English ||| Arabic)
+  if (raw.includes('|||')) {
+    const parts = raw.split('|||').map((s) => s.trim());
+    if (lang === 'ku' && parts[0]) return parts[0];
+    if (lang === 'en' && parts[1]) return parts[1];
+    if (lang === 'ar' && parts[2]) return parts[2];
+    if (lang === 'en' && parts[0]) return translateExamName(parts[0], 'en');
+    if (lang === 'ar' && parts[0]) return translateExamName(parts[0], 'ar');
+    return parts[0] || raw;
+  }
+
+  // 2. Check for JSON encoded multilingual string
+  if (raw.startsWith('{') && raw.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed[lang]) return parsed[lang];
+      if (lang === 'en' && parsed.ku) return translateExamName(parsed.ku, 'en');
+      if (lang === 'ar' && parsed.ku) return translateExamName(parsed.ku, 'ar');
+      return parsed.ku || raw;
+    } catch (e) {
+      // not JSON, continue
+    }
+  }
+
   if (lang === 'ku') return examName;
 
-  const clean = examName.trim();
+  const clean = raw;
   if (lang === 'en') {
     if (EXAM_TERMS_EN[clean]) return EXAM_TERMS_EN[clean];
     let translated = clean;
@@ -710,6 +737,7 @@ const DYNAMIC_PHRASES = {
 
   // Badges & Actions
   'ئاگاداری': { en: 'Notice', ar: 'تنويه' },
+  'ئاگاداری گرنگ': { en: 'Important Notice', ar: 'تنويه هام' },
   'نوێ': { en: 'NEW', ar: 'جديد' },
   'گرنگ': { en: 'IMPORTANT', ar: 'هام' },
   'فەرمی': { en: 'OFFICIAL', ar: 'رسمي' },
@@ -719,9 +747,36 @@ const DYNAMIC_PHRASES = {
 
 export function translateDynamic(text, lang = 'ku') {
   if (!text || typeof text !== 'string') return text;
+
+  const raw = text.trim();
+
+  // 1. Check for ||| delimited multilingual string
+  if (raw.includes('|||')) {
+    const parts = raw.split('|||').map((s) => s.trim());
+    if (lang === 'ku' && parts[0]) return parts[0];
+    if (lang === 'en' && parts[1]) return parts[1];
+    if (lang === 'ar' && parts[2]) return parts[2];
+    if (lang === 'en' && parts[0]) return translateDynamic(parts[0], 'en');
+    if (lang === 'ar' && parts[0]) return translateDynamic(parts[0], 'ar');
+    return parts[0] || raw;
+  }
+
+  // 2. Check for JSON encoded multilingual string
+  if (raw.startsWith('{') && raw.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed[lang]) return parsed[lang];
+      if (lang === 'en' && parsed.ku) return translateDynamic(parsed.ku, 'en');
+      if (lang === 'ar' && parsed.ku) return translateDynamic(parsed.ku, 'ar');
+      return parsed.ku || raw;
+    } catch (e) {
+      // not JSON
+    }
+  }
+
   if (lang === 'ku') return text;
 
-  const clean = text.trim();
+  const clean = raw;
   if (DYNAMIC_PHRASES[clean] && DYNAMIC_PHRASES[clean][lang]) {
     return DYNAMIC_PHRASES[clean][lang];
   }
@@ -739,3 +794,16 @@ export function translateDynamic(text, lang = 'ku') {
 
   return text;
 }
+
+// 10. Helper to get localized slide field with admin translation priority
+export function getSlideLocalized(slide, field, lang = 'ku') {
+  if (!slide) return '';
+  if (lang === 'en' && slide[field + '_en']) return slide[field + '_en'];
+  if (lang === 'ar' && slide[field + '_ar']) return slide[field + '_ar'];
+  if (lang === 'ku' && slide[field + '_ku']) return slide[field + '_ku'];
+  
+  const baseValue = slide[field] || '';
+  return translateDynamic(baseValue, lang);
+}
+
+

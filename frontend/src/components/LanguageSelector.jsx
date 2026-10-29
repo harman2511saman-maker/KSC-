@@ -66,7 +66,7 @@ export default function LanguageSelector({ variant = 'dropdown', className = '' 
           setIsOpen((prev) => !prev);
         }}
         aria-label="Change Language"
-        className={`h-9 sm:h-11 px-2.5 sm:px-4 rounded-full border text-xs sm:text-sm font-bold transition-all shadow-md active:scale-95 flex items-center gap-1.5 sm:gap-2 shrink-0 cursor-pointer ${
+        className={`h-9 sm:h-11 px-2 sm:px-4 rounded-full border text-[11px] sm:text-sm font-bold transition-all shadow-md active:scale-95 flex items-center gap-1 sm:gap-2 shrink-0 cursor-pointer ${
           isDark
             ? 'bg-[#0b1329] hover:bg-[#131d3b] border-slate-700/80 hover:border-amber-400/50 text-white'
             : 'bg-slate-100 hover:bg-slate-200 border-slate-300 hover:border-amber-500 text-slate-900 shadow-sm'

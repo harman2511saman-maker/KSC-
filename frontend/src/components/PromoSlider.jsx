@@ -9,13 +9,21 @@ export default function PromoSlider({ slides: propSlides }) {
     {
       id: 1,
       badge: 'سپۆنسەری فەرمی',
+      badge_en: 'Official Sponsor',
+      badge_ar: 'الراعي الرسمي',
       title: 'پاڵپشتی فەرمیی پێشبڕکێی قوتابییانی کوردستان (KSC)',
+      title_en: 'Official Partner of Kurdistan Students Competition (KSC)',
+      title_ar: 'الراعي الرسمي لمسابقة طلاب كوردستان (KSC)',
       description: 'بەشداری لە بەهێزترین پێشبڕکێی زانستی و خوێندنی کوردستان • دیاری و بڕوانامەی شایستە بۆ قوتابخانە و قوتابییە یەکەمەکان',
+      description_en: 'Participate in Kurdistan premier academic competition • Prestigious awards & certificates for top schools and students',
+      description_ar: 'المشاركة في أقوى مسابقة علمية ودراسية في كوردستان • جوائز وشهادات تقديرية للمدارس والطلاب الأوائل',
       tag: 'KSC VIP',
       link: 'https://t.me/KurdishOMR',
       link_text: 'پەیوەندی لە تێلیگرام',
+      link_text_en: 'Contact on Telegram',
+      link_text_ar: 'تواصل عبر تيليجرام',
       links: [
-        { id: 1, title: 'پەیوەندی لە تێلیگرام', url: 'https://t.me/KurdishOMR' }
+        { id: 1, title: 'پەیوەندی لە تێلیگرام', title_en: 'Contact on Telegram', title_ar: 'تواصل عبر تيليجرام', url: 'https://t.me/KurdishOMR' }
       ],
       image_url: '',
       image_mode: 'side',
@@ -25,13 +33,21 @@ export default function PromoSlider({ slides: propSlides }) {
     {
       id: 2,
       badge: 'ڕێنمایی تاقیکردنەوە',
+      badge_en: 'Exam Guide',
+      badge_ar: 'إرشادات الامتحان',
       title: 'سیستەمی سکان و پشکنینی ئەلیکترۆنیی فۆڕمی وەڵام',
+      title_en: 'Optical Mark Recognition (OMR) Answer Sheet System',
+      title_ar: 'نظام المسح والتصحيح الإلكتروني لاستمارة الإجابة (OMR)',
       description: 'تەنها یەک بازنە بە قەڵەمی جافی تۆخ پڕبکەرەوە • ئەنجامەکان بە شێوازی دەستبەجێ بە ژیری دەستکرد شیکاری دەکرێن',
+      description_en: 'Fill only one circle with a dark pen • Results evaluated instantaneously with KSC AI engine',
+      description_ar: 'قم بتظليل دائرة واحدة فقط بقلم جاف غامق • يتم تصحيح النتائج وتحليلها فورياً بالذكاء الاصطناعي',
       tag: 'OMR GUIDE',
       link: '#',
       link_text: 'خوێندنەوەی یاساکان',
+      link_text_en: 'Read Guidelines',
+      link_text_ar: 'قراءة الإرشادات',
       links: [
-        { id: 1, title: 'خوێندنەوەی یاساکان', url: '#' }
+        { id: 1, title: 'خوێندنەوەی یاساکان', title_en: 'Read Guidelines', title_ar: 'قراءة الإرشادات', url: '#' }
       ],
       image_url: '',
       image_mode: 'side',
@@ -41,13 +57,21 @@ export default function PromoSlider({ slides: propSlides }) {
     {
       id: 3,
       badge: 'ڕێکلام و هاوبەشی',
+      badge_en: 'Sponsorship & Partnership',
+      badge_ar: 'إعلان ورعاية',
       title: 'دەرگای سپۆنسەری و هاوبەشی کراوەیە بۆ کۆمپانیا و ناوەندەکان',
+      title_en: 'Open Sponsorship & Partnerships for Organizations & Brands',
+      title_ar: 'باب الرعاية والشراكة مفتوح للشركات والمراكز التعليمية',
       description: 'بۆ ناساندنی براندەکەت بە دەیان هەزار قوتابی و مامۆستا لە سەرانسەری هەرێمی کوردستان، پەیوەندیمان پێوە بکەن',
+      description_en: 'Reach tens of thousands of students and educators across the Kurdistan Region, get in touch with our team',
+      description_ar: 'للتعريف بعلامتكم التجارية أمام عشرات الآلاف من الطلاب والمعلمين في إقليم كوردستان، تواصلوا معنا',
       tag: 'SPONSOR',
       link: 'https://wa.me/HarmanGaraway',
       link_text: 'پەیوەندی لە وەتسئاپ',
+      link_text_en: 'Contact on WhatsApp',
+      link_text_ar: 'تواصل عبر واتساب',
       links: [
-        { id: 1, title: 'پەیوەندی لە وەتسئاپ', url: 'https://wa.me/HarmanGaraway' }
+        { id: 1, title: 'پەیوەندی لە وەتسئاپ', title_en: 'Contact on WhatsApp', title_ar: 'تواصل عبر واتساب', url: 'https://wa.me/HarmanGaraway' }
       ],
       image_url: '',
       image_mode: 'side',
@@ -61,7 +85,7 @@ export default function PromoSlider({ slides: propSlides }) {
   const [isPaused, setIsPaused] = useState(false);
   const [touchOffset, setTouchOffset] = useState(0);
   const { isDark } = useTheme();
-  const { isRTL, translateDyn } = useLanguage();
+  const { isRTL, translateDyn, getSlideText, lang, t } = useLanguage();
 
   // Touch Swipe Refs
   const touchStartX = useRef(0);
@@ -260,7 +284,7 @@ export default function PromoSlider({ slides: propSlides }) {
                     : 'bg-amber-100 border-amber-300 text-amber-950 font-black'
                 }`}
               >
-                <span>{translateDyn(currentSlide.badge || 'ڕێکلام')}</span>
+                <span>{getSlideText(currentSlide, 'badge') || (lang === 'en' ? 'Sponsor' : lang === 'ar' ? 'إعلان' : 'ڕێکلام')}</span>
               </span>
               {currentSlide.tag && (
                 <span
@@ -290,14 +314,14 @@ export default function PromoSlider({ slides: propSlides }) {
                   isDark ? 'text-white drop-shadow-md' : 'text-black'
                 }`}
               >
-                {translateDyn(currentSlide.title)}
+                {getSlideText(currentSlide, 'title')}
               </h3>
               <p
                 className={`text-xs sm:text-sm leading-relaxed max-w-2xl font-medium break-words whitespace-pre-line ${
                   isDark ? 'text-slate-200/90' : 'text-slate-800'
                 }`}
               >
-                {translateDyn(currentSlide.description)}
+                {getSlideText(currentSlide, 'description')}
               </p>
             </div>
 
@@ -305,7 +329,7 @@ export default function PromoSlider({ slides: propSlides }) {
               <div className="shrink-0 self-center sm:self-auto group/img">
                 <img
                   src={getUploadUrl(currentSlide.image_url)}
-                  alt={currentSlide.title || 'Slide Image'}
+                  alt={getSlideText(currentSlide, 'title') || 'Slide Image'}
                   className={`w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-32 object-cover rounded-2xl border-2 shadow-xl pointer-events-none transition-transform duration-300 group-hover/img:scale-105 ${
                     isDark ? 'border-white/30 bg-black/30 backdrop-blur-sm' : 'border-slate-300 bg-slate-50'
                   }`}
@@ -322,32 +346,35 @@ export default function PromoSlider({ slides: propSlides }) {
           >
             <div className="flex flex-wrap items-center gap-2">
               {activeLinks.length > 0 ? (
-                activeLinks.map((lnk, idx) => (
-                  <a
-                    key={lnk.id || idx}
-                    href={lnk.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className={`inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl active:scale-95 text-xs font-bold transition-all border shadow-md ${
-                      isDark
-                        ? 'bg-white/15 hover:bg-white/25 text-white border-white/20 backdrop-blur-sm'
-                        : 'bg-slate-100 hover:bg-slate-200 text-black border-slate-300 font-bold'
-                    }`}
-                  >
-                    {renderLinkIcon(lnk)}
-                    <span>{translateDyn(lnk.title || lnk.text || 'کردنەوەی بەستەر')}</span>
-                  </a>
-                ))
+                activeLinks.map((lnk, idx) => {
+                  const linkTitle = lnk['title_' + lang] || lnk.title || lnk.text || (lang === 'en' ? 'Open Link' : lang === 'ar' ? 'فتح الرابط' : 'کردنەوەی بەستەر');
+                  return (
+                    <a
+                      key={lnk.id || idx}
+                      href={lnk.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className={`inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl active:scale-95 text-xs font-bold transition-all border shadow-md ${
+                        isDark
+                          ? 'bg-white/15 hover:bg-white/25 text-white border-white/20 backdrop-blur-sm'
+                          : 'bg-slate-100 hover:bg-slate-200 text-black border-slate-300 font-bold'
+                      }`}
+                    >
+                      {renderLinkIcon(lnk)}
+                      <span>{translateDyn(linkTitle)}</span>
+                    </a>
+                  );
+                })
               ) : (
                 <span className={`text-[11px] font-medium ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
-                  {translateDyn(currentSlide.link_text || 'پلاتفۆرمی فەرمی KSC')}
+                  {getSlideText(currentSlide, 'link_text') || (lang === 'en' ? 'KSC Official Platform' : lang === 'ar' ? 'المنصة الرسمية KSC' : 'پلاتفۆرمی فەرمی KSC')}
                 </span>
               )}
             </div>
 
             <span className={`text-xs font-bold ${isDark ? 'text-white/80' : 'text-slate-700'}`}>
-              {translateDyn(currentSlide.badge || 'KSC Platform')}
+              {getSlideText(currentSlide, 'badge') || (lang === 'en' ? 'KSC Official' : lang === 'ar' ? 'المنصة الرسمية' : 'KSC Platform')}
             </span>
           </div>
 
@@ -362,7 +389,7 @@ export default function PromoSlider({ slides: propSlides }) {
             <button
               key={idx}
               onClick={() => setCurrentIndex(idx)}
-              aria-label={`سلایدی ${idx + 1}`}
+              aria-label={`${lang === 'en' ? 'Slide' : lang === 'ar' ? 'شريحة' : 'سلایدی'} ${idx + 1}`}
               className={`transition-all duration-300 rounded-full ${
                 currentIndex === idx
                   ? 'w-7 h-2 bg-amber-400 shadow-lg shadow-amber-400/50'

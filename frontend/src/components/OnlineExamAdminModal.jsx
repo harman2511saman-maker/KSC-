@@ -30,6 +30,31 @@ import {
 } from 'lucide-react';
 import api, { getUploadUrl } from '../api';
 
+const unpackTrilingual = (raw) => {
+  if (!raw) return { ku: '', en: '', ar: '' };
+  if (typeof raw !== 'string') return { ku: String(raw), en: '', ar: '' };
+  const str = raw.trim();
+  if (str.includes('|||')) {
+    const parts = str.split('|||').map((s) => s.trim());
+    return { ku: parts[0] || '', en: parts[1] || '', ar: parts[2] || '' };
+  }
+  if (str.startsWith('{') && str.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(str);
+      return { ku: parsed.ku || '', en: parsed.en || '', ar: parsed.ar || '' };
+    } catch (e) {}
+  }
+  return { ku: str, en: '', ar: '' };
+};
+
+const packTrilingual = (ku, en, ar) => {
+  const cleanKu = (ku || '').trim();
+  const cleanEn = (en || '').trim();
+  const cleanAr = (ar || '').trim();
+  if (!cleanEn && !cleanAr) return cleanKu;
+  return `${cleanKu} ||| ${cleanEn} ||| ${cleanAr}`;
+};
+
 export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdated }) {
   const [activeTab, setActiveTab] = useState('settings'); // 'settings' | 'questions' | 'passcodes'
   const [loading, setLoading] = useState(true);
@@ -43,10 +68,20 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // Exam Settings Form
+  // Exam Settings Form (Multilingual)
+  const [examLang, setExamLang] = useState('ku'); // 'ku' | 'en' | 'ar'
   const [title, setTitle] = useState('');
+  const [titleKu, setTitleKu] = useState('');
+  const [titleEn, setTitleEn] = useState('');
+  const [titleAr, setTitleAr] = useState('');
   const [description, setDescription] = useState('');
+  const [descKu, setDescKu] = useState('');
+  const [descEn, setDescEn] = useState('');
+  const [descAr, setDescAr] = useState('');
   const [sponsorsAndPrizes, setSponsorsAndPrizes] = useState('');
+  const [prizesKu, setPrizesKu] = useState('');
+  const [prizesEn, setPrizesEn] = useState('');
+  const [prizesAr, setPrizesAr] = useState('');
   const [startTime, setStartTime] = useState('');
   const [questionDuration, setQuestionDuration] = useState(60);
   const [telegramUrl, setTelegramUrl] = useState('');
@@ -119,9 +154,23 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
 
       setExam(current || null);
       if (current) {
-        setTitle(current.title || '');
-        setDescription(current.description || '');
-        setSponsorsAndPrizes(current.sponsors_and_prizes || '');
+        const unpTitle = unpackTrilingual(current.title);
+        setTitle(unpTitle.ku || current.title || '');
+        setTitleKu(unpTitle.ku || current.title || '');
+        setTitleEn(unpTitle.en || '');
+        setTitleAr(unpTitle.ar || '');
+
+        const unpDesc = unpackTrilingual(current.description);
+        setDescription(unpDesc.ku || current.description || '');
+        setDescKu(unpDesc.ku || current.description || '');
+        setDescEn(unpDesc.en || '');
+        setDescAr(unpDesc.ar || '');
+
+        const unpPrizes = unpackTrilingual(current.sponsors_and_prizes);
+        setSponsorsAndPrizes(unpPrizes.ku || current.sponsors_and_prizes || '');
+        setPrizesKu(unpPrizes.ku || current.sponsors_and_prizes || '');
+        setPrizesEn(unpPrizes.en || '');
+        setPrizesAr(unpPrizes.ar || '');
 
         if (current.start_time) {
           const timeStr = current.start_time.endsWith('Z') || current.start_time.includes('+')
@@ -166,8 +215,17 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
     setExam(null);
     setSelectedExamId(null);
     setTitle('');
+    setTitleKu('');
+    setTitleEn('');
+    setTitleAr('');
     setDescription('');
+    setDescKu('');
+    setDescEn('');
+    setDescAr('');
     setSponsorsAndPrizes('');
+    setPrizesKu('');
+    setPrizesEn('');
+    setPrizesAr('');
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -192,7 +250,11 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
   // 1. SAVE EXAM SETTINGS (Create or Update)
   const handleSaveSettings = async (e = null) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (!title.trim()) {
+    const finalTitle = packTrilingual(titleKu || title, titleEn, titleAr);
+    const finalDesc = packTrilingual(descKu || description, descEn, descAr);
+    const finalPrizes = packTrilingual(prizesKu || sponsorsAndPrizes, prizesEn, prizesAr);
+
+    if (!finalTitle.trim()) {
       if (onShowToast) onShowToast({ type: 'error', message: 'ناوی تاقیکردنەوە پێویستە بنووسیت' });
       return null;
     }
@@ -200,9 +262,9 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
     try {
       setSaving(true);
       const payload = {
-        title: title.trim(),
-        description: description.trim(),
-        sponsors_and_prizes: sponsorsAndPrizes.trim(),
+        title: finalTitle,
+        description: finalDesc,
+        sponsors_and_prizes: finalPrizes,
         start_time: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
         question_duration_seconds: Number(questionDuration) || 60,
         telegram_group_url: telegramUrl.trim(),
@@ -270,10 +332,14 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         await handleSavePasscodeNames();
       }
 
+      const finalTitle = packTrilingual(titleKu || title, titleEn, titleAr);
+      const finalDesc = packTrilingual(descKu || description, descEn, descAr);
+      const finalPrizes = packTrilingual(prizesKu || sponsorsAndPrizes, prizesEn, prizesAr);
+
       const payload = {
-        title: title.trim(),
-        description: description.trim(),
-        sponsors_and_prizes: sponsorsAndPrizes.trim(),
+        title: finalTitle,
+        description: finalDesc,
+        sponsors_and_prizes: finalPrizes,
         start_time: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
         question_duration_seconds: Number(questionDuration) || 60,
         telegram_group_url: telegramUrl.trim(),
@@ -851,23 +917,26 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
               <span>تاقیکردنەوەکان:</span>
             </span>
 
-            {allExams.map((ex) => (
-              <button
-                key={ex.id}
-                type="button"
-                onClick={() => loadExamDetails(ex.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 border ${
-                  selectedExamId === ex.id && !isCreatingNew
-                    ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30'
-                    : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800'
-                }`}
-              >
-                {ex.title.length > 25 ? ex.title.slice(0, 25) + '...' : ex.title}
-                {!ex.is_active && (
-                  <span className="mr-1 text-[10px] text-slate-400">(ناچالاک)</span>
-                )}
-              </button>
-            ))}
+            {allExams.map((ex) => {
+              const displayTitle = unpackTrilingual(ex.title).ku || ex.title;
+              return (
+                <button
+                  key={ex.id}
+                  type="button"
+                  onClick={() => loadExamDetails(ex.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 border ${
+                    selectedExamId === ex.id && !isCreatingNew
+                      ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30'
+                      : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800'
+                  }`}
+                >
+                  {displayTitle.length > 25 ? displayTitle.slice(0, 25) + '...' : displayTitle}
+                  {!ex.is_active && (
+                    <span className="mr-1 text-[10px] text-slate-400">(ناچالاک)</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <button
@@ -946,43 +1015,121 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
           {activeTab === 'settings' && (
             <div className="max-w-2xl mx-auto space-y-6">
               <form onSubmit={handleSaveSettings} className="space-y-5">
+                {/* Multilingual Selector for Exam Details */}
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-slate-950 border border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-amber-400">زمانی زانیارییەکان / Language:</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setExamLang('ku')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          examLang === 'ku'
+                            ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                            : 'bg-slate-800 text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        کوردى (بنەڕەت)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setExamLang('en')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          examLang === 'en'
+                            ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                            : 'bg-slate-800 text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        English
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setExamLang('ar')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          examLang === 'ar'
+                            ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                            : 'bg-slate-800 text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        عربي
+                      </button>
+                    </div>
+                  </div>
+                  <span className="text-[11px] text-slate-400">
+                    {examLang === 'ku' ? 'زانیاری تاقیکردنەوە بە کوردی' : examLang === 'en' ? 'Exam details in English' : 'تفاصيل الامتحان باللغة العربية'}
+                  </span>
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    ناوی سەرەکیی تاقیکردنەوە:
+                    ناوی سەرەکیی تاقیکردنەوە ({examLang === 'ku' ? 'کوردی' : examLang === 'en' ? 'English' : 'عربي'}):
                   </label>
                   <input
                     type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="نموونە: خولی فەرمیی پێشبڕکێی ئۆنلاینی KSC - خولی یەکەم"
+                    value={examLang === 'ku' ? titleKu : examLang === 'en' ? titleEn : titleAr}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (examLang === 'ku') {
+                        setTitleKu(v);
+                        setTitle(v);
+                      } else if (examLang === 'en') {
+                        setTitleEn(v);
+                      } else {
+                        setTitleAr(v);
+                      }
+                    }}
+                    placeholder={examLang === 'ku' ? 'نموونە: خولی فەرمیی پێشبڕکێی ئۆنلاینی KSC - خولی یەکەم' : examLang === 'en' ? 'e.g. KSC Official Live Online Exam - Round 1' : 'مثال: الامتحان الإلكتروني المباشر لمنصة KSC - الجولة الأولى'}
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    dir={examLang === 'en' ? 'ltr' : 'rtl'}
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    دەقی ڕوونکردنەوەی تاقیکردنەوە:
+                    دەقی ڕوونکردنەوەی تاقیکردنەوە ({examLang === 'ku' ? 'کوردی' : examLang === 'en' ? 'English' : 'عربي'}):
                   </label>
                   <textarea
                     rows={3}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="ڕێنمایی کورت بۆ قوتابییان (دەتوانیت بە Enter دێڕی نوێ بنووسیت)..."
+                    value={examLang === 'ku' ? descKu : examLang === 'en' ? descEn : descAr}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (examLang === 'ku') {
+                        setDescKu(v);
+                        setDescription(v);
+                      } else if (examLang === 'en') {
+                        setDescEn(v);
+                      } else {
+                        setDescAr(v);
+                      }
+                    }}
+                    placeholder={examLang === 'ku' ? 'ڕێنمایی کورت بۆ قوتابییان (دەتوانیت بە Enter دێڕی نوێ بنووسیت)...' : examLang === 'en' ? 'Brief instructions for participants (press Enter for new line)...' : 'تعليمات موجزة للطلاب (يمكنك الضغط على Enter لإضافة سطر جديد)...'}
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-400 resize-y"
+                    dir={examLang === 'en' ? 'ltr' : 'rtl'}
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
                     <Gift className="w-3.5 h-3.5 text-amber-400" />
-                    <span>سپۆنسەر و دیارییەکان:</span>
+                    <span>سپۆنسەر و دیارییەکان ({examLang === 'ku' ? 'کوردی' : examLang === 'en' ? 'English' : 'عربي'}):</span>
                   </label>
                   <textarea
                     rows={2}
-                    value={sponsorsAndPrizes}
-                    onChange={(e) => setSponsorsAndPrizes(e.target.value)}
-                    placeholder="سپۆنسەری فەرمی: کۆمپانیای ... • دیاری: ١ ملیۆن دینار و بڕوانامە"
+                    value={examLang === 'ku' ? prizesKu : examLang === 'en' ? prizesEn : prizesAr}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (examLang === 'ku') {
+                        setPrizesKu(v);
+                        setSponsorsAndPrizes(v);
+                      } else if (examLang === 'en') {
+                        setPrizesEn(v);
+                      } else {
+                        setPrizesAr(v);
+                      }
+                    }}
+                    placeholder={examLang === 'ku' ? 'سپۆنسەری فەرمی: کۆمپانیای ... • دیاری: ١ ملیۆن دینار و بڕوانامە' : examLang === 'en' ? 'Official Sponsor: ... • Prizes: 1M IQD and Gold Certificates' : 'الراعي الرسمي: شركة ... • الجوائز: مليون دينار وشهادات تقديرية'}
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-400 resize-y"
+                    dir={examLang === 'en' ? 'ltr' : 'rtl'}
                   />
                 </div>
 
