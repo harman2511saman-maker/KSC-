@@ -39,6 +39,7 @@ import {
 import api, { getUploadUrl } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { translateDynamic } from '../utils/transliterate';
 import OMRGuideModal from '../components/OMRGuideModal';
 import CertificateModal from '../components/CertificateModal';
 import PromoSlider from '../components/PromoSlider';
@@ -58,7 +59,8 @@ export default function Competitions({ onShowToast }) {
     translateSchool,
     translateExam,
     translateSubj,
-    translateDyn
+    translateDyn,
+    translateDynamic
   } = useLanguage();
   const [leaderboard, setLeaderboard] = useState(null);
   const [exams, setExams] = useState([]);
@@ -799,7 +801,7 @@ export default function Competitions({ onShowToast }) {
                   {t('thSchool')}: <strong className="text-amber-300">{translateSchool(m.school_name)}</strong>
                 </p>
                 <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">
-                  <span>{t('gradeLabel')} {m.grade ? translateDynamic(m.grade) : 'All'}</span>
+                  <span>{t('gradeLabel')} {m.grade ? translateDyn(m.grade) : 'All'}</span>
                   <span className="text-emerald-400 font-bold group-hover:underline">{t('clickForResults')}</span>
                 </div>
               </button>
@@ -842,7 +844,7 @@ export default function Competitions({ onShowToast }) {
                 <p className="text-xs text-slate-300 flex items-center gap-2 flex-wrap">
                   <span>{t('thSchool')}: <strong className="text-amber-300">{translateSchool(searchResult.school_name)}</strong></span>
                   <span>•</span>
-                  <span>{t('gradeLabel')} <strong className="text-amber-300">{searchResult.grade ? translateDynamic(searchResult.grade) : 'All'}</strong></span>
+                  <span>{t('gradeLabel')} <strong className="text-amber-300">{searchResult.grade ? translateDyn(searchResult.grade) : 'All'}</strong></span>
                 </p>
               </div>
             </div>
@@ -1033,7 +1035,7 @@ export default function Competitions({ onShowToast }) {
         {showAdvancedFilters && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-900/60 rounded-2xl border border-slate-800 animate-fadeIn">
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 mb-1">تاقیکردنەوە:</label>
+              <label className="block text-[11px] font-bold text-slate-400 mb-1">{t('examLabel')}:</label>
               <select
                 value={selectedExamId}
                 onChange={(e) => setSelectedExamId(e.target.value)}

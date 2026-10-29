@@ -76,6 +76,7 @@ export const LanguageProvider = ({ children }) => {
         translateExam,
         translateSubj,
         translateDyn,
+        translateDynamic: translateDyn,
         getSlideText
       }}
     >
@@ -98,6 +99,7 @@ export const useLanguage = () => {
       translateExam: (n) => n,
       translateSubj: (n) => n,
       translateDyn: (n) => n,
+      translateDynamic: (n) => n,
       getSlideText: (s, f) => s?.[f] || ''
     };
   }
