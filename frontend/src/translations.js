@@ -121,8 +121,8 @@ export const translations = {
 
   en: {
     // Header & Brand
-    platformTitle: 'Kurdistan Students Competition Official Platform',
-    platformSubtitle: 'National Platform for Rankings & Verified Results',
+    platformTitle: 'Kurdistan Students Competition',
+    platformSubtitle: 'Official National Rankings & Results Platform',
     kscEmblem: 'Kurdistan Platform',
     mainMenu: 'Main Platform Menu',
 
@@ -353,3 +353,4 @@ export const translations = {
     languageSelect: 'اللغة / Language',
   }
 };
+

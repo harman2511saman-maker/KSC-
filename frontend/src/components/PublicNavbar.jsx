@@ -106,7 +106,7 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Logo & Site Title */}
-        <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
+        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
           <div className="relative shrink-0">
             <div className="absolute -inset-1 rounded-2xl bg-amber-500/20 blur-sm pointer-events-none" />
             <img
@@ -114,22 +114,22 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
               alt="KSC Logo"
               onClick={onSecretLogoClick}
               title={t('kscEmblem')}
-              className="relative h-11 sm:h-14 w-auto object-contain rounded-xl drop-shadow-[0_4px_12px_rgba(245,158,11,0.35)] hover:scale-105 transition-transform duration-300 select-none cursor-pointer"
+              className="relative h-10 sm:h-12 md:h-13 w-auto object-contain rounded-xl drop-shadow-[0_4px_12px_rgba(245,158,11,0.35)] hover:scale-105 transition-transform duration-300 select-none cursor-pointer"
             />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xs sm:text-base md:text-lg font-black text-white leading-tight truncate">
+            <h1 className="text-xs sm:text-sm md:text-base lg:text-lg font-black text-white leading-snug">
               {t('platformTitle')}
             </h1>
-            <p className="text-[10px] sm:text-xs text-amber-400 font-bold flex items-center gap-1.5 mt-0.5 truncate">
+            <p className="text-[10px] sm:text-xs text-amber-400 font-bold flex items-center gap-1.5 mt-0.5">
               <span>{t('platformSubtitle')}</span>
-              <span className="text-slate-500 font-normal hidden md:inline">• (KSC)</span>
+              <span className="text-slate-500 font-normal hidden sm:inline">• (KSC)</span>
             </p>
           </div>
         </div>
 
         {/* Center: Desktop Navigation Bar (Large screens) */}
-        <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
+        <nav className="hidden xl:flex items-center gap-1 xl:gap-1.5 2xl:gap-2 mx-2">
           <button
             onClick={() => scrollTo('top')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
@@ -196,16 +196,16 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
         </nav>
 
         {/* Action Controls: Language Selector & Mobile Hamburger */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Language Selector Dropdown (visible on all screens) */}
           <LanguageSelector />
 
-          {/* Mobile Hamburger Menu Toggle Button (Visible on mobile/tablet) */}
+          {/* Mobile Hamburger Menu Toggle Button (Visible on screens below xl) */}
           <button
             type="button"
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
             aria-label="Toggle Menu"
-            className="lg:hidden p-2 rounded-xl bg-slate-900 border border-slate-700/80 text-amber-400 hover:text-white hover:bg-slate-800 active:scale-90 transition-all shadow-md flex items-center justify-center"
+            className="xl:hidden p-2 rounded-xl bg-slate-900 border border-slate-700/80 text-amber-400 hover:text-white hover:bg-slate-800 active:scale-90 transition-all shadow-md flex items-center justify-center shrink-0"
           >
             {isDrawerOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -214,7 +214,7 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
 
       {/* 2. MOBILE SLIDE-OUT DRAWER */}
       {isDrawerOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 xl:hidden">
           {/* Backdrop Blur */}
           <div
             className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity duration-300"

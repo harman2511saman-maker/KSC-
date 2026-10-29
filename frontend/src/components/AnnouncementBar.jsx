@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Megaphone, X, ChevronLeft } from 'lucide-react';
 import api from '../api';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function AnnouncementBar({ initialSettings }) {
+  const { isRTL } = useLanguage();
   const [announcement, setAnnouncement] = useState(initialSettings?.announcement || null);
   const [dismissed, setDismissed] = useState(false);
 
@@ -34,7 +36,7 @@ export default function AnnouncementBar({ initialSettings }) {
   return (
     <div
       className="relative z-30 bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 text-white px-3 sm:px-6 py-2.5 shadow-md border-b border-amber-400/30 select-none animate-fadeIn"
-      dir="rtl"
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
       <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-2.5">
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">

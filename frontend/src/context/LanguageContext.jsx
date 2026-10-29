@@ -4,9 +4,9 @@ import { translations } from '../translations';
 const LanguageContext = createContext(null);
 
 export const languages = [
-  { code: 'ku', name: 'کوردی', flag: '☀️', dir: 'rtl' },
-  { code: 'en', name: 'English', flag: '🇬🇧', dir: 'ltr' },
-  { code: 'ar', name: 'عربي', flag: '🇮🇶', dir: 'rtl' }
+  { code: 'ku', name: 'کوردی', dir: 'rtl' },
+  { code: 'en', name: 'English', dir: 'ltr' },
+  { code: 'ar', name: 'عربي', dir: 'rtl' }
 ];
 
 export const LanguageProvider = ({ children }) => {
@@ -57,7 +57,6 @@ export const LanguageProvider = ({ children }) => {
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
   if (!context) {
-    // Graceful fallback if used outside provider
     return {
       lang: 'ku',
       isRTL: true,
