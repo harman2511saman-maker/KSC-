@@ -7,7 +7,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        kurdish: ['KJino', 'HSAlBasimA', 'NRT', 'Vazirmatn', 'Noto Sans Arabic', 'Segoe UI', 'Tahoma', 'sans-serif'],
+        kurdish: ['NRT', 'NRT-Bold', 'Vazirmatn', 'sans-serif'],
+        sans: ['NRT', 'NRT-Bold', 'Vazirmatn', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       colors: {
         brand: {

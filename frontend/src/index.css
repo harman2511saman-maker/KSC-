@@ -2,10 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* -------------------------------------------------------------------------- */
+/* OFFICIAL KURDISH FONT: NRT Bold (پلاتفۆرمی پێشبڕکێی قوتابخانەکانی کوردستان)     */
+/* -------------------------------------------------------------------------- */
+@font-face {
+  font-family: 'NRT';
+  src: url('/fonts/NRT-Bd.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'NRT-Bold';
+  src: url('/fonts/NRT-Bd.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KurdishFont';
+  src: url('/fonts/NRT-Bd.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
-  body {
+  *, ::before, ::after {
+    font-family: 'NRT', 'NRT-Bold', 'KurdishFont', 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  html, body {
     @apply antialiased;
-    font-family: 'KurdishFont', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'NRT', 'NRT-Bold', 'KurdishFont', 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+
+  button, input, optgroup, select, textarea {
+    font-family: 'NRT', 'NRT-Bold', 'KurdishFont', 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   }
 }
 
