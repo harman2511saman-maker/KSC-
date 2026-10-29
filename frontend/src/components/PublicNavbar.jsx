@@ -105,7 +105,7 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
     <>
       {/* 1. TOP STICKY HEADER (KRG Official Portal Style Layout) */}
       <header
-        className={`sticky top-0 z-40 w-full max-w-full overflow-x-hidden px-2.5 sm:px-6 py-2 sm:py-3 flex items-center justify-between border-b backdrop-blur-md transition-colors duration-300 ${
+        className={`sticky top-0 z-40 w-full max-w-full px-2.5 sm:px-6 py-2 sm:py-3 flex items-center justify-between border-b backdrop-blur-md transition-colors duration-300 ${
           isDark
             ? 'bg-[#060a16]/95 border-slate-800/80 shadow-2xl text-white'
             : 'bg-white/95 border-slate-200/90 shadow-sm text-slate-900'
