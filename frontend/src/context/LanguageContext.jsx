@@ -1,5 +1,12 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { translations } from '../translations';
+import {
+  translateStudentName,
+  translateSchoolName,
+  translateExamName,
+  translateSubject,
+  translateDynamic
+} from '../utils/transliterate';
 
 const LanguageContext = createContext(null);
 
@@ -47,8 +54,28 @@ export const LanguageProvider = ({ children }) => {
     return translations.ku[key] || translations.en[key] || defaultText || key;
   };
 
+  // Automated translation & transliteration helpers bound to current language
+  const translateStudent = useCallback((name) => translateStudentName(name, lang), [lang]);
+  const translateSchool = useCallback((name) => translateSchoolName(name, lang), [lang]);
+  const translateExam = useCallback((name) => translateExamName(name, lang), [lang]);
+  const translateSubj = useCallback((subj) => translateSubject(subj, lang), [lang]);
+  const translateDyn = useCallback((text) => translateDynamic(text, lang), [lang]);
+
   return (
-    <LanguageContext.Provider value={{ lang, isRTL, setLanguage, t, languages }}>
+    <LanguageContext.Provider
+      value={{
+        lang,
+        isRTL,
+        setLanguage,
+        t,
+        languages,
+        translateStudent,
+        translateSchool,
+        translateExam,
+        translateSubj,
+        translateDyn
+      }}
+    >
       {children}
     </LanguageContext.Provider>
   );
@@ -62,7 +89,12 @@ export const useLanguage = () => {
       isRTL: true,
       setLanguage: () => {},
       t: (k, d) => translations.ku[k] || d || k,
-      languages
+      languages,
+      translateStudent: (n) => n,
+      translateSchool: (n) => n,
+      translateExam: (n) => n,
+      translateSubj: (n) => n,
+      translateDyn: (n) => n
     };
   }
   return context;

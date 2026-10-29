@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 
 export default function AnnouncementBar({ initialSettings }) {
-  const { isRTL } = useLanguage();
+  const { isRTL, translateDyn } = useLanguage();
   const { isDark } = useTheme();
   const [announcement, setAnnouncement] = useState(initialSettings?.announcement || null);
   const [dismissed, setDismissed] = useState(false);
@@ -54,14 +54,14 @@ export default function AnnouncementBar({ initialSettings }) {
             }`}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
-            <span>{announcement.badge || 'ئاگاداری'}</span>
+            <span>{translateDyn(announcement.badge || 'ئاگاداری')}</span>
           </span>
           <p
             className={`font-black text-xs sm:text-sm leading-relaxed break-words ${
               isDark ? 'text-amber-50 drop-shadow-sm' : 'text-black'
             }`}
           >
-            {announcement.text}
+            {translateDyn(announcement.text)}
           </p>
         </div>
 

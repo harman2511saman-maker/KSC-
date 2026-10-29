@@ -113,7 +113,7 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Right side (RTL start): Hamburger Button + Logo + Title */}
-        <div className="flex items-center gap-2.5 sm:gap-4 min-w-0 flex-1">
+        <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
           {/* Hamburger Menu Toggle Button with 3 golden horizontal bars */}
           <button
             type="button"
@@ -153,14 +153,14 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
             <img
               src="/logo.png"
               alt="KSC Logo"
-              className="h-10 sm:h-12 md:h-14 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300 select-none"
+              className="h-9 sm:h-11 md:h-13 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300 select-none"
             />
           </div>
 
           {/* Clean Non-Breaking Title */}
           <div className="min-w-0 flex-1 overflow-hidden">
             <span
-              className={`block font-black leading-tight select-none truncate sm:whitespace-normal text-xs xs:text-sm sm:text-lg md:text-xl tracking-tight transition-colors ${
+              className={`block font-black leading-tight select-none truncate text-sm sm:text-base md:text-lg lg:text-xl tracking-tight transition-colors ${
                 isDark ? 'text-white' : 'text-black'
               }`}
             >

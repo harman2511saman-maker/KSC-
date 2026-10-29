@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import api from '../api';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function OnlineExamBanner({
   onStartExam,
@@ -36,6 +37,7 @@ export default function OnlineExamBanner({
   const [isPaused, setIsPaused] = useState(false);
   const [touchOffset, setTouchOffset] = useState(0);
   const { isDark } = useTheme();
+  const { isRTL, translateExam, translateDyn } = useLanguage();
 
   // Countdown state for currently visible slide
   const [timeRemaining, setTimeRemaining] = useState({
@@ -490,7 +492,7 @@ export default function OnlineExamBanner({
         isMouseDown.current = false;
         setTouchOffset(0);
       }}
-      dir="rtl"
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Slide Card Container with Touch & Drag Support */}
       <div
@@ -573,7 +575,7 @@ export default function OnlineExamBanner({
                   isDark ? 'text-white drop-shadow-md' : 'text-black'
                 }`}
               >
-                {currentExam.title}
+                {translateExam(currentExam.title)}
               </h2>
               {currentExam.description && (
                 <p
@@ -581,7 +583,7 @@ export default function OnlineExamBanner({
                     isDark ? 'text-slate-300/90' : 'text-slate-800'
                   }`}
                 >
-                  {currentExam.description}
+                  {translateDyn(currentExam.description)}
                 </p>
               )}
             </div>
@@ -594,7 +596,7 @@ export default function OnlineExamBanner({
                 }`}
               >
                 <Gift className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                <span className="break-words leading-relaxed whitespace-pre-line">{currentExam.sponsors_and_prizes}</span>
+                <span className="break-words leading-relaxed whitespace-pre-line">{translateDyn(currentExam.sponsors_and_prizes)}</span>
               </div>
             )}
 

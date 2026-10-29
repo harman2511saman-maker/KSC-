@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ExternalLink, MessageCircle, Send, Phone, Globe } from 'lucide-react';
 import { getUploadUrl } from '../api';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function PromoSlider({ slides: propSlides }) {
   const defaultSlides = [
@@ -60,6 +61,7 @@ export default function PromoSlider({ slides: propSlides }) {
   const [isPaused, setIsPaused] = useState(false);
   const [touchOffset, setTouchOffset] = useState(0);
   const { isDark } = useTheme();
+  const { isRTL, translateDyn } = useLanguage();
 
   // Touch Swipe Refs
   const touchStartX = useRef(0);
@@ -208,7 +210,7 @@ export default function PromoSlider({ slides: propSlides }) {
         isMouseDown.current = false;
         setTouchOffset(0);
       }}
-      dir="rtl"
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Slide Card Container with Touch Swipe Listeners */}
       <div
@@ -258,7 +260,7 @@ export default function PromoSlider({ slides: propSlides }) {
                     : 'bg-amber-100 border-amber-300 text-amber-950 font-black'
                 }`}
               >
-                <span>{currentSlide.badge || 'ڕێکلام'}</span>
+                <span>{translateDyn(currentSlide.badge || 'ڕێکلام')}</span>
               </span>
               {currentSlide.tag && (
                 <span
@@ -288,14 +290,14 @@ export default function PromoSlider({ slides: propSlides }) {
                   isDark ? 'text-white drop-shadow-md' : 'text-black'
                 }`}
               >
-                {currentSlide.title}
+                {translateDyn(currentSlide.title)}
               </h3>
               <p
                 className={`text-xs sm:text-sm leading-relaxed max-w-2xl font-medium break-words whitespace-pre-line ${
                   isDark ? 'text-slate-200/90' : 'text-slate-800'
                 }`}
               >
-                {currentSlide.description}
+                {translateDyn(currentSlide.description)}
               </p>
             </div>
 
@@ -334,18 +336,18 @@ export default function PromoSlider({ slides: propSlides }) {
                     }`}
                   >
                     {renderLinkIcon(lnk)}
-                    <span>{lnk.title || lnk.text || 'کردنەوەی بەستەر'}</span>
+                    <span>{translateDyn(lnk.title || lnk.text || 'کردنەوەی بەستەر')}</span>
                   </a>
                 ))
               ) : (
                 <span className={`text-[11px] font-medium ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
-                  {currentSlide.link_text || 'پلاتفۆرمی فەرمی KSC'}
+                  {translateDyn(currentSlide.link_text || 'پلاتفۆرمی فەرمی KSC')}
                 </span>
               )}
             </div>
 
             <span className={`text-xs font-bold ${isDark ? 'text-white/80' : 'text-slate-700'}`}>
-              {currentSlide.badge || 'KSC Platform'}
+              {translateDyn(currentSlide.badge || 'KSC Platform')}
             </span>
           </div>
 

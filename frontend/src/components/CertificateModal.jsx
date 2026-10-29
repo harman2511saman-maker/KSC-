@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react';
 import { X, Download, Printer, Award, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function CertificateModal({ isOpen, onClose, data }) {
   if (!isOpen || !data) return null;
 
+  const { lang, isRTL, t, translateStudent, translateSchool, translateExam, translateSubj } = useLanguage();
   const [downloading, setDownloading] = useState(false);
   const certRef = useRef(null);
 
@@ -24,6 +26,11 @@ export default function CertificateModal({ isOpen, onClose, data }) {
     signee_title = 'لیژنەی باڵای هەڵسەنگاندن و تاقیکردنەوەکان',
     date = new Date().toLocaleDateString('ku-IQ')
   } = data;
+
+  const displayName = data.is_school ? translateSchool(school_name) : translateStudent(student_name);
+  const displaySchool = translateSchool(school_name);
+  const displayExam = translateExam(exam_name);
+  const displaySubject = translateSubj(subject);
 
   // Generate and Download Canvas PNG
   const handleDownloadImage = async () => {
@@ -222,12 +229,12 @@ export default function CertificateModal({ isOpen, onClose, data }) {
                 : 'ئەم بڕوانامەیە بە شانازییەوە پێشکەش دەکرێت بە قوتابیی شایستە:'}
             </p>
             <h3 className="text-2xl sm:text-4xl font-black text-white drop-shadow-md py-1">
-              {data.is_school ? `قوتابخانەی ${school_name}` : student_name}
+              {data.is_school ? displayName : displayName}
             </h3>
             <p className="text-xs sm:text-sm font-bold text-sky-400">
               {data.is_school
-                ? `پلەی #${overall_rank} لەسەر ئاستی سەرجەم قوتابخانەکانی کوردستان • ${exam_name}`
-                : `لە ${school_name} • ${grade}`}
+                ? `پلەی #${overall_rank} لەسەر ئاستی سەرجەم قوتابخانەکانی کوردستان • ${displayExam}`
+                : `لە ${displaySchool} • ${grade}`}
             </p>
           </div>
 
