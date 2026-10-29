@@ -6,6 +6,8 @@ import Toast from './components/Toast';
 import SplashScreen from './components/SplashScreen';
 import Footer from './components/Footer';
 import AnnouncementBar from './components/AnnouncementBar';
+import PublicNavbar from './components/PublicNavbar';
+import OMRGuideModal from './components/OMRGuideModal';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -144,6 +146,7 @@ function MainApp() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
 
   // Cross-page selections
   const [selectedExamIdForScan, setSelectedExamIdForScan] = useState(null);
@@ -244,31 +247,13 @@ function MainApp() {
   // PUBLIC PORTAL: If not logged in as Admin, show strictly the public competition page
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col justify-between">
+      <div className="min-h-screen bg-slate-950 flex flex-col justify-between pb-16 lg:pb-0">
         <AnnouncementBar />
-        <header className="sticky top-0 z-40 bg-[#080d1a]/95 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-2xl">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="absolute -inset-1 rounded-2xl bg-amber-500/20 blur-sm pointer-events-none" />
-              <img
-                src="/logo.png"
-                alt="لۆگۆی فەرمیی پێشبڕکێی قوتابیانی کوردستان"
-                onClick={handleSecretLogoClick}
-                title=""
-                className="relative h-12 sm:h-14 w-auto object-contain rounded-xl drop-shadow-[0_4px_12px_rgba(245,158,11,0.35)] hover:scale-105 transition-transform duration-300 select-none cursor-default"
-              />
-            </div>
-            <div>
-              <h1 className="text-sm sm:text-lg font-black text-white leading-tight">
-                پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان
-              </h1>
-              <p className="text-[10px] sm:text-xs text-amber-400 font-bold flex items-center gap-1.5 mt-0.5">
-                <span>سەکۆی نیشتمانی بۆ ڕیزبەندی و ئەنجامە پشتڕاستکراوەکان</span>
-                <span className="text-slate-500 font-normal hidden sm:inline">• (KSC)</span>
-              </p>
-            </div>
-          </div>
-        </header>
+        <PublicNavbar
+          onOpenAdminModal={() => setShowAdminModal(true)}
+          onOpenOMRGuide={() => setShowGuideModal(true)}
+          onSecretLogoClick={handleSecretLogoClick}
+        />
 
         <main className="flex-1">
           <Competitions onShowToast={showToast} />
@@ -280,6 +265,11 @@ function MainApp() {
           isOpen={showAdminModal}
           onClose={() => setShowAdminModal(false)}
           onLoginSuccess={() => showToast({ type: 'success', message: 'بە سەرکەوتوویی چوویتە ژوورەوە بۆ بەشی کارگێڕی' })}
+        />
+
+        <OMRGuideModal
+          isOpen={showGuideModal}
+          onClose={() => setShowGuideModal(false)}
         />
 
         <Toast toast={toast} onClose={() => setToast(null)} />

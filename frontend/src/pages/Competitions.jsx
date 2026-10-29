@@ -259,7 +259,7 @@ export default function Competitions({ onShowToast }) {
           {/* Hero Left Widgets (Search + Compact Stats) in RTL Left / Visual Start */}
           <div className="flex flex-col sm:flex-row items-stretch gap-3.5 order-2 lg:order-1 w-full lg:w-auto shrink-0">
             {/* Student Search & Lookup Box */}
-            <div className="bg-[#0f172a]/90 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-slate-700/60 shadow-xl space-y-3 flex-1 sm:w-88">
+            <div id="student-search-section" className="bg-[#0f172a]/90 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-slate-700/60 shadow-xl space-y-3 flex-1 sm:w-88 scroll-mt-20">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2.5 py-0.5 rounded-full font-mono font-bold">
                   {searchMode === 'code' ? 'STD CODE' : 'TRIPLE NAME'}
@@ -305,6 +305,7 @@ export default function Competitions({ onShowToast }) {
               >
                 {searchMode === 'code' ? (
                   <input
+                    id="student-search-input"
                     type="text"
                     required
                     placeholder="کۆدی بەشداریکردن (وەک KSC-XXXX-XX یان 1001)..."
@@ -315,6 +316,7 @@ export default function Competitions({ onShowToast }) {
                   />
                 ) : (
                   <input
+                    id="student-search-input"
                     type="text"
                     required
                     placeholder="ناوی سیانیی قوتابی بنووسە..."
@@ -405,35 +407,37 @@ export default function Competitions({ onShowToast }) {
             </div>
 
             {/* 2. Online Live Exam Card & Countdown (below promo slider) */}
-            <OnlineExamBanner
-              key={onlineExamKey}
-              onStartExam={(examData) => {
-                setSelectedOnlineExam(examData);
-                setShowOnlineExamPasscodeModal(true);
-              }}
-              onManageExam={() => setShowOnlineExamAdminModal(true)}
-              isAdmin={user?.role === 'ADMIN'}
-              onShowToast={onShowToast}
-              onViewSolutions={(exam) => setSelectedExamForSolutions(exam)}
-              onViewLeaderboard={(exam) => {
-                let targetExamId = exam?.linked_exam_id;
-                if (!targetExamId && exams?.length > 0) {
-                  const match = exams.find(e => e.exam_name === exam?.title || e.subject === exam?.title);
-                  if (match) targetExamId = match.id;
-                }
-                if (targetExamId) {
-                  setSelectedExamId(String(targetExamId));
-                }
-                setSelectedSchoolId('');
-                fetchLeaderboard(targetExamId ? String(targetExamId) : undefined, '');
-                setTimeout(() => {
-                  const el = document.getElementById('leaderboard-section');
-                  if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            <div id="online-exam-section" className="w-full scroll-mt-20">
+              <OnlineExamBanner
+                key={onlineExamKey}
+                onStartExam={(examData) => {
+                  setSelectedOnlineExam(examData);
+                  setShowOnlineExamPasscodeModal(true);
+                }}
+                onManageExam={() => setShowOnlineExamAdminModal(true)}
+                isAdmin={user?.role === 'ADMIN'}
+                onShowToast={onShowToast}
+                onViewSolutions={(exam) => setSelectedExamForSolutions(exam)}
+                onViewLeaderboard={(exam) => {
+                  let targetExamId = exam?.linked_exam_id;
+                  if (!targetExamId && exams?.length > 0) {
+                    const match = exams.find(e => e.exam_name === exam?.title || e.subject === exam?.title);
+                    if (match) targetExamId = match.id;
                   }
-                }, 150);
-              }}
-            />
+                  if (targetExamId) {
+                    setSelectedExamId(String(targetExamId));
+                  }
+                  setSelectedSchoolId('');
+                  fetchLeaderboard(targetExamId ? String(targetExamId) : undefined, '');
+                  setTimeout(() => {
+                    const el = document.getElementById('leaderboard-section');
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }, 150);
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -459,7 +463,7 @@ export default function Competitions({ onShowToast }) {
       </div>
 
       {/* 2. DUAL COLUMN SECTION (Schools Ranking Table + Olympic Podium Pedestal) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div id="schools-ranking-section" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start scroll-mt-20">
         {/* Left Column (7 cols): Full Schools Ranking Dark Table */}
         <div className="lg:col-span-7 bg-[#080d1a] rounded-3xl border border-slate-800/80 p-5 sm:p-6 shadow-xl space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
@@ -979,7 +983,7 @@ export default function Competitions({ onShowToast }) {
       )}
 
       {/* 4. STUDENTS OVERALL RANKING & DIRECTORY (With Advanced Filter Controls) */}
-      <div id="leaderboard-section" className="bg-[#080d1a] rounded-3xl border border-slate-800/80 p-5 sm:p-6 shadow-xl space-y-5">
+      <div id="leaderboard-section" className="bg-[#080d1a] rounded-3xl border border-slate-800/80 p-5 sm:p-6 shadow-xl space-y-5 scroll-mt-20">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
           <div className="flex items-center gap-2.5">
             <GraduationCap className="w-5 h-5 text-amber-400" />
