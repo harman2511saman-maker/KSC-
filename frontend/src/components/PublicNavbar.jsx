@@ -133,16 +133,17 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
             </div>
           </button>
 
-          {/* Official Emblem Logo (Circular badge with golden border ring) */}
+          {/* Official Logo */}
           <div
             onClick={onSecretLogoClick}
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 border-amber-400 p-0.5 bg-white shadow-[0_0_12px_rgba(245,158,11,0.3)] flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform"
+            className="relative shrink-0 cursor-pointer"
             title={t('kscEmblem')}
           >
+            <div className="absolute -inset-1 rounded-2xl bg-amber-500/20 blur-sm pointer-events-none" />
             <img
               src="/logo.png"
-              alt="KSC Emblem"
-              className="w-full h-full object-contain rounded-full"
+              alt="KSC Logo"
+              className="relative h-10 sm:h-12 w-auto object-contain rounded-xl drop-shadow-[0_4px_12px_rgba(245,158,11,0.35)] hover:scale-105 transition-transform duration-300 select-none"
             />
           </div>
 
@@ -192,13 +193,11 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
             <div>
               <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-[#060c18]">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-full border-2 border-amber-400 p-0.5 bg-white shadow-sm flex items-center justify-center shrink-0">
-                    <img
-                      src="/logo.png"
-                      alt="KSC"
-                      className="w-full h-full object-contain rounded-full"
-                    />
-                  </div>
+                  <img
+                    src="/logo.png"
+                    alt="KSC Logo"
+                    className="h-10 w-auto object-contain rounded-xl drop-shadow-sm shrink-0"
+                  />
                   <div>
                     <h2 className="text-xs font-black text-white">{t('kscEmblem')}</h2>
                     <span className="text-[10px] text-amber-400 font-bold block">{t('mainMenu')}</span>
