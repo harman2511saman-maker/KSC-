@@ -8,6 +8,11 @@ export const translations = {
     platformSubtitle: 'سەکۆی نیشتمانی بۆ ڕیزبەندی و ئەنجامەکان',
     kscEmblem: 'پێشبڕکێی قوتابخانەکانی کوردستان',
     mainMenu: 'مینیوی سەرەکی پلاتفۆرم',
+    themeModeLabel: 'شێوازی ڕووکار',
+    lightModeName: 'ڕووناک',
+    darkModeName: 'تاریک',
+    switchToLight: 'گۆڕین بۆ دۆخی ڕووناک',
+    switchToDark: 'گۆڕین بۆ دۆخی تاریک',
 
     // Navigation Links
     navHome: 'سەرەکی',
@@ -121,10 +126,15 @@ export const translations = {
 
   en: {
     // Header & Brand
-    platformTitle: 'KSC Platform',
+    platformTitle: 'Kurdistan Schools Competition',
     platformSubtitle: 'National Examination & Ranking Platform',
-    kscEmblem: 'KSC Platform',
+    kscEmblem: 'Kurdistan Schools Competition',
     mainMenu: 'Main Menu',
+    themeModeLabel: 'Theme Appearance',
+    lightModeName: 'Light',
+    darkModeName: 'Dark',
+    switchToLight: 'Switch to Light Mode',
+    switchToDark: 'Switch to Dark Mode',
 
     // Navigation Links (Short and concise)
     navHome: 'Home',
@@ -242,6 +252,11 @@ export const translations = {
     platformSubtitle: 'المنصة الوطنية للتصنيف والنتائج المعتمدة',
     kscEmblem: 'مسابقة مدارس كوردستان',
     mainMenu: 'القائمة الرئيسية للمنصة',
+    themeModeLabel: 'مظهر الشاشة',
+    lightModeName: 'فاتح',
+    darkModeName: 'داكن',
+    switchToLight: 'التبديل إلى الوضع الفاتح',
+    switchToDark: 'التبديل إلى الوضع الداكن',
 
     // Navigation Links
     navHome: 'الرئيسية',

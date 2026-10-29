@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ExternalLink, MessageCircle, Send, Phone, Globe } from 'lucide-react';
 import { getUploadUrl } from '../api';
+import { useTheme } from '../context/ThemeContext';
 
 export default function PromoSlider({ slides: propSlides }) {
   const defaultSlides = [
@@ -58,6 +59,7 @@ export default function PromoSlider({ slides: propSlides }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [touchOffset, setTouchOffset] = useState(0);
+  const { isDark } = useTheme();
 
   // Touch Swipe Refs
   const touchStartX = useRef(0);
@@ -220,32 +222,52 @@ export default function PromoSlider({ slides: propSlides }) {
           transform: touchOffset ? `translateX(${touchOffset}px)` : 'translateX(0)',
           touchAction: 'pan-y'
         }}
-        className={`relative rounded-3xl p-4 sm:p-8 bg-gradient-to-br ${
-          currentSlide.bg_gradient || 'from-emerald-700 via-emerald-800 to-slate-900'
-        } border border-white/20 shadow-2xl overflow-hidden transition-all duration-300 cursor-grab active:cursor-grabbing`}
+        className={`relative rounded-3xl p-4 sm:p-8 ${
+          isDark
+            ? `bg-gradient-to-br ${currentSlide.bg_gradient || 'from-emerald-700 via-emerald-800 to-slate-900'} border border-white/20 shadow-2xl text-white`
+            : 'bg-white border-2 border-slate-200 shadow-xl text-black'
+        } overflow-hidden transition-all duration-300 cursor-grab active:cursor-grabbing`}
       >
         {/* Background Image Overlay (if configured) */}
         {showBgImage && (
           <div
-            className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-30 pointer-events-none transition-all duration-500 scale-105"
+            className={`absolute inset-0 bg-cover bg-center mix-blend-overlay pointer-events-none transition-all duration-500 scale-105 ${
+              isDark ? 'opacity-30' : 'opacity-10'
+            }`}
             style={{ backgroundImage: `url(${getUploadUrl(currentSlide.image_url)})` }}
           />
         )}
 
         {/* Ambient Decorative Lighting */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+        {isDark && (
+          <>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+          </>
+        )}
 
         <div className="relative z-10 flex flex-col justify-between min-h-[170px] sm:min-h-[190px] space-y-4 pointer-events-auto">
           
           {/* Top Tag & Emblem */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold shadow-sm">
+              <span
+                className={`px-3 py-1 rounded-full text-[11px] font-bold shadow-sm border ${
+                  isDark
+                    ? 'bg-black/40 backdrop-blur-md border-white/20 text-white'
+                    : 'bg-amber-100 border-amber-300 text-amber-950 font-black'
+                }`}
+              >
                 <span>{currentSlide.badge || 'ڕێکلام'}</span>
               </span>
               {currentSlide.tag && (
-                <span className="px-2.5 py-0.5 rounded-lg bg-white/10 text-white/80 font-mono text-[10px] font-bold border border-white/10 hidden sm:inline-block">
+                <span
+                  className={`px-2.5 py-0.5 rounded-lg font-mono text-[10px] font-bold border hidden sm:inline-block ${
+                    isDark
+                      ? 'bg-white/10 text-white/80 border-white/10'
+                      : 'bg-slate-100 text-slate-800 border-slate-300'
+                  }`}
+                >
                   {currentSlide.tag}
                 </span>
               )}
@@ -261,10 +283,18 @@ export default function PromoSlider({ slides: propSlides }) {
           {/* Center Main Text & Optional Side Image */}
           <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 my-1">
             <div className="space-y-1.5 flex-1 min-w-0">
-              <h3 className="text-lg sm:text-2xl font-black text-white leading-snug drop-shadow-md break-words whitespace-pre-line">
+              <h3
+                className={`text-lg sm:text-2xl font-black leading-snug break-words whitespace-pre-line ${
+                  isDark ? 'text-white drop-shadow-md' : 'text-black'
+                }`}
+              >
                 {currentSlide.title}
               </h3>
-              <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed max-w-2xl font-medium break-words whitespace-pre-line">
+              <p
+                className={`text-xs sm:text-sm leading-relaxed max-w-2xl font-medium break-words whitespace-pre-line ${
+                  isDark ? 'text-slate-200/90' : 'text-slate-800'
+                }`}
+              >
                 {currentSlide.description}
               </p>
             </div>
@@ -274,14 +304,20 @@ export default function PromoSlider({ slides: propSlides }) {
                 <img
                   src={getUploadUrl(currentSlide.image_url)}
                   alt={currentSlide.title || 'Slide Image'}
-                  className="w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-32 object-cover rounded-2xl border-2 border-white/30 shadow-2xl bg-black/30 backdrop-blur-sm pointer-events-none transition-transform duration-300 group-hover/img:scale-105"
+                  className={`w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-32 object-cover rounded-2xl border-2 shadow-xl pointer-events-none transition-transform duration-300 group-hover/img:scale-105 ${
+                    isDark ? 'border-white/30 bg-black/30 backdrop-blur-sm' : 'border-slate-300 bg-slate-50'
+                  }`}
                 />
               </div>
             )}
           </div>
 
           {/* Bottom Bar: Multi-Links & Tag */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/15">
+          <div
+            className={`flex flex-wrap items-center justify-between gap-3 pt-3 border-t ${
+              isDark ? 'border-white/15' : 'border-slate-200'
+            }`}
+          >
             <div className="flex flex-wrap items-center gap-2">
               {activeLinks.length > 0 ? (
                 activeLinks.map((lnk, idx) => (
@@ -291,20 +327,24 @@ export default function PromoSlider({ slides: propSlides }) {
                     target="_blank"
                     rel="noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-bold transition-all border border-white/20 shadow-md backdrop-blur-sm"
+                    className={`inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl active:scale-95 text-xs font-bold transition-all border shadow-md ${
+                      isDark
+                        ? 'bg-white/15 hover:bg-white/25 text-white border-white/20 backdrop-blur-sm'
+                        : 'bg-slate-100 hover:bg-slate-200 text-black border-slate-300 font-bold'
+                    }`}
                   >
                     {renderLinkIcon(lnk)}
                     <span>{lnk.title || lnk.text || 'کردنەوەی بەستەر'}</span>
                   </a>
                 ))
               ) : (
-                <span className="text-[11px] text-white/70 font-medium">
+                <span className={`text-[11px] font-medium ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
                   {currentSlide.link_text || 'پلاتفۆرمی فەرمی KSC'}
                 </span>
               )}
             </div>
 
-            <span className="text-xs font-bold text-white/80">
+            <span className={`text-xs font-bold ${isDark ? 'text-white/80' : 'text-slate-700'}`}>
               {currentSlide.badge || 'KSC Platform'}
             </span>
           </div>

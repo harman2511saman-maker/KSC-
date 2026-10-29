@@ -20,6 +20,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import api from '../api';
+import { useTheme } from '../context/ThemeContext';
 
 export default function OnlineExamBanner({
   onStartExam,
@@ -34,6 +35,7 @@ export default function OnlineExamBanner({
   const [loading, setLoading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [touchOffset, setTouchOffset] = useState(0);
+  const { isDark } = useTheme();
 
   // Countdown state for currently visible slide
   const [timeRemaining, setTimeRemaining] = useState({
@@ -218,28 +220,59 @@ export default function OnlineExamBanner({
   if (exams.length === 0 || !currentExam) {
     return (
       <div className="relative w-full my-4 select-none" dir="rtl">
-        <div className="relative rounded-3xl p-5 sm:p-8 bg-gradient-to-br from-slate-900 via-indigo-950/70 to-slate-950 border border-indigo-500/30 shadow-2xl overflow-hidden space-y-6">
-          
+        <div
+          className={`relative rounded-3xl p-5 sm:p-8 ${
+            isDark
+              ? 'bg-gradient-to-br from-slate-900 via-indigo-950/70 to-slate-950 border border-indigo-500/30 shadow-2xl text-white'
+              : 'bg-white border-2 border-slate-200 shadow-xl text-black'
+          } overflow-hidden space-y-6`}
+        >
           {/* Ambient Lighting */}
-          <div className="absolute top-0 right-1/4 w-80 h-40 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-1/4 w-80 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+          {isDark && (
+            <>
+              <div className="absolute top-0 right-1/4 w-80 h-40 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 left-1/4 w-80 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+            </>
+          )}
 
           {/* Header Row */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4 relative z-10">
+          <div
+            className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b ${
+              isDark ? 'border-slate-800/80' : 'border-slate-200'
+            } pb-4 relative z-10`}
+          >
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 text-amber-300 text-xs font-black border border-amber-400/30 shadow-inner">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-spin" />
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border shadow-inner ${
+                    isDark
+                      ? 'bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 text-amber-300 border-amber-400/30'
+                      : 'bg-amber-100 text-amber-950 border-amber-300'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />
                   <span>بەمزووانە (Coming Soon) • پلاتفۆرمی تاقیکردنەوەی KSC</span>
                 </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[11px] font-bold border border-slate-700">
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                    isDark ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-300'
+                  }`}
+                >
                   خولی نوێ لە ئامادەکاریدایە
                 </span>
               </div>
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-snug">
+              <h2
+                className={`text-xl sm:text-2xl lg:text-3xl font-black leading-snug ${
+                  isDark ? 'text-white' : 'text-black'
+                }`}
+              >
                 خولی داهاتووی تاقیکردنەوە و پێشبڕکێی ئۆنلاین بەمزووانە ڕادەگەیەنرێت
               </h2>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
+              <p
+                className={`text-xs sm:text-sm leading-relaxed max-w-3xl ${
+                  isDark ? 'text-slate-300' : 'text-slate-800'
+                }`}
+              >
                 لە ئێستادا هیچ تاقیکردنەوەیەکی چالاک نییە. لەگەڵ دیاریکردنی وادەی تاقیکردنەوە، کاتژمێری پێچەوانە دەستپێدەکات. دەتوانیت لە خوارەوە زانیاری دەربارەی هەردوو شێوازی تاقیکردنەوە بخوێنیتەوە:
               </p>
             </div>
@@ -249,9 +282,9 @@ export default function OnlineExamBanner({
               <button
                 type="button"
                 onClick={onManageExam}
-                className="shrink-0 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 border border-amber-400/40 text-amber-300 hover:text-white text-xs font-black flex items-center gap-2 shadow-lg transition-all active:scale-95"
+                className="shrink-0 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 border border-amber-400/40 text-amber-400 hover:text-amber-500 text-xs font-black flex items-center gap-2 shadow-lg transition-all active:scale-95"
               >
-                <Settings className="w-4 h-4 text-amber-400" />
+                <Settings className="w-4 h-4 text-amber-500" />
                 <span>دانانی تاقیکردنەوەی نوێ (Admin)</span>
               </button>
             )}
@@ -261,82 +294,102 @@ export default function OnlineExamBanner({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
             
             {/* Mode 1: Pure Digital Online (بەبێ پەڕەی سۆما) */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-950/30 via-slate-900 to-slate-950 border border-emerald-500/30 shadow-lg space-y-3.5 hover:border-emerald-500/50 transition-all">
-              <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2.5">
+            <div
+              className={`p-5 rounded-2xl border shadow-lg space-y-3.5 transition-all ${
+                isDark
+                  ? 'bg-gradient-to-br from-emerald-950/30 via-slate-900 to-slate-950 border-emerald-500/30 hover:border-emerald-500/50'
+                  : 'bg-slate-50 border-slate-200 text-black shadow-sm hover:border-slate-300'
+              }`}
+            >
+              <div
+                className={`flex items-center justify-between border-b pb-2.5 ${
+                  isDark ? 'border-emerald-500/20' : 'border-slate-200'
+                }`}
+              >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-bold">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-500 flex items-center justify-center font-bold">
                     <Zap className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm sm:text-base font-black text-white">
+                    <h3 className={`text-sm sm:text-base font-black ${isDark ? 'text-white' : 'text-black'}`}>
                       ١. تاقیکردنەوەی ئۆنلاین (بەبێ پەڕەی سۆما)
                     </h3>
-                    <span className="text-[11px] text-emerald-400 font-bold">
+                    <span className="text-[11px] text-emerald-600 font-bold">
                       دیجیتاڵی ڕاستەوخۆ لەسەر شاشە
                     </span>
                   </div>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 text-[10px] font-bold border border-emerald-500/30">
                   Online Mode
                 </span>
               </div>
 
-              <ul className="space-y-2 text-xs text-slate-300 pr-1">
+              <ul className={`space-y-2 text-xs pr-1 ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <span><strong>وەڵامدانەوەی ڕاستەوخۆ:</strong> پرسیار و هەڵبژاردنەکان (A, B, C, D) لەسەر شاشەن، بە یەک کلیک وەڵامەکە دیاری دەکرێت.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <span><strong>تێپەڕبوونی خێرا:</strong> هەر کە کلیک لە وەڵامەکە دەکەیت، دەستبەجێ دەچێتە پرسیاری دواتر.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <span><strong>ئەنجامی دەستبەجێ:</strong> لە کۆتاییدا یەکسەر نمرە، ڕێژەی سەدی، و هەڵە و ڕاستەکانت بە پێداچوونەوە پیشان دەدات.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <span><strong>چوونە ناو ڕیزبەندی:</strong> ناوت ڕاستەوخۆ لە فلتەری تاقیکردنەوەکەدا دەچێتە ناو خشتەی ڕیزبەندی پێشبڕکێی ماڵپەڕ.</span>
                 </li>
               </ul>
             </div>
 
             {/* Mode 2: Paper OMR (بە پەڕەی سۆما) */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-950/30 via-slate-900 to-slate-950 border border-indigo-500/30 shadow-lg space-y-3.5 hover:border-indigo-500/50 transition-all">
-              <div className="flex items-center justify-between border-b border-indigo-500/20 pb-2.5">
+            <div
+              className={`p-5 rounded-2xl border shadow-lg space-y-3.5 transition-all ${
+                isDark
+                  ? 'bg-gradient-to-br from-indigo-950/30 via-slate-900 to-slate-950 border-indigo-500/30 hover:border-indigo-500/50'
+                  : 'bg-slate-50 border-slate-200 text-black shadow-sm hover:border-slate-300'
+              }`}
+            >
+              <div
+                className={`flex items-center justify-between border-b pb-2.5 ${
+                  isDark ? 'border-indigo-500/20' : 'border-slate-200'
+                }`}
+              >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center font-bold">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-500 flex items-center justify-center font-bold">
                     <FileText className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm sm:text-base font-black text-white">
+                    <h3 className={`text-sm sm:text-base font-black ${isDark ? 'text-white' : 'text-black'}`}>
                       ٢. تاقیکردنەوەی فۆڕمی سۆما (Paper OMR)
                     </h3>
-                    <span className="text-[11px] text-indigo-300 font-bold">
+                    <span className="text-[11px] text-indigo-600 font-bold">
                       شاشە + فۆڕمی کاغەز و تێلیگرام
                     </span>
                   </div>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 text-[10px] font-bold border border-indigo-500/30">
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-700 text-[10px] font-bold border border-indigo-500/30">
                   Paper OMR
                 </span>
               </div>
 
-              <ul className="space-y-2 text-xs text-slate-300 pr-1">
+              <ul className={`space-y-2 text-xs pr-1 ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                   <span><strong>پرسیار لەسەر شاشە:</strong> پرسیارەکان یەک لە دوای یەک بە کاتی دیاریکراو لەسەر شاشەی مۆبایل یان کۆمپیوتەر دەردەکەون.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                   <span><strong>پڕکردنەوەی فۆڕمی سۆما:</strong> قوتابی لەسەر پەڕە سۆماکەی بە قەڵەمی جاف بازنەکان پڕدەکاتەوە.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                   <span><strong>ناردنی وێنە:</strong> لە کۆتایی تاقیکردنەوەکەدا ٥ خولەک مۆڵەت هەیە وێنەی فۆڕمەکە بە فایل بنێرێت بۆ تێلیگرام.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                   <span><strong>پشکنینی OMR:</strong> ئەدمین بە سیستەمی زیرەکی دەستکردی KSC فۆڕمەکان دەخوێنێتەوە و نمرەکان دەردەهێنێت.</span>
                 </li>
               </ul>
@@ -345,14 +398,18 @@ export default function OnlineExamBanner({
           </div>
 
           {/* Quick Preparation Guidelines for Candidates */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 flex flex-wrap items-center justify-between gap-3 relative z-10">
+          <div
+            className={`p-3.5 sm:p-4 rounded-2xl border text-xs flex flex-wrap items-center justify-between gap-3 relative z-10 ${
+              isDark ? 'bg-slate-950/70 border-slate-800 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-800'
+            }`}
+          >
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="font-bold text-amber-300">ڕێنمایی بۆ بەشداریکردن:</span>
+              <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="font-bold text-amber-700">ڕێنمایی بۆ بەشداریکردن:</span>
               <span className="hidden sm:inline text-slate-400">•</span>
               <span className="text-[11px] sm:text-xs">پێویستە کۆدی تایبەت (پاسوۆرد) لە مامۆستا یان ئەدمین وەربگریت، و لە کاتی تاقیکردنەوەدا تاب مەگۆڕە.</span>
             </div>
-            <div className="text-[11px] font-mono text-slate-500">
+            <div className={`text-[11px] font-mono ${isDark ? 'text-slate-500' : 'text-slate-600 font-bold'}`}>
               KSC Online Examination System
             </div>
           </div>
@@ -447,11 +504,19 @@ export default function OnlineExamBanner({
           transform: touchOffset ? `translateX(${touchOffset}px)` : 'translateX(0)',
           touchAction: 'pan-y'
         }}
-        className="relative rounded-3xl p-4 sm:p-7 bg-gradient-to-br from-slate-900 via-indigo-950/70 to-slate-950 border border-indigo-500/30 shadow-2xl overflow-hidden transition-all duration-300 cursor-grab active:cursor-grabbing"
+        className={`relative rounded-3xl p-4 sm:p-7 ${
+          isDark
+            ? 'bg-gradient-to-br from-slate-900 via-indigo-950/70 to-slate-950 border border-indigo-500/30 shadow-2xl text-white'
+            : 'bg-white border-2 border-slate-200 shadow-xl text-black'
+        } overflow-hidden transition-all duration-300 cursor-grab active:cursor-grabbing`}
       >
         {/* Ambient Glows */}
-        <div className="absolute top-0 right-0 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        {isDark && (
+          <>
+            <div className="absolute top-0 right-0 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+          </>
+        )}
 
         <div className="relative z-10 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 pointer-events-auto">
           
@@ -459,35 +524,43 @@ export default function OnlineExamBanner({
           <div className="space-y-3 flex-1 min-w-0">
             {/* Top Badges & Live Status */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-black border border-indigo-500/40 shadow-inner">
+              <span
+                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-black border shadow-inner ${
+                  isDark ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' : 'bg-indigo-100 text-indigo-950 border-indigo-300'
+                }`}
+              >
                 <span>تاقیکردنەوەی ئۆنلاینی فەرمیی KSC</span>
               </span>
 
               {exams.length > 1 && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800/80 text-amber-300 text-[11px] font-bold border border-slate-700">
-                  <Layers className="w-3 h-3 text-amber-400" />
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                    isDark ? 'bg-slate-800/80 text-amber-300 border-slate-700' : 'bg-slate-100 text-amber-800 border-slate-300'
+                  }`}
+                >
+                  <Layers className="w-3 h-3 text-amber-500" />
                   <span>{currentIndex + 1} لە {exams.length} تاقیکردنەوە</span>
                 </span>
               )}
 
               {currentExam.is_ended ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-black border border-purple-500/40 shadow-inner animate-pulse">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-600 text-xs font-black border border-purple-500/40 shadow-inner animate-pulse">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
                   <span>🏁 تاقیکردنەوە کۆتایی پێهات (Exam Ended)</span>
                 </span>
               ) : currentExam.is_coming_soon ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/25 via-purple-500/25 to-pink-500/25 text-amber-200 text-xs font-black border border-amber-400/40 shadow-inner animate-pulse">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/25 via-purple-500/25 to-pink-500/25 text-amber-700 text-xs font-black border border-amber-400/40 shadow-inner animate-pulse">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                   <span>✨ بەمزوانە (Coming Soon) • لە ڕێگایە</span>
                 </span>
               ) : timeRemaining.started ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/40">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-700 text-xs font-bold border border-emerald-500/40">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                   <span>ئێستا بەردەستە (Live Now)</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 text-xs font-bold border border-amber-500/30">
-                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-800 text-xs font-bold border border-amber-500/30">
+                  <Clock className="w-3.5 h-3.5 text-amber-600" />
                   <span>وادەی دەستپێکردن نزیکە</span>
                 </span>
               )}
@@ -495,11 +568,19 @@ export default function OnlineExamBanner({
 
             {/* Exam Title */}
             <div>
-              <h2 className="text-lg sm:text-2xl lg:text-3xl font-black text-white leading-snug drop-shadow-md break-words whitespace-pre-line">
+              <h2
+                className={`text-lg sm:text-2xl lg:text-3xl font-black leading-snug break-words whitespace-pre-line ${
+                  isDark ? 'text-white drop-shadow-md' : 'text-black'
+                }`}
+              >
                 {currentExam.title}
               </h2>
               {currentExam.description && (
-                <p className="text-xs sm:text-sm text-slate-300/90 leading-relaxed max-w-2xl mt-1 break-words whitespace-pre-line">
+                <p
+                  className={`text-xs sm:text-sm leading-relaxed max-w-2xl mt-1 break-words whitespace-pre-line ${
+                    isDark ? 'text-slate-300/90' : 'text-slate-800'
+                  }`}
+                >
                   {currentExam.description}
                 </p>
               )}
@@ -507,30 +588,34 @@ export default function OnlineExamBanner({
 
             {/* Sponsors & Prizes - Full text visible on mobile without truncation */}
             {currentExam.sponsors_and_prizes && (
-              <div className="flex items-start gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs font-medium">
-                <Gift className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div
+                className={`flex items-start gap-2 p-2.5 rounded-xl border text-xs font-medium ${
+                  isDark ? 'bg-amber-500/10 border-amber-500/20 text-amber-200' : 'bg-amber-50 border-amber-300 text-amber-950 font-bold'
+                }`}
+              >
+                <Gift className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                 <span className="break-words leading-relaxed whitespace-pre-line">{currentExam.sponsors_and_prizes}</span>
               </div>
             )}
 
             {/* Stats Badges */}
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-1 text-[11px] sm:text-xs text-slate-300">
-              <span className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 font-bold flex items-center gap-1.5 shrink-0">
-                <HelpCircle className="w-3.5 h-3.5 text-indigo-400" />
+            <div className={`flex flex-wrap items-center gap-1.5 sm:gap-2 pt-1 text-[11px] sm:text-xs ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>
+              <span className={`px-2.5 sm:px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 shrink-0 ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                <HelpCircle className="w-3.5 h-3.5 text-indigo-500" />
                 <span>ژمارەی پرسیار: {currentExam.questions_count ?? 0} پرسیار</span>
               </span>
-              <span className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 font-bold flex items-center gap-1.5 shrink-0">
-                <Timer className="w-3.5 h-3.5 text-amber-400" />
+              <span className={`px-2.5 sm:px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 shrink-0 ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                <Timer className="w-3.5 h-3.5 text-amber-500" />
                 <span>کاتی هەر پرسیارێک: {currentExam.question_duration_seconds} چرکە</span>
               </span>
               {currentExam.total_duration_minutes > 0 && (
-                <span className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 font-bold flex items-center gap-1.5 shrink-0">
-                  <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                <span className={`px-2.5 sm:px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 shrink-0 ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                  <Clock className="w-3.5 h-3.5 text-emerald-500" />
                   <span>کاتی گشتی: {currentExam.total_duration_minutes} خولەک</span>
                 </span>
               )}
-              <span className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 font-bold flex items-center gap-1.5 shrink-0 text-amber-300">
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
+              <span className={`px-2.5 sm:px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 shrink-0 ${isDark ? 'bg-slate-800/80 border-slate-700 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                <Clock className="w-3.5 h-3.5 text-amber-500" />
                 <span>مۆڵەتی چوونەژوورەوە: {currentExam.entry_cutoff_minutes || 3} خولەک</span>
               </span>
             </div>
@@ -580,22 +665,49 @@ export default function OnlineExamBanner({
               <>
                 {/* Countdown Box (if not started) */}
                 {!timeRemaining.started && (
-                  <div className="w-full text-center px-4 py-2.5 rounded-2xl bg-slate-950/80 border border-slate-800 shadow-inner">
-                    <span className="text-[11px] font-bold text-slate-400 block mb-1">کاتی ماوە بۆ دەستپێکردن:</span>
-                    <div className="flex items-center justify-center gap-2 font-mono text-sm sm:text-base font-black text-amber-300" dir="ltr">
-                      <span className="p-1 rounded bg-slate-900 border border-slate-800 min-w-[32px] text-center">
+                  <div
+                    className={`w-full text-center px-4 py-2.5 rounded-2xl border shadow-inner ${
+                      isDark ? 'bg-slate-950/80 border-slate-800' : 'bg-slate-50 border-slate-300'
+                    }`}
+                  >
+                    <span className={`text-[11px] font-bold block mb-1 ${isDark ? 'text-slate-400' : 'text-slate-800'}`}>
+                      کاتی ماوە بۆ دەستپێکردن:
+                    </span>
+                    <div
+                      className={`flex items-center justify-center gap-2 font-mono text-sm sm:text-base font-black ${
+                        isDark ? 'text-amber-300' : 'text-black'
+                      }`}
+                      dir="ltr"
+                    >
+                      <span
+                        className={`p-1 rounded min-w-[32px] text-center border ${
+                          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-300 shadow-sm'
+                        }`}
+                      >
                         {String(timeRemaining.hours).padStart(2, '0')}
                       </span>
                       <span>:</span>
-                      <span className="p-1 rounded bg-slate-900 border border-slate-800 min-w-[32px] text-center">
+                      <span
+                        className={`p-1 rounded min-w-[32px] text-center border ${
+                          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-300 shadow-sm'
+                        }`}
+                      >
                         {String(timeRemaining.minutes).padStart(2, '0')}
                       </span>
                       <span>:</span>
-                      <span className="p-1 rounded bg-slate-900 border border-slate-800 min-w-[32px] text-center text-amber-400">
+                      <span
+                        className={`p-1 rounded min-w-[32px] text-center border ${
+                          isDark ? 'bg-slate-900 border-slate-800 text-amber-400' : 'bg-white border-slate-300 text-amber-700 shadow-sm'
+                        }`}
+                      >
                         {String(timeRemaining.seconds).padStart(2, '0')}
                       </span>
                     </div>
-                    <span className="text-[10px] text-amber-300/90 font-mono block mt-1.5 pt-1 border-t border-slate-800/80">
+                    <span
+                      className={`text-[10px] font-mono block mt-1.5 pt-1 border-t ${
+                        isDark ? 'text-amber-300/90 border-slate-800/80' : 'text-amber-800 border-slate-200'
+                      }`}
+                    >
                       {new Date(currentExam.start_time).toLocaleTimeString('ckb', {
                         timeZone: 'Asia/Baghdad',
                         hour: '2-digit',

@@ -39,7 +39,7 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
 
     const element = document.getElementById(sectionId);
     if (element) {
-      const headerOffset = 75;
+      const headerOffset = 85;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
@@ -105,40 +105,40 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
     <>
       {/* 1. TOP STICKY HEADER (KRG Official Portal Style Layout) */}
       <header
-        className={`sticky top-0 z-40 w-full max-w-full px-2.5 sm:px-6 py-2 sm:py-3 flex items-center justify-between border-b backdrop-blur-md transition-colors duration-300 ${
+        className={`sticky top-0 z-40 w-full max-w-full px-3 sm:px-8 py-3.5 sm:py-5 min-h-[66px] sm:min-h-[80px] flex items-center justify-between border-b backdrop-blur-md transition-colors duration-300 ${
           isDark
-            ? 'bg-[#060a16]/95 border-slate-800/80 shadow-2xl text-white'
-            : 'bg-white/95 border-slate-200/90 shadow-sm text-slate-900'
+            ? 'bg-[#060a16]/98 border-slate-800/80 shadow-2xl text-white'
+            : 'bg-white/98 border-slate-200/90 shadow-sm text-black'
         }`}
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Right side (RTL start): Hamburger Button + Logo + Title */}
-        <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
+        <div className="flex items-center gap-2.5 sm:gap-4 min-w-0 flex-1">
           {/* Hamburger Menu Toggle Button with 3 golden horizontal bars */}
           <button
             type="button"
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
             aria-label="Toggle Navigation Menu"
-            className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
+            className={`w-11 h-11 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
               isDark
                 ? 'bg-[#0b1329] hover:bg-[#131d3b] border-slate-700/80 hover:border-amber-400/50'
                 : 'bg-slate-100 hover:bg-slate-200 border-slate-300 hover:border-amber-500 shadow-sm'
             }`}
           >
-            <div className="flex flex-col justify-center items-center gap-1 w-4 sm:w-5">
+            <div className="flex flex-col justify-center items-center gap-1 sm:gap-1.5 w-5 sm:w-6">
               <span
-                className={`w-4 sm:w-5 h-[2.5px] bg-amber-500 rounded-full transition-all duration-300 ${
-                  isDrawerOpen ? 'rotate-45 translate-y-[6px]' : ''
+                className={`w-5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
+                  isDrawerOpen ? 'rotate-45 translate-y-[6.5px] sm:translate-y-[7.5px]' : ''
                 }`}
               />
               <span
-                className={`w-4 sm:w-5 h-[2.5px] bg-amber-500 rounded-full transition-all duration-300 ${
+                className={`w-5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
                   isDrawerOpen ? 'opacity-0' : ''
                 }`}
               />
               <span
-                className={`w-4 sm:w-5 h-[2.5px] bg-amber-500 rounded-full transition-all duration-300 ${
-                  isDrawerOpen ? '-rotate-45 -translate-y-[6px]' : ''
+                className={`w-5 sm:w-6 h-[2.5px] sm:h-[3px] bg-amber-500 rounded-full transition-all duration-300 ${
+                  isDrawerOpen ? '-rotate-45 -translate-y-[6.5px] sm:-translate-y-[7.5px]' : ''
                 }`}
               />
             </div>
@@ -153,15 +153,15 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
             <img
               src="/logo.png"
               alt="KSC Logo"
-              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300 select-none"
+              className="h-10 sm:h-12 md:h-14 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300 select-none"
             />
           </div>
 
           {/* Clean Non-Breaking Title */}
           <div className="min-w-0 flex-1 overflow-hidden">
             <span
-              className={`block font-black leading-tight select-none truncate sm:whitespace-normal text-[11.5px] xs:text-xs sm:text-base md:text-lg lg:text-xl tracking-tight transition-colors ${
-                isDark ? 'text-white' : 'text-slate-900'
+              className={`block font-black leading-tight select-none truncate sm:whitespace-normal text-xs xs:text-sm sm:text-lg md:text-xl tracking-tight transition-colors ${
+                isDark ? 'text-white' : 'text-black'
               }`}
             >
               {t('kscEmblem')}
@@ -170,23 +170,23 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
         </div>
 
         {/* Left side (RTL end): Sun/Moon Button + Language Pill */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Sun / Moon Theme Toggle Button */}
           <button
             type="button"
             onClick={toggleTheme}
-            title={isDark ? 'گۆڕین بۆ دۆخی ڕووناک (Light Mode)' : 'گۆڕین بۆ دۆخی تاریک (Dark Mode)'}
+            title={isDark ? t('switchToLight') : t('switchToDark')}
             aria-label="Toggle Theme"
-            className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
+            className={`w-11 h-11 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
               isDark
                 ? 'bg-[#0b1329] hover:bg-[#131d3b] border-slate-700/80 hover:border-amber-400/50 text-amber-400'
-                : 'bg-slate-100 hover:bg-slate-200 border-slate-300 hover:border-amber-500 text-slate-700 shadow-sm'
+                : 'bg-slate-100 hover:bg-slate-200 border-slate-300 hover:border-amber-500 text-slate-800 shadow-sm'
             }`}
           >
             {isDark ? (
-              <Sun className="w-4 sm:w-5 h-4 sm:h-5 text-amber-400 transition-transform duration-300 hover:rotate-45" />
+              <Sun className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 transition-transform duration-300 hover:rotate-45" />
             ) : (
-              <Moon className="w-4 sm:w-5 h-4 sm:h-5 text-slate-700 transition-transform duration-300 hover:-rotate-12" />
+              <Moon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-700 transition-transform duration-300 hover:-rotate-12" />
             )}
           </button>
 
@@ -259,20 +259,20 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
                   isDark ? 'border-slate-800' : 'border-slate-200'
                 }`}
               >
-                <span className={`text-[11px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                  {isDark ? 'دۆخی ڕووناک (Light Mode)' : 'دۆخی تاریک (Dark Mode)'}
+                <span className={`text-[11px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
+                  {t('themeModeLabel')}
                 </span>
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${
                     isDark
                       ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700'
-                      : 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'
+                      : 'bg-slate-100 border-slate-300 text-black hover:bg-slate-200 shadow-sm'
                   }`}
                 >
                   {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-                  <span>{isDark ? 'ڕووناک' : 'تاریک'}</span>
+                  <span>{isDark ? t('lightModeName') : t('darkModeName')}</span>
                 </button>
               </div>
 
