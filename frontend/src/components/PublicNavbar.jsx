@@ -12,13 +12,16 @@ import {
   ChevronRight,
   GraduationCap,
   Building2,
-  Sun
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import LanguageSelector from './LanguageSelector';
 
 export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecretLogoClick }) {
   const { t, isRTL, lang } = useLanguage();
+  const { isDark, toggleTheme } = useTheme();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
 
@@ -58,7 +61,7 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
     }
   };
 
-  // Scroll spy to highlight active section in bottom nav and header
+  // Scroll spy to highlight active section in bottom nav and drawer
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.pageYOffset;
@@ -100,72 +103,91 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
 
   return (
     <>
-      {/* 1. TOP STICKY HEADER (KRG Official Government Portal Design) */}
+      {/* 1. TOP STICKY HEADER (KRG Official Portal Style Layout) */}
       <header
-        className="sticky top-0 z-40 bg-[#060a16]/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between shadow-2xl transition-all"
+        className={`sticky top-0 z-40 px-2.5 sm:px-6 py-2 sm:py-3 flex items-center justify-between border-b backdrop-blur-md transition-colors duration-300 ${
+          isDark
+            ? 'bg-[#060a16]/95 border-slate-800/80 shadow-2xl text-white'
+            : 'bg-white/95 border-slate-200/90 shadow-sm text-slate-900'
+        }`}
         dir={isRTL ? 'rtl' : 'ltr'}
       >
-        {/* Right side (RTL start): Hamburger Button + Circular Emblem + Clean Bold Title */}
-        <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
+        {/* Right side (RTL start): Hamburger Button + Logo + Title */}
+        <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
           {/* Hamburger Menu Toggle Button with 3 golden horizontal bars */}
           <button
             type="button"
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
             aria-label="Toggle Navigation Menu"
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#0b1329] hover:bg-[#131d3b] border border-slate-700/80 hover:border-amber-400/50 flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer"
+            className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
+              isDark
+                ? 'bg-[#0b1329] hover:bg-[#131d3b] border-slate-700/80 hover:border-amber-400/50'
+                : 'bg-slate-100 hover:bg-slate-200 border-slate-300 hover:border-amber-500 shadow-sm'
+            }`}
           >
-            <div className="flex flex-col justify-center items-center gap-1 w-5">
+            <div className="flex flex-col justify-center items-center gap-1 w-4 sm:w-5">
               <span
-                className={`w-5 h-[2.5px] bg-amber-400 rounded-full transition-all duration-300 ${
-                  isDrawerOpen ? 'rotate-45 translate-y-[6.5px]' : ''
+                className={`w-4 sm:w-5 h-[2.5px] bg-amber-500 rounded-full transition-all duration-300 ${
+                  isDrawerOpen ? 'rotate-45 translate-y-[6px]' : ''
                 }`}
               />
               <span
-                className={`w-5 h-[2.5px] bg-amber-400 rounded-full transition-all duration-300 ${
+                className={`w-4 sm:w-5 h-[2.5px] bg-amber-500 rounded-full transition-all duration-300 ${
                   isDrawerOpen ? 'opacity-0' : ''
                 }`}
               />
               <span
-                className={`w-5 h-[2.5px] bg-amber-400 rounded-full transition-all duration-300 ${
-                  isDrawerOpen ? '-rotate-45 -translate-y-[6.5px]' : ''
+                className={`w-4 sm:w-5 h-[2.5px] bg-amber-500 rounded-full transition-all duration-300 ${
+                  isDrawerOpen ? '-rotate-45 -translate-y-[6px]' : ''
                 }`}
               />
             </div>
           </button>
 
-          {/* Official Logo */}
+          {/* Official KSC Logo */}
           <div
             onClick={onSecretLogoClick}
             className="relative shrink-0 cursor-pointer"
             title={t('kscEmblem')}
           >
-            <div className="absolute -inset-1 rounded-2xl bg-amber-500/20 blur-sm pointer-events-none" />
             <img
               src="/logo.png"
               alt="KSC Logo"
-              className="relative h-10 sm:h-12 w-auto object-contain rounded-xl drop-shadow-[0_4px_12px_rgba(245,158,11,0.35)] hover:scale-105 transition-transform duration-300 select-none"
+              className="h-8 sm:h-10 md:h-11 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300 select-none"
             />
           </div>
 
-          {/* Clean prominent Title */}
-          <span className="text-sm sm:text-lg md:text-xl font-black text-white tracking-wide truncate select-none">
-            {t('kscEmblem')}
-          </span>
+          {/* Clean Non-Breaking Title */}
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <span
+              className={`block font-black leading-tight select-none truncate sm:whitespace-normal text-[11.5px] xs:text-xs sm:text-base md:text-lg lg:text-xl tracking-tight transition-colors ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}
+            >
+              {t('kscEmblem')}
+            </span>
+          </div>
         </div>
 
-        {/* Left side (RTL end): Sun Button + Language Pill */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-          {/* Sun / Theme Button */}
+        {/* Left side (RTL end): Sun/Moon Button + Language Pill */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Sun / Moon Theme Toggle Button */}
           <button
             type="button"
-            onClick={() => {
-              const el = document.getElementById('student-search-section');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-            title="Search"
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#0b1329] hover:bg-[#131d3b] border border-slate-700/80 hover:border-amber-400/50 flex items-center justify-center text-amber-400 shadow-md active:scale-95 transition-all shrink-0 cursor-pointer"
+            onClick={toggleTheme}
+            title={isDark ? 'گۆڕین بۆ دۆخی ڕووناک (Light Mode)' : 'گۆڕین بۆ دۆخی تاریک (Dark Mode)'}
+            aria-label="Toggle Theme"
+            className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer border ${
+              isDark
+                ? 'bg-[#0b1329] hover:bg-[#131d3b] border-slate-700/80 hover:border-amber-400/50 text-amber-400'
+                : 'bg-slate-100 hover:bg-slate-200 border-slate-300 hover:border-amber-500 text-slate-700 shadow-sm'
+            }`}
           >
-            <Sun className="w-5 h-5 text-amber-400" />
+            {isDark ? (
+              <Sun className="w-4 sm:w-5 h-4 sm:h-5 text-amber-400 transition-transform duration-300 hover:rotate-45" />
+            ) : (
+              <Moon className="w-4 sm:w-5 h-4 sm:h-5 text-slate-700 transition-transform duration-300 hover:-rotate-12" />
+            )}
           </button>
 
           {/* Exact Language Selector Pill [ ⌄ کوردی 🌐 ] */}
@@ -176,7 +198,7 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
       {/* 2. SLIDE-OUT NAVIGATION DRAWER (RTL from Right Side / LTR from Left) */}
       {isDrawerOpen && (
         <div className="fixed inset-0 z-50">
-          {/* Backdrop Blur */}
+          {/* Backdrop */}
           <div
             className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity duration-300"
             onClick={() => setIsDrawerOpen(false)}
@@ -184,14 +206,26 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
 
           {/* Drawer Panel */}
           <aside
-            className={`fixed top-0 bottom-0 w-[290px] sm:w-[330px] bg-[#091122] shadow-2xl z-50 flex flex-col justify-between overflow-y-auto animate-fadeIn ${
-              isRTL ? 'right-0 border-l border-slate-800' : 'left-0 border-r border-slate-800'
+            className={`fixed top-0 bottom-0 w-[290px] sm:w-[330px] shadow-2xl z-50 flex flex-col justify-between overflow-y-auto animate-fadeIn ${
+              isDark ? 'bg-[#091122] text-slate-100' : 'bg-white text-slate-800'
+            } ${
+              isRTL
+                ? isDark
+                  ? 'right-0 border-l border-slate-800'
+                  : 'right-0 border-l border-slate-200'
+                : isDark
+                ? 'left-0 border-r border-slate-800'
+                : 'left-0 border-r border-slate-200'
             }`}
             dir={isRTL ? 'rtl' : 'ltr'}
           >
             {/* Drawer Top Header */}
             <div>
-              <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-[#060c18]">
+              <div
+                className={`p-4 border-b flex items-center justify-between ${
+                  isDark ? 'bg-[#060c18] border-slate-800' : 'bg-slate-50 border-slate-200'
+                }`}
+              >
                 <div className="flex items-center gap-2.5">
                   <img
                     src="/logo.png"
@@ -199,23 +233,52 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
                     className="h-10 w-auto object-contain rounded-xl drop-shadow-sm shrink-0"
                   />
                   <div>
-                    <h2 className="text-xs font-black text-white">{t('kscEmblem')}</h2>
-                    <span className="text-[10px] text-amber-400 font-bold block">{t('mainMenu')}</span>
+                    <h2 className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {t('kscEmblem')}
+                    </h2>
+                    <span className="text-[10px] text-amber-500 font-bold block">{t('mainMenu')}</span>
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setIsDrawerOpen(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                    isDark
+                      ? 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200'
+                  }`}
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
+              {/* Theme Quick Switcher inside Drawer */}
+              <div
+                className={`p-3 border-b flex items-center justify-between ${
+                  isDark ? 'border-slate-800' : 'border-slate-200'
+                }`}
+              >
+                <span className={`text-[11px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  {isDark ? 'دۆخی ڕووناک (Light Mode)' : 'دۆخی تاریک (Dark Mode)'}
+                </span>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all ${
+                    isDark
+                      ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700'
+                      : 'bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200'
+                  }`}
+                >
+                  {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                  <span>{isDark ? 'ڕووناک' : 'تاریک'}</span>
+                </button>
+              </div>
+
               {/* Language Selector inside Drawer */}
-              <div className="p-3 border-b border-slate-800">
-                <span className="text-[10px] font-bold text-slate-400 block mb-1.5 px-1">
+              <div className={`p-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                <span className={`text-[10px] font-bold block mb-1.5 px-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   {t('languageSelect')}
                 </span>
                 <LanguageSelector variant="inline" />
@@ -223,7 +286,7 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
 
               {/* Drawer Navigation List */}
               <div className="p-3 space-y-1">
-                <span className="text-[11px] font-bold text-slate-400 px-3 py-1.5 block">
+                <span className={`text-[11px] font-bold px-3 py-1.5 block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   {t('mainSections')}
                 </span>
 
@@ -231,26 +294,34 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
                   onClick={() => scrollTo('top')}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                     activeSection === 'home'
-                      ? 'bg-amber-400/15 text-amber-300 border border-amber-400/30'
-                      : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      ? isDark
+                        ? 'bg-amber-400/15 text-amber-300 border border-amber-400/30'
+                        : 'bg-amber-500/15 text-amber-700 border border-amber-500/30'
+                      : isDark
+                      ? 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
                   }`}
                 >
-                  <Home className="w-4 h-4 text-amber-400 shrink-0" />
+                  <Home className="w-4 h-4 text-amber-500 shrink-0" />
                   <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>{t('navHome')}</span>
-                  <ArrowIcon className="w-3.5 h-3.5 text-slate-500" />
+                  <ArrowIcon className="w-3.5 h-3.5 text-slate-400" />
                 </button>
 
                 <button
                   onClick={() => scrollTo('student-search-section', 'student-search-input')}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                     activeSection === 'search'
-                      ? 'bg-amber-400/15 text-amber-300 border border-amber-400/30'
-                      : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      ? isDark
+                        ? 'bg-amber-400/15 text-amber-300 border border-amber-400/30'
+                        : 'bg-amber-500/15 text-amber-700 border border-amber-500/30'
+                      : isDark
+                      ? 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
                   }`}
                 >
-                  <Search className="w-4 h-4 text-sky-400 shrink-0" />
+                  <Search className="w-4 h-4 text-sky-500 shrink-0" />
                   <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>{t('navSearch')}</span>
-                  <span className="text-[10px] bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded-full font-mono">
+                  <span className="text-[10px] bg-sky-500/20 text-sky-500 px-2 py-0.5 rounded-full font-mono font-bold">
                     {t('searchBadge')}
                   </span>
                 </button>
@@ -259,41 +330,53 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
                   onClick={() => scrollTo('schools-ranking-section')}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                     activeSection === 'schools'
-                      ? 'bg-amber-400/15 text-amber-300 border border-amber-400/30'
-                      : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      ? isDark
+                        ? 'bg-amber-400/15 text-amber-300 border border-amber-400/30'
+                        : 'bg-amber-500/15 text-amber-700 border border-amber-500/30'
+                      : isDark
+                      ? 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
                   }`}
                 >
-                  <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <Building2 className="w-4 h-4 text-emerald-500 shrink-0" />
                   <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>{t('navSchools')}</span>
-                  <ArrowIcon className="w-3.5 h-3.5 text-slate-500" />
+                  <ArrowIcon className="w-3.5 h-3.5 text-slate-400" />
                 </button>
 
                 <button
                   onClick={() => scrollTo('leaderboard-section')}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                     activeSection === 'leaderboard'
-                      ? 'bg-amber-400/15 text-amber-300 border border-amber-400/30'
-                      : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      ? isDark
+                        ? 'bg-amber-400/15 text-amber-300 border border-amber-400/30'
+                        : 'bg-amber-500/15 text-amber-700 border border-amber-500/30'
+                      : isDark
+                      ? 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
                   }`}
                 >
-                  <GraduationCap className="w-4 h-4 text-purple-400 shrink-0" />
+                  <GraduationCap className="w-4 h-4 text-purple-500 shrink-0" />
                   <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>{t('navLeaderboard')}</span>
-                  <ArrowIcon className="w-3.5 h-3.5 text-slate-500" />
+                  <ArrowIcon className="w-3.5 h-3.5 text-slate-400" />
                 </button>
 
                 <div className="pt-3 pb-1">
-                  <span className="text-[11px] font-bold text-slate-400 px-3 py-1 block">
+                  <span className={`text-[11px] font-bold px-3 py-1 block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     {t('servicesAndTools')}
                   </span>
                 </div>
 
                 <button
                   onClick={() => scrollTo('online-exam-section')}
-                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800/80 hover:text-white transition-all"
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    isDark
+                      ? 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
+                  }`}
                 >
-                  <Laptop className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <Laptop className="w-4 h-4 text-cyan-500 shrink-0" />
                   <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>{t('navOnlineExam')}</span>
-                  <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-bold">
+                  <span className="text-[10px] bg-cyan-500/20 text-cyan-600 px-2 py-0.5 rounded-full font-bold">
                     {t('joinBadge')}
                   </span>
                 </button>
@@ -303,22 +386,30 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
                     setIsDrawerOpen(false);
                     onOpenOMRGuide();
                   }}
-                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800/80 hover:text-white transition-all"
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    isDark
+                      ? 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
+                  }`}
                 >
-                  <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
+                  <BookOpen className="w-4 h-4 text-amber-500 shrink-0" />
                   <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>{t('navOMRGuide')}</span>
-                  <ArrowIcon className="w-3.5 h-3.5 text-slate-500" />
+                  <ArrowIcon className="w-3.5 h-3.5 text-slate-400" />
                 </button>
               </div>
             </div>
 
             {/* Drawer Footer */}
-            <div className="p-4 border-t border-slate-800 bg-[#060c18] space-y-2">
-              <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
-                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div
+              className={`p-4 border-t space-y-2 ${
+                isDark ? 'border-slate-800 bg-[#060c18]' : 'border-slate-200 bg-slate-50'
+              }`}
+            >
+              <div className={`flex items-center gap-2 text-[11px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
                 <span>{t('systemBadge')}</span>
               </div>
-              <p className="text-[10px] text-slate-400 font-mono">
+              <p className={`text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 {t('versionBadge')}
               </p>
             </div>
@@ -328,7 +419,11 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
 
       {/* 3. MOBILE BOTTOM NAVIGATION BAR (Thumb-friendly app-like bar) */}
       <nav
-        className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-[#070c1a]/95 backdrop-blur-xl border-t border-slate-800/90 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.6)]"
+        className={`fixed bottom-0 inset-x-0 z-40 lg:hidden px-2 py-1.5 border-t backdrop-blur-xl transition-colors duration-300 ${
+          isDark
+            ? 'bg-[#070c1a]/95 border-slate-800/90 shadow-[0_-8px_30px_rgba(0,0,0,0.6)]'
+            : 'bg-white/95 border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]'
+        }`}
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         <div className="max-w-md mx-auto grid grid-cols-5 gap-1 items-center">
@@ -338,11 +433,19 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
             onClick={() => scrollTo('top')}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all active:scale-95 ${
               activeSection === 'home'
-                ? 'text-amber-400 font-black'
-                : 'text-slate-400 hover:text-slate-200 font-medium'
+                ? isDark
+                  ? 'text-amber-400 font-black'
+                  : 'text-amber-600 font-black'
+                : isDark
+                ? 'text-slate-400 hover:text-slate-200 font-medium'
+                : 'text-slate-500 hover:text-slate-800 font-medium'
             }`}
           >
-            <div className={`p-1 rounded-lg transition-colors ${activeSection === 'home' ? 'bg-amber-400/15' : ''}`}>
+            <div
+              className={`p-1 rounded-lg transition-colors ${
+                activeSection === 'home' ? (isDark ? 'bg-amber-400/15' : 'bg-amber-500/15') : ''
+              }`}
+            >
               <Home className="w-5 h-5" />
             </div>
             <span className="text-[10px] mt-0.5 leading-none">{t('navHome')}</span>
@@ -354,11 +457,19 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
             onClick={() => scrollTo('student-search-section', 'student-search-input')}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all active:scale-95 ${
               activeSection === 'search'
-                ? 'text-amber-400 font-black'
-                : 'text-slate-400 hover:text-slate-200 font-medium'
+                ? isDark
+                  ? 'text-amber-400 font-black'
+                  : 'text-amber-600 font-black'
+                : isDark
+                ? 'text-slate-400 hover:text-slate-200 font-medium'
+                : 'text-slate-500 hover:text-slate-800 font-medium'
             }`}
           >
-            <div className={`p-1 rounded-lg transition-colors ${activeSection === 'search' ? 'bg-amber-400/15' : ''}`}>
+            <div
+              className={`p-1 rounded-lg transition-colors ${
+                activeSection === 'search' ? (isDark ? 'bg-amber-400/15' : 'bg-amber-500/15') : ''
+              }`}
+            >
               <Search className="w-5 h-5" />
             </div>
             <span className="text-[10px] mt-0.5 leading-none">{t('navSearch')}</span>
@@ -370,11 +481,19 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
             onClick={() => scrollTo('schools-ranking-section')}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all active:scale-95 ${
               activeSection === 'schools'
-                ? 'text-amber-400 font-black'
-                : 'text-slate-400 hover:text-slate-200 font-medium'
+                ? isDark
+                  ? 'text-amber-400 font-black'
+                  : 'text-amber-600 font-black'
+                : isDark
+                ? 'text-slate-400 hover:text-slate-200 font-medium'
+                : 'text-slate-500 hover:text-slate-800 font-medium'
             }`}
           >
-            <div className={`p-1 rounded-lg transition-colors ${activeSection === 'schools' ? 'bg-amber-400/15' : ''}`}>
+            <div
+              className={`p-1 rounded-lg transition-colors ${
+                activeSection === 'schools' ? (isDark ? 'bg-amber-400/15' : 'bg-amber-500/15') : ''
+              }`}
+            >
               <Trophy className="w-5 h-5" />
             </div>
             <span className="text-[10px] mt-0.5 leading-none">{t('navSchools')}</span>
@@ -386,11 +505,19 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
             onClick={() => scrollTo('leaderboard-section')}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all active:scale-95 ${
               activeSection === 'leaderboard'
-                ? 'text-amber-400 font-black'
-                : 'text-slate-400 hover:text-slate-200 font-medium'
+                ? isDark
+                  ? 'text-amber-400 font-black'
+                  : 'text-amber-600 font-black'
+                : isDark
+                ? 'text-slate-400 hover:text-slate-200 font-medium'
+                : 'text-slate-500 hover:text-slate-800 font-medium'
             }`}
           >
-            <div className={`p-1 rounded-lg transition-colors ${activeSection === 'leaderboard' ? 'bg-amber-400/15' : ''}`}>
+            <div
+              className={`p-1 rounded-lg transition-colors ${
+                activeSection === 'leaderboard' ? (isDark ? 'bg-amber-400/15' : 'bg-amber-500/15') : ''
+              }`}
+            >
               <Users className="w-5 h-5" />
             </div>
             <span className="text-[10px] mt-0.5 leading-none">{t('navLeaderboard')}</span>
@@ -402,15 +529,23 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
             onClick={() => setIsDrawerOpen(true)}
             className={`flex flex-col items-center justify-center py-1 rounded-xl transition-all active:scale-95 ${
               isDrawerOpen
-                ? 'text-amber-400 font-black'
-                : 'text-slate-400 hover:text-slate-200 font-medium'
+                ? isDark
+                  ? 'text-amber-400 font-black'
+                  : 'text-amber-600 font-black'
+                : isDark
+                ? 'text-slate-400 hover:text-slate-200 font-medium'
+                : 'text-slate-500 hover:text-slate-800 font-medium'
             }`}
           >
-            <div className={`p-1 rounded-lg transition-colors ${isDrawerOpen ? 'bg-amber-400/15' : ''}`}>
+            <div
+              className={`p-1 rounded-lg transition-colors ${
+                isDrawerOpen ? (isDark ? 'bg-amber-400/15' : 'bg-amber-500/15') : ''
+              }`}
+            >
               <div className="flex flex-col justify-center items-center gap-0.5 w-4 h-4">
-                <span className="w-4 h-[2px] bg-amber-400 rounded-full" />
-                <span className="w-4 h-[2px] bg-amber-400 rounded-full" />
-                <span className="w-4 h-[2px] bg-amber-400 rounded-full" />
+                <span className="w-4 h-[2px] bg-amber-500 rounded-full" />
+                <span className="w-4 h-[2px] bg-amber-500 rounded-full" />
+                <span className="w-4 h-[2px] bg-amber-500 rounded-full" />
               </div>
             </div>
             <span className="text-[10px] mt-0.5 leading-none">{t('navMenu')}</span>

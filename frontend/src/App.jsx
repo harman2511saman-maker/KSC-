@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
@@ -143,6 +144,7 @@ function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
 
 function MainApp() {
   const { user, loading } = useAuth();
+  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toast, setToast] = useState(null);
@@ -239,7 +241,7 @@ function MainApp() {
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-slate-300 text-sm font-medium">پلاتفۆرمی کوردستان لە بارکردندایە...</p>
+          <p className="text-slate-300 text-sm font-medium">پێشبڕکێی قوتابخانەکانی کوردستان لە بارکردندایە...</p>
         </div>
       </div>
     );
@@ -248,7 +250,7 @@ function MainApp() {
   // PUBLIC PORTAL: If not logged in as Admin, show strictly the public competition page
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col justify-between pb-16 lg:pb-0">
+      <div className={`min-h-screen flex flex-col justify-between pb-16 lg:pb-0 transition-colors duration-300 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-[#f4f7fb] text-slate-800'}`}>
         <AnnouncementBar />
         <PublicNavbar
           onOpenAdminModal={() => setShowAdminModal(true)}
@@ -380,11 +382,13 @@ function MainApp() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <SplashScreen />
-        <MainApp />
-      </AuthProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <SplashScreen />
+          <MainApp />
+        </AuthProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }

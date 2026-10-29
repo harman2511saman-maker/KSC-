@@ -4,9 +4,9 @@
 export const translations = {
   ku: {
     // Header & Brand
-    platformTitle: 'پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان',
+    platformTitle: 'پێشبڕکێی قوتابخانەکانی کوردستان',
     platformSubtitle: 'سەکۆی نیشتمانی بۆ ڕیزبەندی و ئەنجامەکان',
-    kscEmblem: 'پلاتفۆرمی کوردستان',
+    kscEmblem: 'پێشبڕکێی قوتابخانەکانی کوردستان',
     mainMenu: 'مینیوی سەرەکی پلاتفۆرم',
 
     // Navigation Links
@@ -238,9 +238,9 @@ export const translations = {
 
   ar: {
     // Header & Brand
-    platformTitle: 'المنصة الرسمية لمسابقة طلاب كوردستان',
+    platformTitle: 'مسابقة مدارس كوردستان',
     platformSubtitle: 'المنصة الوطنية للتصنيف والنتائج المعتمدة',
-    kscEmblem: 'منصة كوردستان',
+    kscEmblem: 'مسابقة مدارس كوردستان',
     mainMenu: 'القائمة الرئيسية للمنصة',
 
     // Navigation Links
