@@ -105,7 +105,7 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
     <>
       {/* 1. TOP STICKY HEADER (KRG Official Portal Style Layout) */}
       <header
-        className={`sticky top-0 z-40 px-2.5 sm:px-6 py-2 sm:py-3 flex items-center justify-between border-b backdrop-blur-md transition-colors duration-300 ${
+        className={`sticky top-0 z-40 w-full max-w-full overflow-x-hidden px-2.5 sm:px-6 py-2 sm:py-3 flex items-center justify-between border-b backdrop-blur-md transition-colors duration-300 ${
           isDark
             ? 'bg-[#060a16]/95 border-slate-800/80 shadow-2xl text-white'
             : 'bg-white/95 border-slate-200/90 shadow-sm text-slate-900'
@@ -419,7 +419,7 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
 
       {/* 3. MOBILE BOTTOM NAVIGATION BAR (Thumb-friendly app-like bar) */}
       <nav
-        className={`fixed bottom-0 inset-x-0 z-40 lg:hidden px-2 py-1.5 border-t backdrop-blur-xl transition-colors duration-300 ${
+        className={`fixed bottom-0 inset-x-0 z-40 lg:hidden w-full max-w-full px-2 py-1.5 border-t backdrop-blur-xl transition-colors duration-300 ${
           isDark
             ? 'bg-[#070c1a]/95 border-slate-800/90 shadow-[0_-8px_30px_rgba(0,0,0,0.6)]'
             : 'bg-white/95 border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]'

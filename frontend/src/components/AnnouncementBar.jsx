@@ -35,7 +35,7 @@ export default function AnnouncementBar({ initialSettings }) {
 
   return (
     <div
-      className="relative z-30 bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 text-white px-3 sm:px-6 py-2.5 shadow-md border-b border-amber-400/30 select-none animate-fadeIn"
+      className="relative z-30 w-full max-w-full overflow-hidden bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 text-white px-3 sm:px-6 py-2.5 shadow-md border-b border-amber-400/30 select-none animate-fadeIn"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-2.5">

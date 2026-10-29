@@ -250,9 +250,9 @@ export default function Competitions({ onShowToast }) {
   );
 
   return (
-    <div className="space-y-6 sm:space-y-8 max-w-[1400px] mx-auto pb-20 px-2 sm:px-4 text-slate-100" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="space-y-6 sm:space-y-8 max-w-[1400px] w-full mx-auto pb-20 px-2 sm:px-4 text-slate-100 min-w-0 overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* 1. HERO SECTION (Dark Glowing Theme as requested) */}
-      <div className="relative overflow-hidden rounded-3xl bg-[#080d1a] border border-slate-800/80 p-6 sm:p-8 lg:p-10 shadow-2xl">
+      <div className="relative overflow-hidden rounded-3xl bg-[#080d1a] border border-slate-800/80 p-4 sm:p-8 lg:p-10 shadow-2xl w-full max-w-full min-w-0">
         {/* Ambient Glows */}
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -465,9 +465,9 @@ export default function Competitions({ onShowToast }) {
       </div>
 
       {/* 2. DUAL COLUMN SECTION (Schools Ranking Table + Olympic Podium Pedestal) */}
-      <div id="schools-ranking-section" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start scroll-mt-20">
+      <div id="schools-ranking-section" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start scroll-mt-20 w-full max-w-full min-w-0">
         {/* Left Column (7 cols): Full Schools Ranking Dark Table */}
-        <div className="lg:col-span-7 bg-[#080d1a] rounded-3xl border border-slate-800/80 p-5 sm:p-6 shadow-xl space-y-4">
+        <div className="lg:col-span-7 bg-[#080d1a] rounded-3xl border border-slate-800/80 p-3.5 sm:p-6 shadow-xl space-y-4 w-full max-w-full min-w-0 overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
             <div className="flex items-center gap-2.5">
               <Building2 className="w-5 h-5 text-brand-400 shrink-0" />
@@ -627,7 +627,7 @@ export default function Competitions({ onShowToast }) {
         </div>
 
         {/* Right Column (5 cols): Olympic Podium Pedestals */}
-        <div className="lg:col-span-5 bg-[#080d1a] rounded-3xl border border-slate-800/80 p-5 sm:p-6 shadow-xl space-y-4">
+        <div className="lg:col-span-5 bg-[#080d1a] rounded-3xl border border-slate-800/80 p-3.5 sm:p-6 shadow-xl space-y-4 w-full max-w-full min-w-0 overflow-hidden">
           <div className="flex items-center justify-between pb-2 border-b border-slate-800">
             <span className="text-xs font-black text-amber-400 bg-amber-400/10 border border-amber-400/30 px-3 py-1 rounded-full flex items-center gap-1.5">
               <Trophy className="w-3.5 h-3.5" />
@@ -803,7 +803,7 @@ export default function Competitions({ onShowToast }) {
       {searchResult?.found && (
         <div
           id="student-result-card"
-          className="bg-gradient-to-br from-[#0c1324] via-[#080d1a] to-[#0f172a] rounded-3xl p-6 sm:p-8 border-2 border-amber-400/80 shadow-2xl space-y-6 animate-fadeIn"
+          className="bg-gradient-to-br from-[#0c1324] via-[#080d1a] to-[#0f172a] rounded-3xl p-4 sm:p-8 border-2 border-amber-400/80 shadow-2xl space-y-6 animate-fadeIn w-full max-w-full min-w-0 overflow-hidden"
         >
           {/* Official Verification Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800">
@@ -985,7 +985,7 @@ export default function Competitions({ onShowToast }) {
       )}
 
       {/* 4. STUDENTS OVERALL RANKING & DIRECTORY (With Advanced Filter Controls) */}
-      <div id="leaderboard-section" className="bg-[#080d1a] rounded-3xl border border-slate-800/80 p-5 sm:p-6 shadow-xl space-y-5 scroll-mt-20">
+      <div id="leaderboard-section" className="bg-[#080d1a] rounded-3xl border border-slate-800/80 p-3.5 sm:p-6 shadow-xl space-y-5 scroll-mt-20 w-full max-w-full min-w-0 overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
           <div className="flex items-center gap-2.5">
             <GraduationCap className="w-5 h-5 text-amber-400" />

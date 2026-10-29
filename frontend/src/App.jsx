@@ -250,7 +250,7 @@ function MainApp() {
   // PUBLIC PORTAL: If not logged in as Admin, show strictly the public competition page
   if (!user) {
     return (
-      <div className={`min-h-screen flex flex-col justify-between pb-16 lg:pb-0 transition-colors duration-300 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-[#f4f7fb] text-slate-800'}`}>
+      <div className={`min-h-screen flex flex-col justify-between pb-16 lg:pb-0 transition-colors duration-300 w-full max-w-full overflow-x-hidden ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-[#f4f7fb] text-slate-800'}`}>
         <AnnouncementBar />
         <PublicNavbar
           onOpenAdminModal={() => setShowAdminModal(true)}
@@ -258,7 +258,7 @@ function MainApp() {
           onSecretLogoClick={handleSecretLogoClick}
         />
 
-        <main className="flex-1">
+        <main className="flex-1 w-full max-w-full overflow-x-hidden min-w-0">
           <Competitions onShowToast={showToast} />
         </main>
 

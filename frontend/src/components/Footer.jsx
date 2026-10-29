@@ -70,7 +70,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className={`border-t border-slate-800/80 bg-[#060a14] pt-12 pb-8 px-4 sm:px-8 mt-12 ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <footer className={`border-t border-slate-800/80 bg-[#060a14] pt-12 pb-8 px-4 sm:px-8 mt-12 w-full max-w-full overflow-hidden ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-7xl mx-auto space-y-10">
         
         {/* Support Section Header */}
