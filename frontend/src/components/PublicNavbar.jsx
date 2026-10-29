@@ -10,8 +10,6 @@ import {
   BookOpen,
   ShieldCheck,
   ChevronLeft,
-  Sparkles,
-  LogIn,
   GraduationCap,
   Building2
 } from 'lucide-react';
@@ -190,16 +188,6 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
 
         {/* Left side (RTL end): Actions & Mobile Hamburger */}
         <div className="flex items-center gap-2">
-          {/* Admin Login Button (Visible on desktop & tablets) */}
-          <button
-            onClick={onOpenAdminModal}
-            title="دەروازەی کارگێڕی و مامۆستایان"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-amber-400/50 text-slate-300 hover:text-amber-300 text-xs font-bold transition-all shadow-sm active:scale-95"
-          >
-            <LogIn className="w-3.5 h-3.5 text-amber-400" />
-            <span>کارگێڕی</span>
-          </button>
-
           {/* Mobile Hamburger Menu Toggle Button (Visible on mobile/tablet) */}
           <button
             type="button"
@@ -337,24 +325,6 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
                   <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
                   <span className="flex-1 text-right">ڕێنمایی پڕکردنەوەی فۆڕمی OMR</span>
                   <ChevronLeft className="w-3.5 h-3.5 text-slate-500" />
-                </button>
-
-                <div className="pt-3 pb-1">
-                  <span className="text-[11px] font-bold text-slate-400 px-3 py-1 block">
-                    دەروازەی ستاف و کارگێڕی
-                  </span>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setIsDrawerOpen(false);
-                    onOpenAdminModal();
-                  }}
-                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 transition-all shadow-sm"
-                >
-                  <LogIn className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span className="flex-1 text-right">چوونەژوورەوەی مامۆستایان و کارگێڕی</span>
-                  <ChevronLeft className="w-3.5 h-3.5 text-amber-400" />
                 </button>
               </div>
             </div>
