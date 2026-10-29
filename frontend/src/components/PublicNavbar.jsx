@@ -118,12 +118,12 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
             />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xs sm:text-sm md:text-base lg:text-lg font-black text-white leading-snug">
+            <h1 className="text-sm sm:text-base md:text-lg font-black text-white leading-tight">
               {t('platformTitle')}
             </h1>
             <p className="text-[10px] sm:text-xs text-amber-400 font-bold flex items-center gap-1.5 mt-0.5">
               <span>{t('platformSubtitle')}</span>
-              <span className="text-slate-500 font-normal hidden sm:inline">• (KSC)</span>
+              {lang === 'ku' && <span className="text-slate-500 font-normal hidden sm:inline">• (KSC)</span>}
             </p>
           </div>
         </div>
