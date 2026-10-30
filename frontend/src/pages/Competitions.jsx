@@ -460,41 +460,6 @@ export default function Competitions({ onShowToast }) {
         )}
       </div>
 
-      {/* SECTION TRACK HEADER: Official Paper OMR Competitions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-slate-950 border border-slate-800 shadow-lg">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-amber-400/10 border border-amber-400/30 text-amber-400 flex items-center justify-center font-black">
-            📄
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                {lang === 'en' ? 'Official Paper OMR Track' : lang === 'ar' ? 'المنافسات الورقية الرسمية (سوما)' : 'پێشبڕکێی فەرمیی کاغەزی (سۆما)'}
-              </span>
-              <span className="text-xs text-slate-400 font-bold hidden sm:inline">
-                {lang === 'en' ? 'Kurdistan Schools League' : lang === 'ar' ? 'دوري مدارس كوردستان' : 'خولی فەرمیی قوتابخانەکانی کوردستان'}
-              </span>
-            </div>
-            <h2 className="text-base sm:text-lg font-black text-white mt-0.5">
-              {lang === 'en'
-                ? 'Official Schools League & Students Directory'
-                : lang === 'ar'
-                ? 'الترتيب الرسمي للمدارس ودليل نتائج الطلاب'
-                : 'ڕیزبەندیی فەرمیی قوتابخانەکان و تۆماری نمرەی قوتابییان'}
-            </h2>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs text-slate-400 self-end sm:self-center">
-          <span className="px-3 py-1 rounded-xl bg-slate-800/80 border border-slate-700/60 font-mono font-bold text-amber-300">
-            {displayedSchools.length} {t('totalSchoolsCount')}
-          </span>
-          <span className="px-3 py-1 rounded-xl bg-slate-800/80 border border-slate-700/60 font-mono font-bold text-slate-200">
-            {leaderboard?.total_participants || 0} {t('totalStudents')}
-          </span>
-        </div>
-      </div>
-
       {/* 2. DUAL COLUMN SECTION (Schools Ranking Table + Olympic Podium Pedestal) */}
       <div id="schools-ranking-section" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start scroll-mt-20 w-full max-w-full min-w-0">
         {/* Left Column (7 cols): Full Schools Ranking Dark Table */}

@@ -19,7 +19,7 @@ export const translations = {
     navSearch: 'پشکنینی ئەنجام',
     navSchools: 'قوتابخانەکان',
     navLeaderboard: 'ڕیزبەندی گشتی',
-    navOnlineExam: 'تاقیکردنەوە',
+    navOnlineExam: 'تاقیکردنەوەی ئۆنلاین',
     navOMRGuide: 'ڕێبەری OMR',
     navMenu: 'مینو',
 
@@ -140,6 +140,7 @@ export const translations = {
     clickForResults: 'کلیک بکە بۆ ئەنجام ←',
     sampleExamQuickTest: 'تاقیکردنەوەی خێرای نموونە بۆ قوتابی:',
     allSchoolsOption: 'هەموو قوتابخانەکان',
+    allSchoolsCount: 'هەموو قوتابخانەکان',
     cleanFiltersTitle: 'پاککردنەوەی فلتەر',
     multipleFoundSchoolsNotice: 'چەند قوتابییەک بەم ناوەوە دۆزرانەوە، تکایە قوتابخانەکەت هەڵبژێرە:',
 
@@ -242,7 +243,7 @@ export const translations = {
     navSearch: 'Search',
     navSchools: 'Schools',
     navLeaderboard: 'Ranking',
-    navOnlineExam: 'Exam',
+    navOnlineExam: 'Online Exam',
     navOMRGuide: 'Guide',
     navMenu: 'Menu',
 
@@ -363,6 +364,7 @@ export const translations = {
     clickForResults: 'Click for results →',
     sampleExamQuickTest: 'Sample student quick code test:',
     allSchoolsOption: 'All Schools',
+    allSchoolsCount: 'All Schools',
     cleanFiltersTitle: 'Reset all filters',
     multipleFoundSchoolsNotice: 'Multiple students found with this name. Select your school:',
 
@@ -465,7 +467,7 @@ export const translations = {
     navSearch: 'فحص النتيجة',
     navSchools: 'المدارس',
     navLeaderboard: 'الترتيب العام',
-    navOnlineExam: 'الامتحان',
+    navOnlineExam: 'امتحان أونلاين',
     navOMRGuide: 'دليل OMR',
     navMenu: 'القائمة',
 
@@ -586,6 +588,7 @@ export const translations = {
     clickForResults: 'انقر لعرض النتيجة ←',
     sampleExamQuickTest: 'فحص تجريبي سريع بكود الطالب:',
     allSchoolsOption: 'جميع المدارس',
+    allSchoolsCount: 'جميع المدارس',
     cleanFiltersTitle: 'إعادة تعيين كافة الفلاتر',
     multipleFoundSchoolsNotice: 'تم العثور على عدة طلاب بهذا الاسم. حدد مدرستك:',
 
