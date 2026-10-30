@@ -8,13 +8,9 @@ import {
   TrendingUp,
   Sparkles,
   CheckCircle2,
-  ChevronRight,
-  ChevronLeft,
   RotateCcw,
-  Layers,
   Crown,
-  ShieldCheck,
-  Star
+  Layers
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -29,7 +25,7 @@ export default function KurdistanMapSection({
   const { isDark } = useTheme();
   const [hoveredRegionId, setHoveredRegionId] = useState(null);
 
-  // Region Definitions with accurate Kurdish, English, and Arabic names
+  // Region Definitions with exact matching colors from the official graphic
   const regions = useMemo(
     () => [
       {
@@ -41,10 +37,10 @@ export default function KurdistanMapSection({
         badgeEn: 'Capital of Kurdistan Region',
         badgeAr: 'عاصمة إقليم كوردستان',
         isCapital: true,
-        center: { x: 420, y: 260 },
-        color: '#f59e0b', // Amber / Gold
-        accentBg: 'rgba(245, 158, 11, 0.16)',
-        path: 'M 320 200 C 370 170, 460 170, 500 220 C 530 250, 520 300, 470 330 C 430 355, 360 360, 320 310 C 290 270, 290 220, 320 200 Z',
+        // Pin center percentages on 1024x794 image: (427, 370)
+        pos: { x: 41.7, y: 46.6 },
+        color: '#22c55e', // Vibrant Neon Green
+        dotClass: 'bg-emerald-500',
         keywords: ['هەولێر', 'erbil', 'arbil', 'hawler', 'أربيل', 'هەولێری']
       },
       {
@@ -56,10 +52,10 @@ export default function KurdistanMapSection({
         badgeEn: 'Cultural Capital',
         badgeAr: 'عاصمة الثقافة',
         isCapital: false,
-        center: { x: 620, y: 360 },
-        color: '#10b981', // Emerald
-        accentBg: 'rgba(16, 185, 129, 0.16)',
-        path: 'M 515 285 C 570 260, 670 270, 715 325 C 750 365, 735 430, 680 445 C 610 460, 545 425, 515 375 C 495 340, 495 305, 515 285 Z',
+        // (650, 384)
+        pos: { x: 63.5, y: 48.4 },
+        color: '#f97316', // Vibrant Glowing Orange
+        dotClass: 'bg-orange-500',
         keywords: ['سلێمانی', 'sulaymaniyah', 'slemani', 'sulaimani', 'السليمانية', 'سلێمانیی']
       },
       {
@@ -71,11 +67,26 @@ export default function KurdistanMapSection({
         badgeEn: 'Heart of Badinan',
         badgeAr: 'قلب بادينان',
         isCapital: false,
-        center: { x: 230, y: 175 },
-        color: '#6366f1', // Indigo
-        accentBg: 'rgba(99, 102, 241, 0.16)',
-        path: 'M 170 120 C 240 100, 310 115, 335 165 C 355 210, 330 265, 275 275 C 215 285, 155 250, 145 195 C 140 155, 150 125, 170 120 Z',
+        // (370, 184)
+        pos: { x: 36.1, y: 23.2 },
+        color: '#eab308', // Bright Golden Yellow
+        dotClass: 'bg-yellow-500',
         keywords: ['دهۆک', 'duhok', 'dohuk', 'دهوك', 'دهۆکی']
+      },
+      {
+        id: 'zakho',
+        nameKu: 'ئیدارەی سەربەخۆی زاخۆ',
+        nameEn: 'Zakho Administration',
+        nameAr: 'إدارة زاخو المستقلة',
+        badgeKu: 'دەروازەی نێودەوڵەتی خابوور',
+        badgeEn: 'International Gateway',
+        badgeAr: 'بوابة خابور الدولية',
+        isCapital: false,
+        // (214, 204)
+        pos: { x: 20.9, y: 25.7 },
+        color: '#a855f7', // Vibrant Glowing Purple
+        dotClass: 'bg-purple-500',
+        keywords: ['زاخۆ', 'zakho', 'زاخو', 'خابوور']
       },
       {
         id: 'halabja',
@@ -86,41 +97,11 @@ export default function KurdistanMapSection({
         badgeEn: 'City of Peace & Martyrs',
         badgeAr: 'مدينة السلام والشهداء',
         isCapital: false,
-        center: { x: 740, y: 440 },
-        color: '#f43f5e', // Rose
-        accentBg: 'rgba(244, 63, 94, 0.16)',
-        path: 'M 695 390 C 740 375, 805 395, 825 440 C 840 480, 810 520, 765 525 C 720 530, 675 490, 680 440 C 682 415, 685 400, 695 390 Z',
+        // (737, 529)
+        pos: { x: 72.0, y: 66.6 },
+        color: '#d946ef', // Vibrant Magenta / Fuchsia
+        dotClass: 'bg-fuchsia-500',
         keywords: ['هەڵەبجە', 'halabja', 'حلبجة', 'هەڵەبجەی']
-      },
-      {
-        id: 'soran',
-        nameKu: 'ئیدارەی سەربەخۆی سۆران',
-        nameEn: 'Soran Administration',
-        nameAr: 'إدارة سوران المستقلة',
-        badgeKu: 'لووتکەی چیا بەرزەکان',
-        badgeEn: 'Highland Mountain Peaks',
-        badgeAr: 'قمم الجبال العالية',
-        isCapital: false,
-        center: { x: 575, y: 135 },
-        color: '#0ea5e9', // Sky Blue
-        accentBg: 'rgba(14, 165, 233, 0.16)',
-        path: 'M 480 85 C 560 55, 665 65, 700 120 C 725 165, 695 215, 630 225 C 565 235, 495 200, 475 155 C 465 125, 468 95, 480 85 Z',
-        keywords: ['سۆران', 'soran', 'سوران', 'ڕەواندز', 'چۆمان', 'مێرگەسۆر']
-      },
-      {
-        id: 'zakho',
-        nameKu: 'ئیدارەی سەربەخۆی زاخۆ',
-        nameEn: 'Zakho Administration',
-        nameAr: 'إدارة زاخو المستقلة',
-        badgeKu: 'دەروازەی نێودەوڵەتی خابوور',
-        badgeEn: 'International Border Gateway',
-        badgeAr: 'بوابة خابور الدولية',
-        isCapital: false,
-        center: { x: 135, y: 95 },
-        color: '#f97316', // Orange
-        accentBg: 'rgba(249, 115, 22, 0.16)',
-        path: 'M 75 60 C 130 45, 185 55, 205 95 C 220 135, 195 175, 150 180 C 105 185, 65 150, 60 110 C 58 85, 65 65, 75 60 Z',
-        keywords: ['زاخۆ', 'zakho', 'زاخو', 'خابوور']
       },
       {
         id: 'garmian',
@@ -131,10 +112,10 @@ export default function KurdistanMapSection({
         badgeEn: 'Historic Resistance Heartland',
         badgeAr: 'معقل الصمود والتاريخ',
         isCapital: false,
-        center: { x: 575, y: 505 },
-        color: '#d97706', // Warm Gold
-        accentBg: 'rgba(217, 119, 6, 0.16)',
-        path: 'M 490 445 C 555 430, 645 440, 675 490 C 695 530, 665 575, 605 585 C 540 595, 475 560, 465 510 C 460 480, 475 455, 490 445 Z',
+        // (789, 678)
+        pos: { x: 77.1, y: 85.4 },
+        color: '#ef4444', // Deep Glowing Red
+        dotClass: 'bg-red-500',
         keywords: ['گەرمیان', 'garmian', 'كرميان', 'کەلار', 'کفری', 'kalar']
       },
       {
@@ -143,14 +124,29 @@ export default function KurdistanMapSection({
         nameEn: 'Raparin Administration',
         nameAr: 'إدارة ڕاپەرين المستقلة',
         badgeKu: 'دەروازەی ڕاپەڕینی مەزن',
-        badgeEn: 'Gateway of the Great Uprising',
+        badgeEn: 'Gateway of Great Uprising',
         badgeAr: 'بوابة الانتفاضة العظيمة',
         isCapital: false,
-        center: { x: 625, y: 245 },
-        color: '#14b8a6', // Teal
-        accentBg: 'rgba(20, 184, 166, 0.16)',
-        path: 'M 545 195 C 615 185, 695 195, 725 240 C 740 275, 715 310, 660 320 C 600 330, 545 300, 530 260 C 525 230, 535 205, 545 195 Z',
+        // (601, 545)
+        pos: { x: 58.7, y: 68.6 },
+        color: '#06b6d4', // Neon Cyan / Light Teal
+        dotClass: 'bg-cyan-500',
         keywords: ['ڕاپەڕین', 'raparin', 'رانية', 'ڕانیە', 'قەڵادزێ', 'پشدەر']
+      },
+      {
+        id: 'soran',
+        nameKu: 'ئیدارەی سەربەخۆی سۆران',
+        nameEn: 'Soran Administration',
+        nameAr: 'إدارة سوران المستقلة',
+        badgeKu: 'لووتکەی چیا بەرزەکان',
+        badgeEn: 'Highland Mountain Peaks',
+        badgeAr: 'قمم الجبال العالية',
+        isCapital: false,
+        // (562, 250)
+        pos: { x: 54.9, y: 31.5 },
+        color: '#0284c7', // Electric Blue
+        dotClass: 'bg-sky-600',
+        keywords: ['سۆران', 'soran', 'سوران', 'ڕەواندز', 'چۆمان', 'مێرگەسۆر']
       }
     ],
     []
@@ -160,7 +156,6 @@ export default function KurdistanMapSection({
   const regionStats = useMemo(() => {
     const stats = {};
     regions.forEach((r) => {
-      // Find matching schools by keyword
       const matchingSchools = schools.filter((s) => {
         const sName = (s.name || s.school_name || '').toLowerCase();
         return r.keywords.some((kw) => sName.includes(kw.toLowerCase()));
@@ -182,7 +177,7 @@ export default function KurdistanMapSection({
     return stats;
   }, [schools, regions]);
 
-  // Active region to display in HUD (hovered or selected or first capital)
+  // Active region for HUD
   const activeRegion = useMemo(() => {
     if (hoveredRegionId) {
       return regions.find((r) => r.id === hoveredRegionId) || regions[0];
@@ -190,7 +185,7 @@ export default function KurdistanMapSection({
     if (selectedRegion) {
       return regions.find((r) => r.id === selectedRegion) || regions[0];
     }
-    return regions[0]; // Default to Erbil
+    return regions[0]; // Erbil by default
   }, [hoveredRegionId, selectedRegion, regions]);
 
   const activeStats = regionStats[activeRegion.id] || { schoolsCount: 0, average: 0, leadingSchool: null };
@@ -222,7 +217,7 @@ export default function KurdistanMapSection({
               <h2 className="text-base sm:text-lg md:text-xl font-black text-white flex items-center gap-2">
                 <span>{t('kurdistanMapTitle')}</span>
                 <span className="text-[10px] bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full font-mono font-bold">
-                  LIVE GIS
+                  OFFICIAL 3D RELIEF
                 </span>
               </h2>
             </div>
@@ -261,7 +256,7 @@ export default function KurdistanMapSection({
           <span>{t('allKurdistan')}</span>
         </button>
 
-        {/* Governorates & Administrations */}
+        {/* Governorates & Administrations with exact matching colors */}
         {regions.map((reg) => {
           const isSelected = selectedRegion === reg.id;
           const isHovered = hoveredRegionId === reg.id;
@@ -276,19 +271,24 @@ export default function KurdistanMapSection({
               onMouseLeave={() => setHoveredRegionId(null)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 transition-all cursor-pointer ${
                 isSelected
-                  ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/25 font-black ring-2 ring-amber-300'
+                  ? 'text-slate-950 shadow-md font-black ring-2'
                   : isHovered
-                  ? 'bg-slate-800 text-white border border-amber-400/40'
+                  ? 'bg-slate-800 text-white border'
                   : 'bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
+              style={{
+                backgroundColor: isSelected ? reg.color : undefined,
+                borderColor: isHovered ? reg.color : undefined,
+                boxShadow: isSelected ? `0 0 16px ${reg.color}66` : undefined
+              }}
             >
               <span
-                className="w-2 h-2 rounded-full shrink-0"
+                className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
                 style={{ backgroundColor: reg.color }}
               />
               <span>{getRegionName(reg)}</span>
               {reg.isCapital && (
-                <span className="text-[9px] bg-amber-400/20 text-amber-300 px-1 py-0.2 rounded font-mono">
+                <span className="text-[9px] bg-black/20 text-slate-900 px-1 py-0.2 rounded font-mono font-bold">
                   ★
                 </span>
               )}
@@ -297,180 +297,108 @@ export default function KurdistanMapSection({
         })}
       </div>
 
-      {/* 3. Main Dual Panel: Left is Neon SVG Map, Right is Dynamic HUD Card */}
+      {/* 3. Main Dual Panel: Left is Official 3D Relief Graphic with Interactive Hotspots, Right is HUD Card */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        {/* Left Column (8 cols): High Precision Vector SVG Map */}
-        <div className="lg:col-span-8 bg-[#070b16] rounded-3xl border border-slate-800/90 p-3 sm:p-5 shadow-2xl relative overflow-hidden flex flex-col justify-between">
-          {/* Cybernetic Grid & Radar Background Details */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/5 via-slate-950/20 to-transparent pointer-events-none" />
-
+        {/* Left Column (8 cols): Official High Definition Kurdistan Relief Map */}
+        <div className="lg:col-span-8 bg-[#070b16] rounded-3xl border border-slate-800/90 p-2 sm:p-4 shadow-2xl relative overflow-hidden flex flex-col justify-between">
           {/* Map Top Status Bar */}
-          <div className="relative z-10 flex items-center justify-between text-[11px] text-slate-400 border-b border-slate-800/60 pb-2 mb-2">
+          <div className="relative z-20 flex items-center justify-between text-[11px] text-slate-400 border-b border-slate-800/60 pb-2 mb-2 px-2">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="font-mono font-bold text-slate-300">
-                KURDISTAN REGION • GIS VECTOR MAP
+                KURDISTAN REGION • RELIEF 3D GIS
               </span>
             </div>
-            <div className="hidden sm:flex items-center gap-3 font-mono text-[10px] text-slate-500">
-              <span>LAT: 36°11' N</span>
-              <span>LON: 44°00' E</span>
-              <span>GRID: KRG-8Z</span>
+            <div className="flex items-center gap-3 font-mono text-[10px] text-slate-500">
+              <span className="hidden sm:inline">SCALE: 1:500,000</span>
+              <span className="text-amber-400 font-bold">8 REGIONS & ADMINISTRATIONS</span>
             </div>
           </div>
 
-          {/* SVG Map Container */}
-          <div className="relative z-10 w-full h-[320px] sm:h-[400px] md:h-[460px] flex items-center justify-center">
-            <svg
-              viewBox="0 0 920 620"
-              className="w-full h-full object-contain filter drop-shadow-[0_10px_25px_rgba(0,0,0,0.8)] select-none"
-            >
-              <defs>
-                {/* Glow Filter for Selected / Hovered Territory */}
-                <filter id="neon-glow" x="-30%" y="-30%" width="160%" height="160%">
-                  <feGaussianBlur stdDeviation="8" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
+          {/* Interactive Map Visual Layer with Exact Pin Radar Overlays */}
+          <div className="relative z-10 w-full overflow-hidden rounded-2xl bg-black border border-slate-800/80 shadow-2xl group select-none">
+            {/* The Official Graphic provided by User */}
+            <img
+              src="/kurdistan-map.jpg"
+              alt="Official Kurdistan Region Governorates Map"
+              className="w-full h-auto object-contain block rounded-2xl"
+              loading="eager"
+            />
 
-                {/* Subtle Grid Pattern */}
-                <pattern id="grid-dots" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <circle cx="20" cy="20" r="1" fill="#1e293b" opacity="0.6" />
-                </pattern>
-              </defs>
+            {/* Interactive Radar Hotspots Overlay positioned exactly over each territory's pin */}
+            {regions.map((reg) => {
+              const isSelected = selectedRegion === reg.id;
+              const isHovered = hoveredRegionId === reg.id;
+              const isHighlighted = isSelected || isHovered;
 
-              {/* Background Radar Grid */}
-              <rect x="0" y="0" width="920" height="620" fill="url(#grid-dots)" />
+              return (
+                <div
+                  key={reg.id}
+                  onClick={() => {
+                    if (onSelectRegion) onSelectRegion(reg.id);
+                  }}
+                  onMouseEnter={() => setHoveredRegionId(reg.id)}
+                  onMouseLeave={() => setHoveredRegionId(null)}
+                  className="absolute cursor-pointer -translate-x-1/2 -translate-y-1/2 flex items-center justify-center p-3 group/pin z-20"
+                  style={{
+                    left: `${reg.pos.x}%`,
+                    top: `${reg.pos.y}%`
+                  }}
+                  title={getRegionName(reg)}
+                >
+                  {/* Glowing Radar Pulse Wave */}
+                  <span
+                    className={`absolute rounded-full pointer-events-none transition-all duration-300 ${
+                      isHighlighted ? 'w-10 h-10 animate-ping opacity-85' : 'w-6 h-6 animate-pulse opacity-40'
+                    }`}
+                    style={{ backgroundColor: reg.color }}
+                  />
 
-              {/* Decorative Geographic Latitude & Longitude Guidelines */}
-              <line x1="40" y1="200" x2="880" y2="200" stroke="#1e293b" strokeDasharray="3 3" opacity="0.4" />
-              <line x1="40" y1="380" x2="880" y2="380" stroke="#1e293b" strokeDasharray="3 3" opacity="0.4" />
-              <line x1="300" y1="40" x2="300" y2="580" stroke="#1e293b" strokeDasharray="3 3" opacity="0.4" />
-              <line x1="600" y1="40" x2="600" y2="580" stroke="#1e293b" strokeDasharray="3 3" opacity="0.4" />
-
-              {/* Compass Rose in Upper Corner */}
-              <g transform="translate(850, 70)" opacity="0.8">
-                <circle cx="0" cy="0" r="26" fill="#0b1329" stroke="#334155" strokeWidth="1" />
-                <polygon points="0,-22 5,-4 0,0 -5,-4" fill="#f59e0b" />
-                <polygon points="0,22 5,4 0,0 -5,4" fill="#475569" />
-                <polygon points="-22,0 -4,5 0,0 -4,-5" fill="#475569" />
-                <polygon points="22,0 4,5 0,0 4,-5" fill="#475569" />
-                <circle cx="0" cy="0" r="3" fill="#f59e0b" />
-                <text x="0" y="-28" textAnchor="middle" fill="#f59e0b" fontSize="10" fontWeight="900">
-                  N
-                </text>
-              </g>
-
-              {/* 1. Territory Polygons */}
-              {regions.map((reg) => {
-                const isSelected = selectedRegion === reg.id;
-                const isHovered = hoveredRegionId === reg.id;
-                const isHighlighted = isSelected || isHovered;
-
-                return (
-                  <g
-                    key={reg.id}
-                    className="cursor-pointer transition-all duration-300 group"
-                    onClick={() => {
-                      if (onSelectRegion) onSelectRegion(reg.id);
+                  {/* Outer Glowing Ring */}
+                  <span
+                    className={`absolute rounded-full border transition-all duration-300 pointer-events-none ${
+                      isHighlighted
+                        ? 'w-7 h-7 scale-125 border-white shadow-lg'
+                        : 'w-4 h-4 border-white/60'
+                    }`}
+                    style={{
+                      borderColor: '#ffffff',
+                      boxShadow: `0 0 14px ${reg.color}`
                     }}
-                    onMouseEnter={() => setHoveredRegionId(reg.id)}
-                    onMouseLeave={() => setHoveredRegionId(null)}
+                  />
+
+                  {/* Center Solid Colored Pin Dot */}
+                  <span
+                    className={`relative rounded-full transition-all duration-300 border-2 border-white shadow-md ${
+                      isHighlighted ? 'w-4 h-4 scale-125' : 'w-2.5 h-2.5'
+                    }`}
+                    style={{ backgroundColor: reg.color }}
+                  />
+
+                  {/* Interactive Floating Hover Pill */}
+                  <div
+                    className={`absolute bottom-full mb-1.5 whitespace-nowrap px-2.5 py-1 rounded-xl bg-slate-950/95 border text-[11px] font-black text-white shadow-2xl pointer-events-none transition-all duration-200 ${
+                      isHighlighted
+                        ? 'opacity-100 scale-100 -translate-y-1'
+                        : 'opacity-0 scale-90 translate-y-1'
+                    }`}
+                    style={{ borderColor: reg.color }}
                   >
-                    {/* Glowing Underlay if Highlighted */}
-                    {isHighlighted && (
-                      <path
-                        d={reg.path}
-                        fill={reg.color}
-                        opacity="0.35"
-                        filter="url(#neon-glow)"
-                      />
-                    )}
-
-                    {/* Main Territory Shape */}
-                    <path
-                      d={reg.path}
-                      fill={isHighlighted ? reg.accentBg : '#0b1426'}
-                      stroke={isHighlighted ? reg.color : '#1e293b'}
-                      strokeWidth={isHighlighted ? '2.8' : '1.5'}
-                      strokeLinejoin="round"
-                      className="transition-all duration-300"
-                    />
-
-                    {/* Territory Name Label on Map */}
-                    <text
-                      x={reg.center.x}
-                      y={reg.center.y - 12}
-                      textAnchor="middle"
-                      fill={isHighlighted ? '#ffffff' : '#94a3b8'}
-                      fontSize={reg.isCapital ? '14' : '12'}
-                      fontWeight="900"
-                      className="select-none pointer-events-none drop-shadow-md"
-                    >
-                      {getRegionName(reg)}
-                    </text>
-
-                    {/* Beacon Node Circle with Animated Pulse */}
-                    <circle
-                      cx={reg.center.x}
-                      cy={reg.center.y + 10}
-                      r={isHighlighted ? '7' : '5'}
-                      fill={reg.color}
-                      className="transition-all duration-300 drop-shadow"
-                    />
-
-                    {/* Pulse wave when hovered/selected */}
-                    {isHighlighted && (
-                      <circle
-                        cx={reg.center.x}
-                        cy={reg.center.y + 10}
-                        r="14"
-                        fill="none"
-                        stroke={reg.color}
-                        strokeWidth="1.5"
-                        opacity="0.8"
-                      >
-                        <animate
-                          attributeName="r"
-                          from="6"
-                          to="22"
-                          dur="1.4s"
-                          repeatCount="indefinite"
-                        />
-                        <animate
-                          attributeName="opacity"
-                          from="0.9"
-                          to="0"
-                          dur="1.4s"
-                          repeatCount="indefinite"
-                        />
-                      </circle>
-                    )}
-
-                    {/* Capital Star Emblem if Erbil */}
-                    {reg.isCapital && (
-                      <g transform={`translate(${reg.center.x - 7}, ${reg.center.y + 3})`}>
-                        <polygon
-                          points="7,0 9,5 14,5 10,8 12,13 7,10 2,13 4,8 0,5 5,5"
-                          fill="#ffffff"
-                        />
-                      </g>
-                    )}
-                  </g>
-                );
-              })}
-            </svg>
+                    <span>{getRegionName(reg)}</span>
+                    {reg.isCapital && <span className="text-amber-400 ml-1">★</span>}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Map Footer Note */}
-          <div className="relative z-10 flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-800/60">
+          <div className="relative z-10 flex items-center justify-between text-[11px] text-slate-400 pt-2.5 px-2 border-t border-slate-800/60 mt-2">
             <span className="flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span>{t('clickRegionToFilter')}</span>
             </span>
-            <span className="font-mono text-slate-500">8 GOVERNORATES & REGIONS</span>
+            <span className="text-[10px] text-slate-500 font-mono">KSC OFFICIAL COMPETITION GIS</span>
           </div>
         </div>
 
@@ -484,8 +412,11 @@ export default function KurdistanMapSection({
                 <div>
                   <div className="flex items-center gap-2">
                     <span
-                      className="w-3 h-3 rounded-full shrink-0 shadow-md"
-                      style={{ backgroundColor: activeRegion.color }}
+                      className="w-3.5 h-3.5 rounded-full shrink-0 shadow-lg"
+                      style={{
+                        backgroundColor: activeRegion.color,
+                        boxShadow: `0 0 10px ${activeRegion.color}`
+                      }}
                     />
                     <h3 className="text-lg sm:text-xl font-black text-white">
                       {getRegionName(activeRegion)}
@@ -584,18 +515,18 @@ export default function KurdistanMapSection({
             </div>
           </div>
 
-          {/* Quick Governorates League Podium Card */}
+          {/* Quick Governorates League Podium Card with Exact Matching Colors */}
           <div className="bg-[#080d1a] rounded-3xl border border-slate-800/90 p-4 shadow-xl">
             <div className="flex items-center justify-between text-xs font-black text-white pb-2.5 border-b border-slate-800">
               <div className="flex items-center gap-1.5 text-amber-400">
                 <Trophy className="w-3.5 h-3.5" />
                 <span>{t('governoratesCup')}</span>
               </div>
-              <span className="text-[10px] text-slate-400 font-mono">TOP KRG</span>
+              <span className="text-[10px] text-slate-400 font-mono">KRG LEAGUE</span>
             </div>
 
             <div className="space-y-1.5 pt-2.5 text-xs">
-              {regions.slice(0, 3).map((reg, idx) => (
+              {regions.slice(0, 4).map((reg, idx) => (
                 <div
                   key={reg.id}
                   onClick={() => {
@@ -603,14 +534,18 @@ export default function KurdistanMapSection({
                   }}
                   className={`flex items-center justify-between p-2 rounded-xl transition-all cursor-pointer ${
                     selectedRegion === reg.id
-                      ? 'bg-amber-400/20 border border-amber-400/40 text-amber-300'
+                      ? 'bg-slate-800/90 border text-white font-bold'
                       : 'hover:bg-slate-900 text-slate-300'
                   }`}
+                  style={{
+                    borderColor: selectedRegion === reg.id ? reg.color : undefined
+                  }}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-[10px] font-black font-mono text-amber-400">
-                      {idx + 1}
-                    </span>
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
+                      style={{ backgroundColor: reg.color }}
+                    />
                     <span className="font-bold">{getRegionName(reg)}</span>
                   </div>
                   <span className="text-[11px] font-mono font-bold text-slate-400">
