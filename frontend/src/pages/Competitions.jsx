@@ -52,6 +52,17 @@ import OnlineExamLeaderboardModal from '../components/OnlineExamLeaderboardModal
 import KurdistanMapSection from '../components/KurdistanMapSection';
 import OMRSheetAuditModal from '../components/OMRSheetAuditModal';
 
+const REGION_MAP = {
+  erbil: { nameKu: 'هەولێر', color: '#22c55e' },
+  sulaymaniyah: { nameKu: 'سلێمانی', color: '#f97316' },
+  duhok: { nameKu: 'دهۆک', color: '#eab308' },
+  zakho: { nameKu: 'ئیدارەی سەربەخۆی زاخۆ', color: '#a855f7' },
+  halabja: { nameKu: 'هەڵەبجە', color: '#d946ef' },
+  garmian: { nameKu: 'ئیدارەی سەربەخۆی گەرمیان', color: '#ef4444' },
+  raparin: { nameKu: 'ئیدارەی سەربەخۆی ڕاپەڕین', color: '#06b6d4' },
+  soran: { nameKu: 'ئیدارەی سەربەخۆی سۆران', color: '#0284c7' }
+};
+
 export default function Competitions({ onShowToast }) {
   const { user } = useAuth() || {};
   const {
@@ -890,6 +901,12 @@ export default function Competitions({ onShowToast }) {
                 </h3>
                 <p className="text-xs text-slate-300 flex items-center gap-2 flex-wrap">
                   <span>{t('thSchool')}: <strong className="text-amber-300">{translateSchool(searchResult.school_name)}</strong></span>
+                  {searchResult.school_region && (
+                    <>
+                      <span>•</span>
+                      <span>{t('schoolRegion')}: <strong className="text-emerald-400 font-bold">{REGION_MAP[searchResult.school_region]?.nameKu || searchResult.school_region}</strong></span>
+                    </>
+                  )}
                   <span>•</span>
                   <span>{t('gradeLabel')} <strong className="text-amber-300">{searchResult.grade ? translateDyn(searchResult.grade) : 'All'}</strong></span>
                 </p>
@@ -922,46 +939,60 @@ export default function Competitions({ onShowToast }) {
 
           {searchResult.results?.map((res, i) => (
             <div key={i} className="space-y-6">
-              {/* 3 Prominent Rank Placement Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                {/* Kurdistan Rank */}
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/20 via-slate-900 to-amber-950/20 border border-amber-400/60 shadow-lg text-center space-y-1">
-                  <span className="text-xs font-black text-amber-300 flex items-center justify-center gap-1">
-                    <Crown className="w-4 h-4 text-amber-400" />
+              {/* 4 Prominent Rank Placement Cards (Kurdistan, City/Governorate, School, Percentile) */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
+                {/* 1. Kurdistan Overall Rank */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-amber-500/20 via-slate-900 to-amber-950/20 border border-amber-400/60 shadow-lg text-center space-y-1">
+                  <span className="text-[11px] sm:text-xs font-black text-amber-300 flex items-center justify-center gap-1">
+                    <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                     <span>{t('rankInKurdistan')}</span>
                   </span>
-                  <div className="text-3xl sm:text-4xl font-black text-white">
+                  <div className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">
                     {t('thRank')} #{res.overall_rank}
                   </div>
-                  <span className="text-[11px] text-slate-400 block">
+                  <span className="text-[10px] sm:text-[11px] text-slate-400 block truncate">
                     {t('ofLabel')} {res.total_participants} {t('outOfStudentsKurdistan')}
                   </span>
                 </div>
 
-                {/* School Rank */}
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-brand-500/20 via-slate-900 to-brand-950/20 border border-brand-400/60 shadow-lg text-center space-y-1">
-                  <span className="text-xs font-black text-brand-300 flex items-center justify-center gap-1">
-                    <Building2 className="w-4 h-4 text-brand-400" />
+                {/* 2. City / Governorate Rank */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-purple-500/20 via-slate-900 to-purple-950/20 border border-purple-400/60 shadow-lg text-center space-y-1">
+                  <span className="text-[11px] sm:text-xs font-black text-purple-300 flex items-center justify-center gap-1">
+                    <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" />
+                    <span>{t('rankInCity')}</span>
+                  </span>
+                  <div className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">
+                    {t('thRank')} #{res.city_rank || 1}
+                  </div>
+                  <span className="text-[10px] sm:text-[11px] text-slate-400 block truncate">
+                    {t('ofLabel')} {res.total_in_city || res.total_in_school} {t('outOfStudentsCity')}
+                  </span>
+                </div>
+
+                {/* 3. School Rank */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-brand-500/20 via-slate-900 to-brand-950/20 border border-brand-400/60 shadow-lg text-center space-y-1">
+                  <span className="text-[11px] sm:text-xs font-black text-brand-300 flex items-center justify-center gap-1">
+                    <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-400" />
                     <span>{t('rankInSchool')}</span>
                   </span>
-                  <div className="text-3xl sm:text-4xl font-black text-white">
+                  <div className="text-2xl sm:text-3xl lg:text-4xl font-black text-white">
                     {t('thRank')} #{res.school_rank}
                   </div>
-                  <span className="text-[11px] text-slate-400 block">
+                  <span className="text-[10px] sm:text-[11px] text-slate-400 block truncate">
                     {t('ofLabel')} {res.total_in_school} {t('outOfStudentsSchool')}
                   </span>
                 </div>
 
-                {/* Percentile Ranking */}
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-slate-900 to-emerald-950/20 border border-emerald-400/60 shadow-lg text-center space-y-1">
-                  <span className="text-xs font-black text-emerald-300 flex items-center justify-center gap-1">
-                    <TrendingUp className="w-4 h-4 text-emerald-400" />
+                {/* 4. Percentile Ranking */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-slate-900 to-emerald-950/20 border border-emerald-400/60 shadow-lg text-center space-y-1">
+                  <span className="text-[11px] sm:text-xs font-black text-emerald-300 flex items-center justify-center gap-1">
+                    <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
                     <span>{t('percentileLabel')}</span>
                   </span>
-                  <div className="text-3xl sm:text-4xl font-black text-emerald-400">
+                  <div className="text-2xl sm:text-3xl lg:text-4xl font-black text-emerald-400">
                     {res.percentile}%
                   </div>
-                  <span className="text-[11px] text-slate-400 block">
+                  <span className="text-[10px] sm:text-[11px] text-slate-400 block truncate">
                     {t('percentileDesc')}
                   </span>
                 </div>

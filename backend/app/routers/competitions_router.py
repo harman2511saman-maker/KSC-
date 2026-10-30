@@ -504,6 +504,19 @@ def search_student_public_result(
                 rank_in_school = idx
                 break
 
+        # Calculate City / Governorate Rank
+        st_region = student.school_class.region if (student and student.school_class and student.school_class.region) else 'erbil'
+        city_results = [
+            res for res in all_exam_results
+            if res.student and res.student.school_class and (res.student.school_class.region or 'erbil').lower() == st_region.lower()
+        ]
+        total_in_city = len(city_results) if city_results else total_in_school
+        rank_in_city = 1
+        for idx, c_res in enumerate(city_results, start=1):
+            if c_res.id == r.id:
+                rank_in_city = idx
+                break
+
         percentile = round(((total_in_exam - rank_in_exam + 1) / max(1, total_in_exam)) * 100, 1)
 
         # Check Certificate Eligibility based on Admin's exact rules
@@ -619,6 +632,9 @@ def search_student_public_result(
             "status": r.status,
             "overall_rank": rank_in_exam,
             "total_participants": total_in_exam,
+            "city_rank": rank_in_city,
+            "total_in_city": total_in_city,
+            "city_region": st_region,
             "school_rank": rank_in_school,
             "total_in_school": total_in_school,
             "percentile": percentile,
