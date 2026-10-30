@@ -76,6 +76,33 @@ for col_def in [("score", "REAL"), ("percentage", "REAL"), ("submitted_at", "DAT
     except Exception:
         pass
 
+# Ensure complete isolation of Online Exams from Paper OMR tables (Schools, Exams, Students, Results)
+try:
+    with engine.connect() as conn:
+        conn.execute(text("""
+            DELETE FROM detected_answers WHERE page_id IN (
+                SELECT id FROM scan_pages WHERE job_id LIKE 'ONLINE_JOB_%'
+            )
+        """))
+        conn.execute(text("""
+            DELETE FROM results WHERE 
+            exam_id IN (SELECT id FROM exams WHERE template_version = 'ONLINE' OR grade = 'ئۆنلاین')
+            OR student_id IN (SELECT id FROM students WHERE grade = 'ئۆنلاین' OR class_id IN (SELECT id FROM classes WHERE grade = 'ئۆنلاین' OR name LIKE 'ئۆنلاین:%'))
+            OR page_id IN (SELECT id FROM scan_pages WHERE job_id LIKE 'ONLINE_JOB_%')
+        """))
+        conn.execute(text("DELETE FROM scan_pages WHERE job_id LIKE 'ONLINE_JOB_%'"))
+        conn.execute(text("DELETE FROM scan_jobs WHERE id LIKE 'ONLINE_JOB_%'"))
+        conn.execute(text("""
+            DELETE FROM students WHERE grade = 'ئۆنلاین' OR class_id IN (SELECT id FROM classes WHERE grade = 'ئۆنلاین' OR name LIKE 'ئۆنلاین:%')
+        """))
+        conn.execute(text("DELETE FROM exams WHERE template_version = 'ONLINE' OR grade = 'ئۆنلاین'"))
+        conn.execute(text("""
+            DELETE FROM classes WHERE grade = 'ئۆنلاین' OR name LIKE 'ئۆنلاین:%' OR name LIKE '%پلاتفۆرمی پێشبڕکێی ئۆنلاینی%'
+        """))
+        conn.commit()
+except Exception:
+    pass
+
 # Seed realistic demo data
 db_session = SessionLocal()
 try:

@@ -113,31 +113,42 @@ def get_competition_leaderboard(
     db: Session = Depends(get_db)
 ):
     """
-    Computes school-level and full student-level tournament rankings with flexible filters.
+    Computes school-level and full student-level tournament rankings strictly for official Paper OMR competitions.
+    Completely isolated from online exams.
     """
-    try:
-        from app.routers.online_exam_router import sync_online_classes_and_exams
-        sync_online_classes_and_exams(db)
-    except Exception:
-        pass
-
-    # Available exams for dropdown filter
-    all_exams = db.query(Exam).order_by(desc(Exam.created_at)).all()
+    # Available exams for dropdown filter (strictly Paper OMR)
+    all_exams = db.query(Exam).filter(
+        Exam.template_version != 'ONLINE',
+        Exam.grade != 'ئۆنلاین'
+    ).order_by(desc(Exam.created_at)).all()
     exams_list = [{"id": e.id, "name": e.exam_name, "subject": e.subject, "grade": e.grade} for e in all_exams]
 
-    # Available schools for dropdown filter
-    all_classes = db.query(SchoolClass).order_by(SchoolClass.name).all()
+    # Available schools for dropdown filter (strictly real physical schools)
+    all_classes = db.query(SchoolClass).filter(
+        SchoolClass.grade != 'ئۆنلاین',
+        ~SchoolClass.name.like('ئۆنلاین:%'),
+        ~SchoolClass.name.like('%پلاتفۆرمی پێشبڕکێی ئۆنلاینی%')
+    ).order_by(SchoolClass.name).all()
     classes_list = [{"id": c.id, "name": c.name, "grade": c.grade} for c in all_classes]
 
     # 1. School Rankings
-    schools_query = db.query(SchoolClass)
+    schools_query = db.query(SchoolClass).filter(
+        SchoolClass.grade != 'ئۆنلاین',
+        ~SchoolClass.name.like('ئۆنلاین:%'),
+        ~SchoolClass.name.like('%پلاتفۆرمی پێشبڕکێی ئۆنلاینی%')
+    )
     if class_id:
         schools_query = schools_query.filter(SchoolClass.id == class_id)
     schools = schools_query.all()
     schools_ranking = []
 
     for s in schools:
-        query = db.query(Result).join(Result.student).filter(Student.class_id == s.id)
+        query = db.query(Result).join(Result.student).join(Result.exam).filter(
+            Student.class_id == s.id,
+            Student.grade != 'ئۆنلاین',
+            Exam.template_version != 'ONLINE',
+            Exam.grade != 'ئۆنلاین'
+        )
         if exam_id:
             query = query.filter(Result.exam_id == exam_id)
         
@@ -179,8 +190,20 @@ def get_competition_leaderboard(
         else:
             item["badge"] = f"پلەی {rank}"
 
-    # 2. All Students Leaderboard (Calculated across all participants)
-    student_query = db.query(Result).join(Result.student).outerjoin(Student.school_class).join(Result.exam)
+    # 2. All Students Leaderboard (Calculated across all official Paper OMR participants)
+    student_query = (
+        db.query(Result)
+        .join(Result.student)
+        .outerjoin(Student.school_class)
+        .join(Result.exam)
+        .filter(
+            Student.grade != 'ئۆنلاین',
+            Exam.template_version != 'ONLINE',
+            Exam.grade != 'ئۆنلاین',
+            (Student.class_id == None) | (SchoolClass.grade != 'ئۆنلاین'),
+            (Student.class_id == None) | (~SchoolClass.name.like('ئۆنلاین:%'))
+        )
+    )
     if exam_id:
         student_query = student_query.filter(Result.exam_id == exam_id)
     if class_id:
@@ -409,14 +432,16 @@ def search_student_public_result(
     if student_code and student_code.strip():
         code_cleaned = student_code.strip()
         student = db.query(Student).filter(
-            or_(Student.student_id == code_cleaned, Student.qr_identifier == code_cleaned)
+            or_(Student.student_id == code_cleaned, Student.qr_identifier == code_cleaned),
+            Student.grade != 'ئۆنلاین'
         ).first()
         if not student:
             return {"found": False, "message_ku": "هیچ قوتابییەک بەم کۆدە نەدۆزرایەوە"}
     elif student_name and student_name.strip():
         name_cleaned = student_name.strip()
         matching_students = db.query(Student).filter(
-            Student.name.ilike(f"%{name_cleaned}%")
+            Student.name.ilike(f"%{name_cleaned}%"),
+            Student.grade != 'ئۆنلاین'
         ).all()
         if not matching_students:
             return {"found": False, "message_ku": "هیچ قوتابییەک بەم ناوە نەدۆزرایەوە"}
@@ -441,7 +466,17 @@ def search_student_public_result(
     if not student:
         return {"found": False, "message_ku": "زانیاری قوتابی نەدۆزرایەوە"}
 
-    results = db.query(Result).filter(Result.student_id == student.id).order_by(desc(Result.created_at)).all()
+    results = (
+        db.query(Result)
+        .join(Result.exam)
+        .filter(
+            Result.student_id == student.id,
+            Exam.template_version != 'ONLINE',
+            Exam.grade != 'ئۆنلاین'
+        )
+        .order_by(desc(Result.created_at))
+        .all()
+    )
     res_list = []
     
     for r in results:

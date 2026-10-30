@@ -17,13 +17,12 @@ router = APIRouter(prefix="/api/classes", tags=["Classes & Schools"], dependenci
 
 @router.get("/", response_model=List[ClassOut])
 def get_classes(db: Session = Depends(get_db)):
-    try:
-        from app.routers.online_exam_router import sync_online_classes_and_exams
-        sync_online_classes_and_exams(db)
-    except Exception:
-        pass
-
-    schools = db.query(SchoolClass).order_by(SchoolClass.name).all()
+    # Strictly filter out any online exam dummy classes
+    schools = db.query(SchoolClass).filter(
+        SchoolClass.grade != 'ئۆنلاین',
+        ~SchoolClass.name.like('ئۆنلاین:%'),
+        ~SchoolClass.name.like('%پلاتفۆرمی پێشبڕکێی ئۆنلاینی%')
+    ).order_by(SchoolClass.name).all()
     results = []
     for s in schools:
         out = ClassOut.from_orm(s)

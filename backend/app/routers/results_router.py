@@ -88,13 +88,16 @@ def list_results(
     offset: int = 0,
     db: Session = Depends(get_db)
 ):
-    try:
-        from app.routers.online_exam_router import sync_online_classes_and_exams
-        sync_online_classes_and_exams(db)
-    except Exception:
-        pass
-
-    query = db.query(Result).join(Result.exam).outerjoin(Result.student)
+    query = (
+        db.query(Result)
+        .join(Result.exam)
+        .outerjoin(Result.student)
+        .filter(
+            Exam.template_version != 'ONLINE',
+            Exam.grade != 'ئۆنلاین',
+            (Student.grade != 'ئۆنلاین') | (Result.student_id == None)
+        )
+    )
 
     if exam_id:
         query = query.filter(Result.exam_id == exam_id)

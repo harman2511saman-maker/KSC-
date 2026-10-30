@@ -48,6 +48,7 @@ import OnlineExamPasscodeModal from '../components/OnlineExamPasscodeModal';
 import OnlineExamRoom from '../components/OnlineExamRoom';
 import OnlineExamAdminModal from '../components/OnlineExamAdminModal';
 import PublicExamSolutionsModal from '../components/PublicExamSolutionsModal';
+import OnlineExamLeaderboardModal from '../components/OnlineExamLeaderboardModal';
 
 export default function Competitions({ onShowToast }) {
   const { user } = useAuth() || {};
@@ -73,6 +74,7 @@ export default function Competitions({ onShowToast }) {
   const [activeExamSession, setActiveExamSession] = useState(null);
   const [showOnlineExamAdminModal, setShowOnlineExamAdminModal] = useState(false);
   const [selectedExamForSolutions, setSelectedExamForSolutions] = useState(null);
+  const [selectedExamForOnlineLeaderboard, setSelectedExamForOnlineLeaderboard] = useState(null);
   const [onlineExamKey, setOnlineExamKey] = useState(0);
 
   // Filters State
@@ -431,24 +433,7 @@ export default function Competitions({ onShowToast }) {
                 isAdmin={user?.role === 'ADMIN'}
                 onShowToast={onShowToast}
                 onViewSolutions={(exam) => setSelectedExamForSolutions(exam)}
-                onViewLeaderboard={(exam) => {
-                  let targetExamId = exam?.linked_exam_id;
-                  if (!targetExamId && exams?.length > 0) {
-                    const match = exams.find(e => e.exam_name === exam?.title || e.subject === exam?.title);
-                    if (match) targetExamId = match.id;
-                  }
-                  if (targetExamId) {
-                    setSelectedExamId(String(targetExamId));
-                  }
-                  setSelectedSchoolId('');
-                  fetchLeaderboard(targetExamId ? String(targetExamId) : undefined, '');
-                  setTimeout(() => {
-                    const el = document.getElementById('leaderboard-section');
-                    if (el) {
-                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                  }, 150);
-                }}
+                onViewLeaderboard={(exam) => setSelectedExamForOnlineLeaderboard(exam)}
               />
             </div>
           </div>
@@ -473,6 +458,41 @@ export default function Competitions({ onShowToast }) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* SECTION TRACK HEADER: Official Paper OMR Competitions */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-slate-950 border border-slate-800 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-amber-400/10 border border-amber-400/30 text-amber-400 flex items-center justify-center font-black">
+            📄
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                {lang === 'en' ? 'Official Paper OMR Track' : lang === 'ar' ? 'المنافسات الورقية الرسمية (سوما)' : 'پێشبڕکێی فەرمیی کاغەزی (سۆما)'}
+              </span>
+              <span className="text-xs text-slate-400 font-bold hidden sm:inline">
+                {lang === 'en' ? 'Kurdistan Schools League' : lang === 'ar' ? 'دوري مدارس كوردستان' : 'خولی فەرمیی قوتابخانەکانی کوردستان'}
+              </span>
+            </div>
+            <h2 className="text-base sm:text-lg font-black text-white mt-0.5">
+              {lang === 'en'
+                ? 'Official Schools League & Students Directory'
+                : lang === 'ar'
+                ? 'الترتيب الرسمي للمدارس ودليل نتائج الطلاب'
+                : 'ڕیزبەندیی فەرمیی قوتابخانەکان و تۆماری نمرەی قوتابییان'}
+            </h2>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-slate-400 self-end sm:self-center">
+          <span className="px-3 py-1 rounded-xl bg-slate-800/80 border border-slate-700/60 font-mono font-bold text-amber-300">
+            {displayedSchools.length} {t('totalSchoolsCount')}
+          </span>
+          <span className="px-3 py-1 rounded-xl bg-slate-800/80 border border-slate-700/60 font-mono font-bold text-slate-200">
+            {leaderboard?.total_participants || 0} {t('totalStudents')}
+          </span>
+        </div>
       </div>
 
       {/* 2. DUAL COLUMN SECTION (Schools Ranking Table + Olympic Podium Pedestal) */}
@@ -1219,24 +1239,11 @@ export default function Competitions({ onShowToast }) {
         <OnlineExamRoom
           sessionData={activeExamSession}
           onClose={(result) => {
-            let linkedId = result?.linked_exam_id || activeExamSession?.exam?.linked_exam_id;
-            if (!linkedId && exams?.length > 0) {
-              const examTitle = result?.exam_title || activeExamSession?.exam?.title;
-              const match = exams.find(e => e.exam_name === examTitle || e.subject === examTitle);
-              if (match) linkedId = match.id;
-            }
+            const finishedExam = activeExamSession?.exam;
             setActiveExamSession(null);
-            if (linkedId) {
-              setSelectedExamId(String(linkedId));
+            if (finishedExam) {
+              setSelectedExamForOnlineLeaderboard(finishedExam);
             }
-            setSelectedSchoolId('');
-            fetchLeaderboard(linkedId ? String(linkedId) : undefined, '');
-            setTimeout(() => {
-              const el = document.getElementById('leaderboard-section');
-              if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }
-            }, 300);
           }}
           onShowToast={onShowToast}
         />
@@ -1260,17 +1267,16 @@ export default function Competitions({ onShowToast }) {
           onClose={() => setSelectedExamForSolutions(null)}
           onGoToLeaderboard={(exam) => {
             setSelectedExamForSolutions(null);
-            if (exam.linked_exam_id) {
-              setSelectedExamId(String(exam.linked_exam_id));
-            }
-            fetchLeaderboard();
-            setTimeout(() => {
-              const el = document.getElementById('leaderboard-section');
-              if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }
-            }, 300);
+            setSelectedExamForOnlineLeaderboard(exam);
           }}
+        />
+      )}
+
+      {/* Dedicated Online Live Exam Tournament Leaderboard Modal */}
+      {selectedExamForOnlineLeaderboard && (
+        <OnlineExamLeaderboardModal
+          exam={selectedExamForOnlineLeaderboard}
+          onClose={() => setSelectedExamForOnlineLeaderboard(null)}
         />
       )}
     </div>
