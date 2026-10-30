@@ -416,7 +416,10 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
                 </button>
 
                 <button
-                  onClick={() => {
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setIsDrawerOpen(false);
                     window.dispatchEvent(new CustomEvent('ksc-open-install'));
                   }}
@@ -430,9 +433,7 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
                   <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
                     {lang === 'en' ? 'Install Mobile App' : lang === 'ar' ? 'تثبيت التطبيق' : 'دابەزاندنی ئەپی مۆبایل'}
                   </span>
-                  <span className="text-[10px] bg-amber-400/20 text-amber-400 px-2 py-0.5 rounded-full font-bold">
-                    PWA
-                  </span>
+                  <ArrowIcon className="w-3.5 h-3.5 text-slate-400" />
                 </button>
               </div>
             </div>
