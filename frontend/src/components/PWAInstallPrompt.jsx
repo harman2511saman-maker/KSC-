@@ -10,9 +10,6 @@ export default function PWAInstallPrompt({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState('ios');
   const [internalModalOpen, setInternalModalOpen] = useState(false);
   const [installSuccess, setInstallSuccess] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(() => {
-    return sessionStorage.getItem('ksc_install_banner_dismissed') === 'true';
-  });
 
   const showInstallModal = typeof isOpen === 'boolean' ? isOpen : internalModalOpen;
 
@@ -21,10 +18,6 @@ export default function PWAInstallPrompt({ isOpen, onClose }) {
     if (onClose) {
       onClose();
     }
-  };
-
-  const handleOpenModal = () => {
-    setInternalModalOpen(true);
   };
 
   useEffect(() => {
@@ -56,7 +49,7 @@ export default function PWAInstallPrompt({ isOpen, onClose }) {
       }
     };
 
-    // 4. Custom event triggered from menu button or elsewhere
+    // 4. Custom event triggered from menu button
     const handleOpenInstall = () => {
       setInternalModalOpen(true);
     };
@@ -96,293 +89,228 @@ export default function PWAInstallPrompt({ isOpen, onClose }) {
     }
   };
 
-  const handleDismissBanner = () => {
-    setIsDismissed(true);
-    sessionStorage.setItem('ksc_install_banner_dismissed', 'true');
-  };
+  // Only render the modal when requested from menu
+  if (!showInstallModal) {
+    return null;
+  }
 
   return (
-    <>
-      {/* 1. Floating Bottom Banner (Dismissable, does not show if standalone or dismissed) */}
-      {!isStandalone && !isDismissed && (deferredPrompt || isIOS) && !showInstallModal && (
-        <div
-          className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 z-40 max-w-sm animate-in slide-in-from-bottom-5 duration-300 pointer-events-auto"
-          dir={isRTL ? 'rtl' : 'ltr'}
-        >
-          <div className="bg-[#0b1329]/95 backdrop-blur-xl border border-amber-500/40 p-3 sm:p-3.5 rounded-2xl shadow-2xl shadow-black/80 flex items-center justify-between gap-3 text-slate-100">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shrink-0 shadow-md">
-                <img
-                  src="/pwa-192x192.png"
-                  alt="KSC App Icon"
-                  className="w-full h-full object-cover rounded-[10px]"
-                />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-black text-white truncate flex items-center gap-1.5">
-                  <span>
-                    {lang === 'en'
-                      ? 'Install KSC App'
-                      : lang === 'ar'
-                      ? 'تثبيت تطبيق KSC'
-                      : 'دابەزاندنی ئەپی KSC'}
-                  </span>
-                  <span className="text-[9px] bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded font-mono font-bold">
-                    v2.0
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-300 truncate mt-0.5">
-                  {lang === 'en'
-                    ? 'Faster access & full-screen exams'
-                    : lang === 'ar'
-                    ? 'دخول أسرع وشاشة كاملة للامتحانات'
-                    : 'خێراتر و شاشەی تەواو بۆ تاقیکردنەوە'}
-                </p>
-              </div>
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+      dir={isRTL ? 'rtl' : 'ltr'}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleCloseModal();
+      }}
+    >
+      <div className="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-slate-900 border border-slate-700/80 p-4 sm:p-5 space-y-4 shadow-2xl text-slate-100 relative">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-lg shadow-amber-500/20 shrink-0">
+              <img
+                src="/pwa-192x192.png"
+                alt="KSC Official App Logo"
+                className="w-full h-full object-cover rounded-[14px]"
+              />
             </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={handleOpenModal}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>{lang === 'en' ? 'Install' : lang === 'ar' ? 'تثبيت' : 'دابەزاندن'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleDismissBanner}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-                title={lang === 'en' ? 'Close' : 'داخستن'}
-              >
-                <X className="w-4 h-4" />
-              </button>
+            <div>
+              <h3 className="text-sm sm:text-base font-black text-white">
+                {lang === 'en'
+                  ? 'Install KSC Official App'
+                  : lang === 'ar'
+                  ? 'تثبيت تطبيق KSC الرسمي'
+                  : 'دابەزاندنی ئەپی فەرمیی KSC'}
+              </h3>
+              <span className="text-[11px] text-amber-400 font-bold block mt-0.5">
+                {lang === 'en'
+                  ? 'iPhone • Android • Windows'
+                  : 'ئایفۆن • گالاکسی • کۆمپیوتەر'}
+              </span>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={handleCloseModal}
+            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            title={lang === 'en' ? 'Close' : 'داخستن'}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-      )}
 
-      {/* 2. Full Dedicated App Installation Modal (Always opens when clicked from menu or banner) */}
-      {showInstallModal && (
-        <div
-          className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
-          dir={isRTL ? 'rtl' : 'ltr'}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) handleCloseModal();
-          }}
-        >
-          <div className="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-slate-900 border border-slate-700/80 p-4 sm:p-5 space-y-4 shadow-2xl text-slate-100 relative">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-lg shadow-amber-500/20 shrink-0">
-                  <img
-                    src="/pwa-192x192.png"
-                    alt="KSC Official App Logo"
-                    className="w-full h-full object-cover rounded-[14px]"
-                  />
-                </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-black text-white">
-                    {lang === 'en'
-                      ? 'Install KSC Official App'
-                      : lang === 'ar'
-                      ? 'تثبيت تطبيق KSC الرسمي'
-                      : 'دابەزاندنی ئەپی فەرمیی KSC'}
-                  </h3>
-                  <span className="text-[11px] text-amber-400 font-bold block mt-0.5">
-                    {lang === 'en'
-                      ? 'iPhone • Android • Windows'
-                      : 'ئایفۆن • گالاکسی • کۆمپیوتەر'}
-                  </span>
-                </div>
-              </div>
+        {/* Platform Tabs Selector */}
+        {!isStandalone && !installSuccess && (
+          <div className="flex items-center gap-2 p-1 bg-slate-950 rounded-2xl border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setActiveTab('ios')}
+              className={`flex-1 py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'ios'
+                  ? 'bg-amber-400 text-slate-950 shadow-md font-black'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Apple className="w-4 h-4" />
+              <span>{lang === 'en' ? 'iPhone (Safari)' : 'ئایفۆن (Safari)'}</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-                title={lang === 'en' ? 'Close' : 'داخستن'}
-              >
-                <X className="w-5 h-5" />
-              </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('android')}
+              className={`flex-1 py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'android'
+                  ? 'bg-amber-400 text-slate-950 shadow-md font-black'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Smartphone className="w-4 h-4" />
+              <span>{lang === 'en' ? 'Android / Galaxy' : 'ئەندرۆید / گالاکسی'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Content Area */}
+        {isStandalone ? (
+          <div className="py-8 text-center space-y-2">
+            <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
+            <h4 className="text-base font-black text-white">
+              {lang === 'en' ? 'App Already Installed' : lang === 'ar' ? 'التطبيق مثبت بالفعل' : 'ئەپەکە پێشتر دابەزێنراوە'}
+            </h4>
+            <p className="text-xs text-slate-400">
+              {lang === 'en'
+                ? 'You are currently using the installed KSC application.'
+                : lang === 'ar'
+                ? 'أنت تستخدم حالياً تطبيق KSC المثبت.'
+                : 'ئێستا تۆ لەناو ئەپی دابەزێنراوی فەرمیی KSC کار دەکەیت.'}
+            </p>
+          </div>
+        ) : installSuccess ? (
+          <div className="py-8 text-center space-y-2">
+            <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto animate-bounce" />
+            <h4 className="text-base font-black text-white">
+              {lang === 'en' ? 'Successfully Installed!' : 'پیرۆزە! ئەپەکە بە سەرکەوتوویی دامەزرا'}
+            </h4>
+            <p className="text-xs text-slate-400">
+              {lang === 'en'
+                ? 'You can now launch KSC directly from your home screen.'
+                : 'ئێستا دەتوانیت ڕاستەوخۆ لەسەر شاشەی مۆبایلەکەتەوە ئەپەکە بکەیتەوە.'}
+            </p>
+          </div>
+        ) : activeTab === 'ios' ? (
+          /* Visual Image Guide for iPhone / Safari */
+          <div className="space-y-3">
+            <p className="text-xs text-slate-300 font-bold leading-relaxed flex items-center gap-1.5">
+              <Apple className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                {lang === 'en'
+                  ? 'Step-by-step installation guide for iPhone (Safari):'
+                  : lang === 'ar'
+                  ? 'دليل التثبيت المصور خطوة بخطوة للآيفون (سفاري):'
+                  : 'ڕێبەری وێنەیی هەنگاو بە هەنگاو بۆ ئایفۆن (سەفاری):'}
+              </span>
+            </p>
+
+            {/* Infographic Guide Image */}
+            <div className="rounded-2xl overflow-hidden border-2 border-amber-500/40 bg-black shadow-2xl relative">
+              <img
+                src="/ios-install-guide.jpg"
+                alt="KSC App iPhone Installation Guide"
+                className="w-full h-auto object-contain rounded-2xl block"
+                loading="eager"
+              />
             </div>
 
-            {/* Platform Tabs Selector */}
-            {!isStandalone && !installSuccess && (
-              <div className="flex items-center gap-2 p-1 bg-slate-950 rounded-2xl border border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('ios')}
-                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                    activeTab === 'ios'
-                      ? 'bg-amber-400 text-slate-950 shadow-md font-black'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                  }`}
-                >
-                  <Apple className="w-4 h-4" />
-                  <span>{lang === 'en' ? 'iPhone (Safari)' : 'ئایفۆن (Safari)'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('android')}
-                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                    activeTab === 'android'
-                      ? 'bg-amber-400 text-slate-950 shadow-md font-black'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                  }`}
-                >
-                  <Smartphone className="w-4 h-4" />
-                  <span>{lang === 'en' ? 'Android / Galaxy' : 'ئەندرۆید / گالاکسی'}</span>
-                </button>
+            {/* Quick Safari Instructions Pill */}
+            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-1.5">
+              <div className="flex items-center gap-2 text-amber-400 font-black">
+                <span>💡</span>
+                <span>
+                  {lang === 'en' ? 'Quick 2-Step Summary:' : 'پوختەی هەنگاوەکان لە Safari:'}
+                </span>
               </div>
-            )}
-
-            {/* Content Area */}
-            {isStandalone ? (
-              <div className="py-8 text-center space-y-2">
-                <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
-                <h4 className="text-base font-black text-white">
-                  {lang === 'en' ? 'App Already Installed' : lang === 'ar' ? 'التطبيق مثبت بالفعل' : 'ئەپەکە پێشتر دابەزێنراوە'}
-                </h4>
-                <p className="text-xs text-slate-400">
+              <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-400 font-medium">
+                <li>
                   {lang === 'en'
-                    ? 'You are currently using the installed KSC application.'
-                    : lang === 'ar'
-                    ? 'أنت تستخدم حالياً تطبيق KSC المثبت.'
-                    : 'ئێستا تۆ لەناو ئەپی دابەزێنراوی فەرمیی KSC کار دەکەیت.'}
-                </p>
-              </div>
-            ) : installSuccess ? (
-              <div className="py-8 text-center space-y-2">
-                <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto animate-bounce" />
-                <h4 className="text-base font-black text-white">
-                  {lang === 'en' ? 'Successfully Installed!' : 'پیرۆزە! ئەپەکە بە سەرکەوتوویی دامەزرا'}
-                </h4>
-                <p className="text-xs text-slate-400">
+                    ? 'Tap the Share icon [ ⎋ ] in Safari bottom bar.'
+                    : 'لە خوارەوەی وێبگەڕی Safari کلیک لە دوگمەی Share [ ⎋ ] بکە.'}
+                </li>
+                <li>
                   {lang === 'en'
-                    ? 'You can now launch KSC directly from your home screen.'
-                    : 'ئێستا دەتوانیت ڕاستەوخۆ لەسەر شاشەی مۆبایلەکەتەوە ئەپەکە بکەیتەوە.'}
-                </p>
-              </div>
-            ) : activeTab === 'ios' ? (
-              /* Visual Image Guide for iPhone / Safari */
+                    ? 'Select "Add to Home Screen" [+] and tap Add.'
+                    : 'بڕۆ خوارەوە و کلیک لەسەر "Add to Home Screen" [+] بکە و پاشان Add.'}
+                </li>
+              </ol>
+            </div>
+          </div>
+        ) : (
+          /* Android / Galaxy Content */
+          <div className="space-y-4">
+            {deferredPrompt ? (
+              /* Native 1-Click Install Button */
               <div className="space-y-3">
-                <p className="text-xs text-slate-300 font-bold leading-relaxed flex items-center gap-1.5">
-                  <Apple className="w-4 h-4 text-amber-400 shrink-0" />
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {lang === 'en'
+                    ? 'Click below to install the official KSC App directly onto your Android device.'
+                    : lang === 'ar'
+                    ? 'انقر أدناه لتثبيت التطبيق الرسمي مباشرة على جهازك الأندرويد.'
+                    : 'کلیک لە دوگمەی خوارەوە بکە بۆ دابەزاندنی ئەپی فەرمیی KSC ڕاستەوخۆ لەسەر مۆبایلەکەت.'}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={handleNativeInstall}
+                  className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-all cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
                   <span>
                     {lang === 'en'
-                      ? 'Step-by-step installation guide for iPhone (Safari):'
+                      ? 'Install KSC App Now'
                       : lang === 'ar'
-                      ? 'دليل التثبيت المصور خطوة بخطوة للآيفون (سفاري):'
-                      : 'ڕێبەری وێنەیی هەنگاو بە هەنگاو بۆ ئایفۆن (سەفاری):'}
+                      ? 'تثبيت التطبيق الآن'
+                      : 'دابەزاندنی یەکسەرەی ئەپی KSC'}
                   </span>
-                </p>
-
-                {/* Infographic Guide Image */}
-                <div className="rounded-2xl overflow-hidden border-2 border-amber-500/40 bg-black shadow-2xl relative">
-                  <img
-                    src="/ios-install-guide.jpg"
-                    alt="KSC App iPhone Installation Guide"
-                    className="w-full h-auto object-contain rounded-2xl block"
-                    loading="eager"
-                  />
-                </div>
-
-                {/* Quick Safari Instructions Pill */}
-                <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-1.5">
-                  <div className="flex items-center gap-2 text-amber-400 font-black">
-                    <span>💡</span>
-                    <span>
-                      {lang === 'en' ? 'Quick 2-Step Summary:' : 'پوختەی هەنگاوەکان لە Safari:'}
-                    </span>
-                  </div>
-                  <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-400 font-medium">
-                    <li>
-                      {lang === 'en'
-                        ? 'Tap the Share icon [ ⎋ ] in Safari bottom bar.'
-                        : 'لە خوارەوەی وێبگەڕی Safari کلیک لە دوگمەی Share [ ⎋ ] بکە.'}
-                    </li>
-                    <li>
-                      {lang === 'en'
-                        ? 'Select "Add to Home Screen" [+] and tap Add.'
-                        : 'بڕۆ خوارەوە و کلیک لەسەر "Add to Home Screen" [+] بکە و پاشان Add.'}
-                    </li>
-                  </ol>
-                </div>
+                </button>
               </div>
             ) : (
-              /* Android / Galaxy Content */
-              <div className="space-y-4">
-                {deferredPrompt ? (
-                  /* Native 1-Click Install Button */
-                  <div className="space-y-3">
-                    <p className="text-xs text-slate-300 leading-relaxed">
+              /* Generic Android/Chrome Browser Guidance */
+              <div className="space-y-3 text-xs text-slate-300 leading-relaxed">
+                <p>
+                  {lang === 'en'
+                    ? 'To install on Android / Galaxy browsers:'
+                    : 'بۆ دابەزاندن لەسەر گالاکسی و وێبگەڕەکانی ئەندرۆید:'}
+                </p>
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-white">
+                    <Monitor className="w-4 h-4 text-amber-400" />
+                    <span>
                       {lang === 'en'
-                        ? 'Click below to install the official KSC App directly onto your Android device.'
-                        : lang === 'ar'
-                        ? 'انقر أدناه لتثبيت التطبيق الرسمي مباشرة على جهازك الأندرويد.'
-                        : 'کلیک لە دوگمەی خوارەوە بکە بۆ دابەزاندنی ئەپی فەرمیی KSC ڕاستەوخۆ لەسەر مۆبایلەکەت.'}
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={handleNativeInstall}
-                      className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-all cursor-pointer"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>
-                        {lang === 'en'
-                          ? 'Install KSC App Now'
-                          : lang === 'ar'
-                          ? 'تثبيت التطبيق الآن'
-                          : 'دابەزاندنی یەکسەرەی ئەپی KSC'}
-                      </span>
-                    </button>
+                        ? 'From your browser menu (⋮):'
+                        : 'لە مینووی وێبگەڕەکەتەوە (⋮ یان ⋯):'}
+                    </span>
                   </div>
-                ) : (
-                  /* Generic Android/Chrome Browser Guidance */
-                  <div className="space-y-3 text-xs text-slate-300 leading-relaxed">
-                    <p>
-                      {lang === 'en'
-                        ? 'To install on Android / Galaxy browsers:'
-                        : 'بۆ دابەزاندن لەسەر گالاکسی و وێبگەڕەکانی ئەندرۆید:'}
-                    </p>
-                    <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
-                      <div className="flex items-center gap-2 font-bold text-white">
-                        <Monitor className="w-4 h-4 text-amber-400" />
-                        <span>
-                          {lang === 'en'
-                            ? 'From your browser menu (⋮):'
-                            : 'لە مینووی وێبگەڕەکەتەوە (⋮ یان ⋯):'}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-400">
-                        {lang === 'en'
-                          ? 'Click the 3 dots menu and choose "Install app" or "Add to Home screen".'
-                          : 'کلیک لەسەر ٣ خاڵەکەی سەرەوەی وێبگەڕەکە بکە و پاشان "Install app" یان "Add to Home screen" هەڵبژێرە.'}
-                      </p>
-                    </div>
-                  </div>
-                )}
+                  <p className="text-[11px] text-slate-400">
+                    {lang === 'en'
+                      ? 'Click the 3 dots menu and choose "Install app" or "Add to Home screen".'
+                      : 'کلیک لەسەر ٣ خاڵەکەی سەرەوەی وێبگەڕەکە بکە و پاشان "Install app" یان "Add to Home screen" هەڵبژێرە.'}
+                  </p>
+                </div>
               </div>
             )}
-
-            {/* Footer Close */}
-            <div className="pt-2 border-t border-slate-800 flex justify-end">
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors cursor-pointer"
-              >
-                {lang === 'en' ? 'Close' : lang === 'ar' ? 'إغلاق' : 'داخستن'}
-              </button>
-            </div>
           </div>
+        )}
+
+        {/* Footer Close */}
+        <div className="pt-2 border-t border-slate-800 flex justify-end">
+          <button
+            type="button"
+            onClick={handleCloseModal}
+            className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors cursor-pointer"
+          >
+            {lang === 'en' ? 'Close' : lang === 'ar' ? 'إغلاق' : 'داخستن'}
+          </button>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }
