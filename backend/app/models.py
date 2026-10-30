@@ -28,6 +28,7 @@ class SchoolClass(Base):
     name = Column(String(64), nullable=False)
     grade = Column(String(64), nullable=False)
     academic_year = Column(String(32), default="2025-2026")
+    region = Column(String(64), nullable=True)  # erbil, sulaymaniyah, duhok, zakho, halabja, garmian, raparin, soran
     created_at = Column(DateTime, default=datetime.utcnow)
 
     students = relationship("Student", back_populates="school_class")

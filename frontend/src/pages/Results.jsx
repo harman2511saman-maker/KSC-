@@ -17,6 +17,7 @@ import {
 import api, { getUploadUrl } from '../api';
 import Modal from '../components/Modal';
 import AdminSettingsModal from '../components/AdminSettingsModal';
+import OMRSheetAuditModal from '../components/OMRSheetAuditModal';
 
 export default function Results({ onShowToast, onOpenReviewForPage }) {
   const [results, setResults] = useState([]);
@@ -24,6 +25,7 @@ export default function Results({ onShowToast, onOpenReviewForPage }) {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [auditResult, setAuditResult] = useState(null);
 
   // Filters
   const [selectedExamId, setSelectedExamId] = useState('');
@@ -453,12 +455,22 @@ export default function Results({ onShowToast, onOpenReviewForPage }) {
             </div>
 
             {/* Scanned Image Visualizer or Digital Online Exam Notice */}
-            {detailResult.debug_file ? (
-              <div className="space-y-2">
-                <span className="font-bold text-xs text-slate-800 block">پەڕەی سکانکراو و دیاریکردنی بازنەکان:</span>
-                <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-200 p-2 bg-slate-950 flex items-center justify-center">
+            {(detailResult.debug_file || detailResult.sheet_url || detailResult.normalized_file) ? (
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setAuditResult(detailResult)}
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>پشکنینی بەڵگەی سۆما و بازنەکان (OMR Audit Studio)</span>
+                </button>
+                <div
+                  onClick={() => setAuditResult(detailResult)}
+                  className="max-h-72 overflow-y-auto rounded-xl border border-slate-200 p-2 bg-slate-950 flex items-center justify-center cursor-pointer hover:border-amber-400/60 transition-colors"
+                >
                   <img
-                    src={getUploadUrl(`/uploads/debug/${detailResult.debug_file}`)}
+                    src={getUploadUrl(detailResult.sheet_url || (detailResult.debug_file ? `/uploads/debug/${detailResult.debug_file}` : `/uploads/normalized/${detailResult.normalized_file}`))}
                     alt="پەڕەی شیکاریکراو و بازنەکان"
                     className="w-full max-h-68 object-contain rounded-lg"
                   />
@@ -488,6 +500,13 @@ export default function Results({ onShowToast, onOpenReviewForPage }) {
         isOpen={settingsModalOpen}
         onClose={() => setSettingsModalOpen(false)}
         onShowToast={onShowToast}
+      />
+
+      {/* Official OMR Sheet Audit Modal */}
+      <OMRSheetAuditModal
+        isOpen={!!auditResult}
+        onClose={() => setAuditResult(null)}
+        result={auditResult}
       />
     </div>
   );

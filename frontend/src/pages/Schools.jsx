@@ -16,15 +16,29 @@ import {
   ChevronRight,
   TrendingUp,
   Award,
-  BookOpen
+  BookOpen,
+  MapPin,
+  Compass
 } from 'lucide-react';
 import api from '../api';
 import Modal from '../components/Modal';
+
+export const REGIONS = [
+  { id: 'erbil', nameKu: 'هەولێر', color: '#22c55e', dotClass: 'bg-emerald-500' },
+  { id: 'sulaymaniyah', nameKu: 'سلێمانی', color: '#f97316', dotClass: 'bg-orange-500' },
+  { id: 'duhok', nameKu: 'دهۆک', color: '#eab308', dotClass: 'bg-yellow-500' },
+  { id: 'zakho', nameKu: 'ئیدارەی سەربەخۆی زاخۆ', color: '#a855f7', dotClass: 'bg-purple-500' },
+  { id: 'halabja', nameKu: 'هەڵەبجە', color: '#d946ef', dotClass: 'bg-fuchsia-500' },
+  { id: 'garmian', nameKu: 'ئیدارەی سەربەخۆی گەرمیان', color: '#ef4444', dotClass: 'bg-red-500' },
+  { id: 'raparin', nameKu: 'ئیدارەی سەربەخۆی ڕاپەڕین', color: '#06b6d4', dotClass: 'bg-cyan-500' },
+  { id: 'soran', nameKu: 'ئیدارەی سەربەخۆی سۆران', color: '#0284c7', dotClass: 'bg-sky-600' }
+];
 
 export default function Schools({ onShowToast }) {
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRegionFilter, setSelectedRegionFilter] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
   const [sortBy, setSortBy] = useState('name'); // 'name', 'students'
 
@@ -37,7 +51,8 @@ export default function Schools({ onShowToast }) {
   const [formData, setFormData] = useState({
     name: '',
     grade: 'قوتابخانە',
-    academic_year: '2025-2026'
+    academic_year: '2025-2026',
+    region: 'erbil'
   });
 
   const fetchSchools = async () => {
@@ -72,7 +87,7 @@ export default function Schools({ onShowToast }) {
       }
       setCreateModalOpen(false);
       setEditingSchool(null);
-      setFormData({ name: '', grade: 'قوتابخانە', academic_year: '2025-2026' });
+      setFormData({ name: '', grade: 'قوتابخانە', academic_year: '2025-2026', region: 'erbil' });
       fetchSchools();
     } catch (err) {
       onShowToast({ type: 'error', message: err.message });
@@ -95,7 +110,8 @@ export default function Schools({ onShowToast }) {
     setFormData({
       name: s.name,
       grade: s.grade || 'قوتابخانە',
-      academic_year: s.academic_year || '2025-2026'
+      academic_year: s.academic_year || '2025-2026',
+      region: s.region || 'erbil'
     });
     setCreateModalOpen(true);
   };
@@ -104,7 +120,11 @@ export default function Schools({ onShowToast }) {
   const avgStudentsPerSchool = schools.length > 0 ? Math.round(totalStudentsCount / schools.length) : 0;
 
   const filteredSchools = schools
-    .filter((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((s) => {
+      const matchSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchRegion = !selectedRegionFilter || (s.region && s.region.toLowerCase() === selectedRegionFilter.toLowerCase());
+      return matchSearch && matchRegion;
+    })
     .sort((a, b) => {
       if (sortBy === 'students') {
         return (b.student_count || 0) - (a.student_count || 0);
@@ -211,6 +231,20 @@ export default function Schools({ onShowToast }) {
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 hidden sm:inline">پارێزگا:</span>
+            <select
+              value={selectedRegionFilter}
+              onChange={(e) => setSelectedRegionFilter(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            >
+              <option value="">هەموو شارەکان</option>
+              {REGIONS.map((r) => (
+                <option key={r.id} value={r.id}>{r.nameKu}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-500 hidden sm:inline">ڕیزکردن:</span>
             <select
               value={sortBy}
@@ -308,13 +342,29 @@ export default function Schools({ onShowToast }) {
                   </div>
                 </div>
 
-                <div className="mt-4 space-y-1">
+                <div className="mt-4 space-y-1.5">
                   <h3 className="font-black text-slate-900 text-lg group-hover:text-brand-700 transition-colors leading-snug">
                     {s.name}
                   </h3>
-                  <p className="text-xs text-slate-400 flex items-center gap-1">
-                    <span>ساڵی خوێندن: {s.academic_year || '2025-2026'}</span>
-                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {(() => {
+                      const reg = REGIONS.find((r) => r.id === s.region) || REGIONS[0];
+                      return (
+                        <span
+                          className="text-[10px] font-black px-2 py-0.5 rounded-lg border flex items-center gap-1.5"
+                          style={{
+                            backgroundColor: `${reg.color}15`,
+                            color: reg.color,
+                            borderColor: `${reg.color}35`
+                          }}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: reg.color }} />
+                          <span>{reg.nameKu}</span>
+                        </span>
+                      );
+                    })()}
+                    <span className="text-xs text-slate-400">ساڵی خوێندن: {s.academic_year || '2025-2026'}</span>
+                  </div>
                 </div>
               </div>
 
@@ -344,6 +394,7 @@ export default function Schools({ onShowToast }) {
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 text-xs font-bold">
                   <th className="py-3.5 px-4 text-center">کۆدی ناسنامە</th>
                   <th className="py-3.5 px-4">ناوی قوتابخانە</th>
+                  <th className="py-3.5 px-4 text-center">پارێزگا / ئیدارە</th>
                   <th className="py-3.5 px-4 text-center">ساڵی خوێندن</th>
                   <th className="py-3.5 px-4 text-center">کۆی قوتابییان</th>
                   <th className="py-3.5 px-4 text-center">کردارەکان</th>
@@ -357,6 +408,24 @@ export default function Schools({ onShowToast }) {
                     </td>
                     <td className="py-3.5 px-4 font-bold text-slate-900 text-sm">
                       {s.name}
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      {(() => {
+                        const reg = REGIONS.find((r) => r.id === s.region) || REGIONS[0];
+                        return (
+                          <span
+                            className="inline-flex items-center gap-1.5 text-[10px] font-black px-2 py-0.5 rounded-lg border"
+                            style={{
+                              backgroundColor: `${reg.color}15`,
+                              color: reg.color,
+                              borderColor: `${reg.color}35`
+                            }}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: reg.color }} />
+                            <span>{reg.nameKu}</span>
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="py-3.5 px-4 text-center text-slate-600 font-semibold">
                       {s.academic_year || '2025-2026'}
@@ -443,6 +512,38 @@ export default function Schools({ onShowToast }) {
                 onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/30"
               />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              پارێزگا یان ئیدارەی سەربەخۆ <span className="text-rose-500">*</span>
+            </label>
+            <p className="text-[11px] text-slate-500 mb-2.5">
+              بۆ بەستنەوە بە نەخشەی کوردستان، ڕیزبەندی جامی پارێزگاکان و دابەشبوونی جوگرافی.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {REGIONS.map((r) => {
+                const isSelected = (formData.region || 'erbil') === r.id;
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, region: r.id })}
+                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-brand-500 shadow-sm ring-2 ring-brand-500/20'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
+                    style={isSelected ? { backgroundColor: `${r.color}15`, borderColor: r.color } : {}}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: r.color }} />
+                    <span className={isSelected ? 'text-slate-900 font-black' : 'text-slate-600'}>
+                      {r.nameKu}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

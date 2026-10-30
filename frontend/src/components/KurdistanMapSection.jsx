@@ -157,6 +157,9 @@ export default function KurdistanMapSection({
     const stats = {};
     regions.forEach((r) => {
       const matchingSchools = schools.filter((s) => {
+        if (s.region && s.region.toLowerCase() === r.id.toLowerCase()) {
+          return true;
+        }
         const sName = (s.name || s.school_name || '').toLowerCase();
         return r.keywords.some((kw) => sName.includes(kw.toLowerCase()));
       });

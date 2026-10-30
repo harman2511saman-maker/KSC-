@@ -50,6 +50,7 @@ import OnlineExamAdminModal from '../components/OnlineExamAdminModal';
 import PublicExamSolutionsModal from '../components/PublicExamSolutionsModal';
 import OnlineExamLeaderboardModal from '../components/OnlineExamLeaderboardModal';
 import KurdistanMapSection from '../components/KurdistanMapSection';
+import OMRSheetAuditModal from '../components/OMRSheetAuditModal';
 
 export default function Competitions({ onShowToast }) {
   const { user } = useAuth() || {};
@@ -108,6 +109,7 @@ export default function Competitions({ onShowToast }) {
 
   // Image preview modal
   const [previewImage, setPreviewImage] = useState(null);
+  const [auditResult, setAuditResult] = useState(null);
 
   const fetchLeaderboard = async (overrideExamId, overrideSchoolId) => {
     try {
@@ -232,6 +234,9 @@ export default function Competitions({ onShowToast }) {
       return false;
     }
     if (selectedRegion) {
+      if (s.region && s.region.toLowerCase() === selectedRegion.toLowerCase()) {
+        return true;
+      }
       const regionKeywords = {
         erbil: ['هەولێر', 'erbil', 'arbil', 'hawler', 'أربيل', 'هەولێری'],
         sulaymaniyah: ['سلێمانی', 'sulaymaniyah', 'slemani', 'sulaimani', 'السليمانية', 'سلێمانیی'],
@@ -248,7 +253,7 @@ export default function Competitions({ onShowToast }) {
       if (
         !matched &&
         schoolsRanking.some((item) =>
-          kws.some((kw) => item.school_name.toLowerCase().includes(kw.toLowerCase()))
+          item.region === selectedRegion || kws.some((kw) => item.school_name.toLowerCase().includes(kw.toLowerCase()))
         )
       ) {
         return false;
@@ -1003,34 +1008,52 @@ export default function Competitions({ onShowToast }) {
                   </div>
                 </div>
 
-                {/* Scanned OMR Sheet Preview if available */}
-                {res.debug_file && (
-                  <div className="pt-2 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-slate-300 flex items-center gap-1.5">
-                        <Eye className="w-4 h-4 text-amber-400" />
-                        {t('scannedOMRSheet')}
-                      </span>
-                      <button
-                        onClick={() => setPreviewImage(getUploadUrl(`/uploads/debug/${res.debug_file}`))}
-                        className="text-xs text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        <span>{t('zoomView')}</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                {/* OMR Sheet & Visual Audit Button & Interactive Preview */}
+                <div className="pt-2 space-y-3">
+                  <button
+                    onClick={() => setAuditResult({
+                      ...res,
+                      student_name: searchResult.student_name,
+                      student_code: searchResult.student_code,
+                      school_name: searchResult.school_name
+                    })}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-amber-500/25 active:scale-98 transition-all cursor-pointer"
+                  >
+                    <Eye className="w-4 h-4 text-slate-950" />
+                    <span>{t('viewAuditSheet')}</span>
+                    <span className="text-[10px] bg-slate-950/20 text-slate-950 font-extrabold px-2 py-0.5 rounded-full">
+                      {t('sheetTransparencyBadge')}
+                    </span>
+                  </button>
+
+                  {(res.debug_file || res.sheet_url || res.normalized_file) && (
                     <div
-                      onClick={() => setPreviewImage(getUploadUrl(`/uploads/debug/${res.debug_file}`))}
-                      className="rounded-2xl border border-slate-700 bg-black/90 p-2 max-h-80 overflow-y-auto cursor-pointer flex items-center justify-center hover:border-amber-500/50 transition-colors"
+                      onClick={() => setAuditResult({
+                        ...res,
+                        student_name: searchResult.student_name,
+                        student_code: searchResult.student_code,
+                        school_name: searchResult.school_name
+                      })}
+                      className="rounded-2xl border border-slate-700 bg-black/90 p-2.5 max-h-80 overflow-hidden cursor-pointer flex flex-col items-center justify-center hover:border-amber-500/60 transition-all group"
                     >
+                      <div className="w-full flex items-center justify-between text-[11px] text-slate-400 mb-1.5 px-1 font-bold">
+                        <span className="flex items-center gap-1.5 text-amber-400">
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>{t('scannedOMRSheet')}</span>
+                        </span>
+                        <span className="text-amber-400 group-hover:underline flex items-center gap-1">
+                          <span>{t('zoomView')}</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </span>
+                      </div>
                       <img
-                        src={getUploadUrl(`/uploads/debug/${res.debug_file}`)}
+                        src={getUploadUrl(res.sheet_url || (res.debug_file ? `/uploads/debug/${res.debug_file}` : `/uploads/normalized/${res.normalized_file}`))}
                         alt="پەڕەی وەڵامی سکانکراوی قوتابی"
-                        className="w-full max-h-76 object-contain rounded-xl opacity-95 hover:opacity-100 transition-opacity"
+                        className="w-full max-h-72 object-contain rounded-xl opacity-90 group-hover:opacity-100 group-hover:scale-[1.01] transition-all"
                       />
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -1301,6 +1324,13 @@ export default function Competitions({ onShowToast }) {
           onClose={() => setSelectedExamForOnlineLeaderboard(null)}
         />
       )}
+
+      {/* Official OMR Sheet Audit & Visual Proof Modal */}
+      <OMRSheetAuditModal
+        isOpen={!!auditResult}
+        onClose={() => setAuditResult(null)}
+        result={auditResult}
+      />
     </div>
   );
 }

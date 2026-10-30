@@ -120,6 +120,15 @@ def list_results(
     items = []
     for r in results:
         scan_page = r.scan_page
+        sheet_url = None
+        if scan_page:
+            if scan_page.debug_file:
+                sheet_url = f"/uploads/debug/{scan_page.debug_file}"
+            elif scan_page.normalized_file:
+                sheet_url = f"/uploads/normalized/{scan_page.normalized_file}"
+            elif scan_page.original_file:
+                sheet_url = f"/uploads/original/{scan_page.original_file}"
+
         item = ResultOut(
             id=r.id,
             page_id=r.page_id,
@@ -139,8 +148,10 @@ def list_results(
             uncertain_count=r.uncertain_count,
             status=r.status,
             created_at=r.created_at,
+            original_file=scan_page.original_file if scan_page else None,
             normalized_file=scan_page.normalized_file if scan_page else None,
-            debug_file=scan_page.debug_file if scan_page else None
+            debug_file=scan_page.debug_file if scan_page else None,
+            sheet_url=sheet_url
         )
         items.append(item)
 
@@ -190,6 +201,15 @@ def get_result_detail(result_id: int, db: Session = Depends(get_db)):
             crop_image_path=a.crop_image_path
         ))
 
+    sheet_url = None
+    if scan_page:
+        if scan_page.debug_file:
+            sheet_url = f"/uploads/debug/{scan_page.debug_file}"
+        elif scan_page.normalized_file:
+            sheet_url = f"/uploads/normalized/{scan_page.normalized_file}"
+        elif scan_page.original_file:
+            sheet_url = f"/uploads/original/{scan_page.original_file}"
+
     item = ResultOut(
         id=r.id,
         page_id=r.page_id,
@@ -209,8 +229,10 @@ def get_result_detail(result_id: int, db: Session = Depends(get_db)):
         uncertain_count=r.uncertain_count,
         status=r.status,
         created_at=r.created_at,
+        original_file=scan_page.original_file if scan_page else None,
         normalized_file=scan_page.normalized_file if scan_page else None,
         debug_file=scan_page.debug_file if scan_page else None,
+        sheet_url=sheet_url,
         answers=answer_items
     )
     return item

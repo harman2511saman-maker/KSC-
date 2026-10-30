@@ -39,7 +39,8 @@ def create_class(
     school_class = SchoolClass(
         name=data.name.strip(),
         grade=data.grade or "قوتابخانە",
-        academic_year=data.academic_year or "2025-2026"
+        academic_year=data.academic_year or "2025-2026",
+        region=data.region or "erbil"
     )
     db.add(school_class)
     db.commit()
@@ -67,6 +68,8 @@ def update_class(
         c.grade = data.grade
     if data.academic_year is not None:
         c.academic_year = data.academic_year
+    if data.region is not None:
+        c.region = data.region
 
     db.commit()
     db.refresh(c)

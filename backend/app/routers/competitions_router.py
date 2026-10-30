@@ -129,7 +129,7 @@ def get_competition_leaderboard(
         ~SchoolClass.name.like('ئۆنلاین:%'),
         ~SchoolClass.name.like('%پلاتفۆرمی پێشبڕکێی ئۆنلاینی%')
     ).order_by(SchoolClass.name).all()
-    classes_list = [{"id": c.id, "name": c.name, "grade": c.grade} for c in all_classes]
+    classes_list = [{"id": c.id, "name": c.name, "grade": c.grade, "region": c.region or ""} for c in all_classes]
 
     # 1. School Rankings
     schools_query = db.query(SchoolClass).filter(
@@ -167,6 +167,7 @@ def get_competition_leaderboard(
         schools_ranking.append({
             "school_id": s.id,
             "school_name": s.name,
+            "region": s.region or "",
             "students_participated": student_count,
             "total_score": round(total_score, 1),
             "max_possible_score": round(max_score, 1),
@@ -595,6 +596,15 @@ def search_student_public_result(
                 })
             answers.sort(key=lambda x: x["question_num"])
 
+        sheet_url = None
+        if scan_page:
+            if scan_page.debug_file:
+                sheet_url = f"/uploads/debug/{scan_page.debug_file}"
+            elif scan_page.normalized_file:
+                sheet_url = f"/uploads/normalized/{scan_page.normalized_file}"
+            elif scan_page.original_file:
+                sheet_url = f"/uploads/original/{scan_page.original_file}"
+
         res_list.append({
             "result_id": r.id,
             "exam_name": r.exam.exam_name if r.exam else "—",
@@ -616,6 +626,8 @@ def search_student_public_result(
             "certificate_data": certificate_data,
             "debug_file": scan_page.debug_file if scan_page else None,
             "normalized_file": scan_page.normalized_file if scan_page else None,
+            "original_file": scan_page.original_file if scan_page else None,
+            "sheet_url": sheet_url,
             "created_at": r.created_at,
             "answers": answers
         })
@@ -625,6 +637,7 @@ def search_student_public_result(
         "student_name": student.name,
         "student_code": student.student_id,
         "school_name": student.school_class.name if student.school_class else "—",
+        "school_region": student.school_class.region if student.school_class else "",
         "grade": student.grade,
         "results": res_list
     }

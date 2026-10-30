@@ -33,6 +33,32 @@ Base.metadata.create_all(bind=engine)
 from sqlalchemy import text
 try:
     with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE classes ADD COLUMN region VARCHAR(64)"))
+        conn.commit()
+except Exception:
+    pass
+
+# Auto-assign initial region for existing classes if unassigned
+try:
+    with engine.connect() as conn:
+        conn.execute(text("""
+            UPDATE classes SET region = CASE
+                WHEN LOWER(name) LIKE '%سلێمانی%' OR LOWER(name) LIKE '%slemani%' THEN 'sulaymaniyah'
+                WHEN LOWER(name) LIKE '%دهۆک%' OR LOWER(name) LIKE '%duhok%' THEN 'duhok'
+                WHEN LOWER(name) LIKE '%زاخۆ%' OR LOWER(name) LIKE '%zakho%' THEN 'zakho'
+                WHEN LOWER(name) LIKE '%هەڵەبجە%' OR LOWER(name) LIKE '%halabja%' THEN 'halabja'
+                WHEN LOWER(name) LIKE '%گەرمیان%' OR LOWER(name) LIKE '%کەلار%' OR LOWER(name) LIKE '%کفری%' THEN 'garmian'
+                WHEN LOWER(name) LIKE '%ڕاپەڕین%' OR LOWER(name) LIKE '%ڕانیە%' OR LOWER(name) LIKE '%قەڵادزێ%' THEN 'raparin'
+                WHEN LOWER(name) LIKE '%سۆران%' OR LOWER(name) LIKE '%ڕەواندز%' OR LOWER(name) LIKE '%چۆمان%' THEN 'soran'
+                ELSE 'erbil'
+            END
+            WHERE region IS NULL OR region = ''
+        """))
+        conn.commit()
+except Exception:
+    pass
+try:
+    with engine.connect() as conn:
         conn.execute(text("ALTER TABLE online_exams ADD COLUMN entry_cutoff_minutes INTEGER DEFAULT 3"))
         conn.commit()
 except Exception:

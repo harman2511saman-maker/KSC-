@@ -37,17 +37,20 @@ class ClassCreate(BaseModel):
     name: str
     grade: Optional[str] = "قوتابخانە"
     academic_year: Optional[str] = "2025-2026"
+    region: Optional[str] = "erbil"
 
 class ClassUpdate(BaseModel):
     name: Optional[str] = None
     grade: Optional[str] = None
     academic_year: Optional[str] = None
+    region: Optional[str] = None
 
 class ClassOut(BaseModel):
     id: int
     name: str
     grade: Optional[str] = "قوتابخانە"
     academic_year: Optional[str] = "2025-2026"
+    region: Optional[str] = "erbil"
     student_count: Optional[int] = 0
     created_at: datetime
 
@@ -196,8 +199,10 @@ class ResultOut(BaseModel):
     uncertain_count: int
     status: str
     created_at: datetime
+    original_file: Optional[str] = None
     normalized_file: Optional[str] = None
     debug_file: Optional[str] = None
+    sheet_url: Optional[str] = None
     answers: Optional[List[DetectedAnswerOut]] = []
 
     class Config:
