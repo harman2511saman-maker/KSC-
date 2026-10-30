@@ -20,7 +20,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import LanguageSelector from './LanguageSelector';
 
-export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecretLogoClick }) {
+export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecretLogoClick, onOpenInstall }) {
   const { t, isRTL, lang } = useLanguage();
   const { isDark, toggleTheme } = useTheme();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -421,6 +421,9 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
                     e.preventDefault();
                     e.stopPropagation();
                     setIsDrawerOpen(false);
+                    if (onOpenInstall) {
+                      onOpenInstall();
+                    }
                     window.dispatchEvent(new CustomEvent('ksc-open-install'));
                   }}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${

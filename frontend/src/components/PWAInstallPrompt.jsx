@@ -1,17 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Download, X, Share2, Smartphone, CheckCircle2, Monitor, ArrowDown } from 'lucide-react';
+import { Download, X, Share2, Smartphone, CheckCircle2, Monitor } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-export default function PWAInstallPrompt() {
+export default function PWAInstallPrompt({ isOpen, onClose }) {
   const { lang, isRTL } = useLanguage();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [internalModalOpen, setInternalModalOpen] = useState(false);
   const [installSuccess, setInstallSuccess] = useState(false);
   const [isDismissed, setIsDismissed] = useState(() => {
     return sessionStorage.getItem('ksc_install_banner_dismissed') === 'true';
   });
+
+  const showInstallModal = typeof isOpen === 'boolean' ? isOpen : internalModalOpen;
+
+  const handleCloseModal = () => {
+    setInternalModalOpen(false);
+    if (onClose) {
+      onClose();
+    }
+  };
+
+  const handleOpenModal = () => {
+    setInternalModalOpen(true);
+  };
 
   useEffect(() => {
     // 1. Detect if running inside installed standalone app
@@ -31,9 +44,9 @@ export default function PWAInstallPrompt() {
       setDeferredPrompt(e);
     };
 
-    // 4. Custom event triggered from menu button
+    // 4. Custom event triggered from menu button or elsewhere
     const handleOpenInstall = () => {
-      setShowInstallModal(true);
+      setInternalModalOpen(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
@@ -66,7 +79,7 @@ export default function PWAInstallPrompt() {
       setInstallSuccess(true);
       setDeferredPrompt(null);
       setTimeout(() => {
-        setShowInstallModal(false);
+        handleCloseModal();
       }, 2000);
     }
   };
@@ -76,7 +89,6 @@ export default function PWAInstallPrompt() {
     sessionStorage.setItem('ksc_install_banner_dismissed', 'true');
   };
 
-  // Render banner only when not standalone and not dismissed
   return (
     <>
       {/* 1. Floating Bottom Banner (Dismissable, does not show if standalone or dismissed) */}
@@ -120,7 +132,7 @@ export default function PWAInstallPrompt() {
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
-                onClick={() => setShowInstallModal(true)}
+                onClick={handleOpenModal}
                 className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -145,7 +157,7 @@ export default function PWAInstallPrompt() {
           className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
           dir={isRTL ? 'rtl' : 'ltr'}
           onClick={(e) => {
-            if (e.target === e.currentTarget) setShowInstallModal(false);
+            if (e.target === e.currentTarget) handleCloseModal();
           }}
         >
           <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-slate-700/80 p-5 sm:p-6 space-y-5 shadow-2xl text-slate-100 relative">
@@ -177,7 +189,7 @@ export default function PWAInstallPrompt() {
 
               <button
                 type="button"
-                onClick={() => setShowInstallModal(false)}
+                onClick={handleCloseModal}
                 className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
                 title={lang === 'en' ? 'Close' : 'داخستن'}
               >
@@ -234,7 +246,7 @@ export default function PWAInstallPrompt() {
                           ? 'Tap the Share Button'
                           : lang === 'ar'
                           ? 'اضغط على زر المشاركة (Share)'
-                          : 'کلیک لەسەر دوگمەی Share بکە'}
+                          : 'کلیک لەسەر دوگمەی بەشکردن (Share) بکە'}
                       </span>
                       <span className="text-[11px] text-slate-400 block mt-0.5">
                         {lang === 'en'
@@ -321,7 +333,7 @@ export default function PWAInstallPrompt() {
             <div className="pt-2 border-t border-slate-800 flex justify-end">
               <button
                 type="button"
-                onClick={() => setShowInstallModal(false)}
+                onClick={handleCloseModal}
                 className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors cursor-pointer"
               >
                 {lang === 'en' ? 'Close' : lang === 'ar' ? 'إغلاق' : 'داخستن'}

@@ -151,6 +151,7 @@ function MainApp() {
   const [toast, setToast] = useState(null);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
 
   // Cross-page selections
   const [selectedExamIdForScan, setSelectedExamIdForScan] = useState(null);
@@ -256,6 +257,7 @@ function MainApp() {
         <PublicNavbar
           onOpenAdminModal={() => setShowAdminModal(true)}
           onOpenOMRGuide={() => setShowGuideModal(true)}
+          onOpenInstall={() => setShowInstallModal(true)}
           onSecretLogoClick={handleSecretLogoClick}
         />
 
@@ -274,6 +276,12 @@ function MainApp() {
         <OMRGuideModal
           isOpen={showGuideModal}
           onClose={() => setShowGuideModal(false)}
+        />
+
+        {/* Progressive Web App (PWA) Mobile Install Prompt */}
+        <PWAInstallPrompt
+          isOpen={showInstallModal}
+          onClose={() => setShowInstallModal(false)}
         />
 
         <Toast toast={toast} onClose={() => setToast(null)} />
@@ -379,7 +387,10 @@ function MainApp() {
       <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* Progressive Web App (PWA) Mobile Install Prompt */}
-      <PWAInstallPrompt />
+      <PWAInstallPrompt
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+      />
     </div>
   );
 }
