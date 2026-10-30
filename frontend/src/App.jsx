@@ -10,6 +10,7 @@ import Footer from './components/Footer';
 import AnnouncementBar from './components/AnnouncementBar';
 import PublicNavbar from './components/PublicNavbar';
 import OMRGuideModal from './components/OMRGuideModal';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -376,6 +377,9 @@ function MainApp() {
 
       {/* Global Toast */}
       <Toast toast={toast} onClose={() => setToast(null)} />
+
+      {/* Progressive Web App (PWA) Mobile Install Prompt */}
+      <PWAInstallPrompt />
     </div>
   );
 }

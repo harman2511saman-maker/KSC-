@@ -13,7 +13,8 @@ import {
   GraduationCap,
   Building2,
   Sun,
-  Moon
+  Moon,
+  Smartphone
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -412,6 +413,26 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
                   <BookOpen className="w-4 h-4 text-amber-500 shrink-0" />
                   <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>{t('navOMRGuide')}</span>
                   <ArrowIcon className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsDrawerOpen(false);
+                    window.dispatchEvent(new CustomEvent('ksc-open-install'));
+                  }}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    isDark
+                      ? 'text-amber-400 hover:bg-slate-800/80 hover:text-amber-300'
+                      : 'text-amber-600 hover:bg-slate-100 hover:text-amber-700'
+                  }`}
+                >
+                  <Smartphone className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                    {lang === 'en' ? 'Install Mobile App' : lang === 'ar' ? 'تثبيت التطبيق' : 'دابەزاندنی ئەپی مۆبایل'}
+                  </span>
+                  <span className="text-[10px] bg-amber-400/20 text-amber-400 px-2 py-0.5 rounded-full font-bold">
+                    PWA
+                  </span>
                 </button>
               </div>
             </div>
