@@ -49,6 +49,7 @@ import OnlineExamRoom from '../components/OnlineExamRoom';
 import OnlineExamAdminModal from '../components/OnlineExamAdminModal';
 import PublicExamSolutionsModal from '../components/PublicExamSolutionsModal';
 import OnlineExamLeaderboardModal from '../components/OnlineExamLeaderboardModal';
+import KurdistanMapSection from '../components/KurdistanMapSection';
 
 export default function Competitions({ onShowToast }) {
   const { user } = useAuth() || {};
@@ -80,6 +81,7 @@ export default function Competitions({ onShowToast }) {
   // Filters State
   const [selectedExamId, setSelectedExamId] = useState('');
   const [selectedSchoolId, setSelectedSchoolId] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState('');
   const [schoolSearchTerm, setSchoolSearchTerm] = useState('');
   const [scoreRange, setScoreRange] = useState('all');
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
@@ -214,6 +216,7 @@ export default function Competitions({ onShowToast }) {
   const resetFilters = () => {
     setSelectedExamId('');
     setSelectedSchoolId('');
+    setSelectedRegion('');
     setSchoolSearchTerm('');
     setScoreRange('all');
     setStudentSearchTerm('');
@@ -225,10 +228,35 @@ export default function Competitions({ onShowToast }) {
   const selectedExam = exams.find((e) => String(e.id) === String(selectedExamId));
   const schoolsRanking = leaderboard?.schools_ranking || [];
   const displayedSchools = schoolsRanking.filter((s) => {
-    if (!schoolSearchTerm.trim()) return true;
-    return s.school_name.toLowerCase().includes(schoolSearchTerm.toLowerCase().trim());
+    if (schoolSearchTerm.trim() && !s.school_name.toLowerCase().includes(schoolSearchTerm.toLowerCase().trim())) {
+      return false;
+    }
+    if (selectedRegion) {
+      const regionKeywords = {
+        erbil: ['هەولێر', 'erbil', 'arbil', 'hawler', 'أربيل', 'هەولێری'],
+        sulaymaniyah: ['سلێمانی', 'sulaymaniyah', 'slemani', 'sulaimani', 'السليمانية', 'سلێمانیی'],
+        duhok: ['دهۆک', 'duhok', 'dohuk', 'دهوك', 'دهۆکی'],
+        halabja: ['هەڵەبجە', 'halabja', 'حلبجة', 'هەڵەبجەی'],
+        soran: ['سۆران', 'soran', 'سوران', 'ڕەواندز', 'چۆمان', 'مێرگەسۆر'],
+        zakho: ['زاخۆ', 'zakho', 'زاخو', 'خابوور'],
+        garmian: ['گەرمیان', 'garmian', 'كرميان', 'کەلار', 'کفری', 'kalar'],
+        raparin: ['ڕاپەڕین', 'raparin', 'رانية', 'ڕانیە', 'قەڵادزێ', 'پشدەر']
+      };
+      const kws = regionKeywords[selectedRegion] || [];
+      const sName = s.school_name.toLowerCase();
+      const matched = kws.some((kw) => sName.includes(kw.toLowerCase()));
+      if (
+        !matched &&
+        schoolsRanking.some((item) =>
+          kws.some((kw) => item.school_name.toLowerCase().includes(kw.toLowerCase()))
+        )
+      ) {
+        return false;
+      }
+    }
+    return true;
   });
-  const top3 = schoolsRanking.slice(0, 3);
+  const top3 = displayedSchools.slice(0, 3);
 
   // Filter and Sort Students Leaderboard
   const allStudents = leaderboard?.students_leaderboard || [];
@@ -460,6 +488,18 @@ export default function Competitions({ onShowToast }) {
         )}
       </div>
 
+      {/* 1.5. Interactive Kurdistan Region Competition Map */}
+      <KurdistanMapSection
+        schools={schoolsRanking}
+        selectedRegion={selectedRegion}
+        onSelectRegion={(regId) => {
+          setSelectedRegion(regId);
+          const el = document.getElementById('schools-ranking-section');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onResetRegion={() => setSelectedRegion('')}
+      />
+
       {/* 2. DUAL COLUMN SECTION (Schools Ranking Table + Olympic Podium Pedestal) */}
       <div id="schools-ranking-section" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start scroll-mt-20 w-full max-w-full min-w-0">
         {/* Left Column (7 cols): Full Schools Ranking Dark Table */}
@@ -515,17 +555,34 @@ export default function Competitions({ onShowToast }) {
                 />
               </div>
 
-              {(selectedExamId || schoolSearchTerm) && (
+              {(selectedExamId || schoolSearchTerm || selectedRegion) && (
                 <button
                   onClick={() => {
                     setSelectedExamId('');
+                    setSelectedSchoolId('');
+                    setSelectedRegion('');
                     setSchoolSearchTerm('');
                   }}
-                  className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl text-xs transition-colors"
+                  className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl text-xs transition-colors cursor-pointer"
                   title={t('cleanFiltersTitle')}
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
+              )}
+
+              {selectedRegion && (
+                <span className="text-[11px] text-amber-300 font-bold px-2.5 py-1 bg-amber-500/15 border border-amber-500/30 rounded-xl flex items-center gap-1.5 shrink-0">
+                  <span>📍</span>
+                  <span className="capitalize">{selectedRegion}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRegion('')}
+                    className="hover:text-white cursor-pointer font-bold text-xs"
+                    title={t('cleanFiltersTitle')}
+                  >
+                    ×
+                  </button>
+                </span>
               )}
 
               <span className="text-xs text-slate-400 font-bold px-2.5 py-1 bg-slate-800/80 rounded-xl shrink-0">

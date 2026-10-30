@@ -219,6 +219,19 @@ export const translations = {
     omrMarkHalf: 'نیوەڕەش',
     understoodThanks: 'تێگەیشتم، سوپاس',
 
+    // Kurdistan Interactive Map
+    kurdistanMapTitle: 'نەخشەی ئینتەراکتیڤی کێبڕکێی هەرێمی کوردستان',
+    kurdistanMapSubtitle: 'شیکاریی زیندووی ئاستی پەروەردەیی و ڕیزبەندی بەپێی پارێزگاکان و ئیدارە سەربەخۆکان',
+    allKurdistan: 'هەموو کوردستان',
+    governoratesCup: 'جامی پارێزگاکان',
+    filterByGovernorate: 'فلتەرکردنی ڕیزبەندی بەپێی ئەم پارێزگایە',
+    activeGovernorateFilter: 'ئێستا ڕیزبەندی سنوردارکراوە بە:',
+    showAllSchools: 'پیشاندانی هەموو قوتابخانەکانی کوردستان',
+    capitalCity: 'پایتەختی هەرێمی کوردستان',
+    participatingSchools: 'قوتابخانەی بەشداربوو',
+    leadingSchool: 'قوتابخانەی پێشەنگ',
+    clickRegionToFilter: 'کلیک لە هەر پارێزگایەک بکە بۆ بینینی ئامار و فلتەرکردنی قوتابخانەکانی',
+
     // Footer
     footerDesc: 'پلاتفۆرمی فەرمیی پێشبڕکێی قوتابییانی کوردستان - بەڕێوەبردنی تاقیکردنەوەکان بە وردترین و خێراترین شێوازی خوێندنەوەی ئۆپتیکاڵی (OMR).',
     allRightsReserved: 'هەموو مافەکان پارێزراون بۆ پلاتفۆرمی فەرمیی کوردستان (KSC)',
@@ -443,6 +456,19 @@ export const translations = {
     omrMarkHalf: 'Half filled',
     understoodThanks: 'Understood, Thank You',
 
+    // Kurdistan Interactive Map
+    kurdistanMapTitle: 'Kurdistan Region Interactive Competition Map',
+    kurdistanMapSubtitle: 'Live educational analytics & rankings across governorates and independent administrations',
+    allKurdistan: 'All Kurdistan',
+    governoratesCup: 'Governorates League',
+    filterByGovernorate: 'Filter rankings by this governorate',
+    activeGovernorateFilter: 'Rankings currently filtered by:',
+    showAllSchools: 'Show all Kurdistan schools',
+    capitalCity: 'Capital of Kurdistan Region',
+    participatingSchools: 'Participating Schools',
+    leadingSchool: 'Leading School',
+    clickRegionToFilter: 'Click any governorate to view analytics & filter schools',
+
     // Footer
     footerDesc: 'KSC Platform - National examination scoring powered by advanced Optical Mark Recognition (OMR).',
     allRightsReserved: 'All Rights Reserved • KSC Official Examination Platform',
@@ -666,6 +692,19 @@ export const translations = {
     omrMarkDot: 'نقطة صغيرة',
     omrMarkHalf: 'نصف مظلل',
     understoodThanks: 'فهمت، شكراً',
+
+    // Kurdistan Interactive Map
+    kurdistanMapTitle: 'خريطة المنافسة التفاعلية لإقليم كوردستان',
+    kurdistanMapSubtitle: 'تحليل مباشر للأداء التعليمي والتصنيف حسب المحافظات والإدارات المستقلة',
+    allKurdistan: 'كل كوردستان',
+    governoratesCup: 'كأس المحافظات',
+    filterByGovernorate: 'تصفية الترتيب حسب هذه المحافظة',
+    activeGovernorateFilter: 'الترتيب مقيد حالياً بـ:',
+    showAllSchools: 'عرض جميع مدارس كوردستان',
+    capitalCity: 'عاصمة إقليم كوردستان',
+    participatingSchools: 'المدارس المشاركة',
+    leadingSchool: 'المدرسة المتصدرة',
+    clickRegionToFilter: 'انقر على أي محافظة لمشاهدة الإحصائيات وتصفية مدارسها',
 
     // Footer
     footerDesc: 'المنصة الرسمية لمسابقة طلاب كوردستان - إدارة وتصحيح الامتحانات بأعلى درجات الدقة والسرعة باستخدام تقنية القراءة الضوئية (OMR).',
