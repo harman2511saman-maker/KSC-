@@ -37,8 +37,8 @@ export default function KurdistanMapSection({
         badgeEn: 'Capital of Kurdistan Region',
         badgeAr: 'عاصمة إقليم كوردستان',
         isCapital: true,
-        // Pin center percentages on 1024x794 image: (427, 370)
-        pos: { x: 41.7, y: 46.6 },
+        // Exact detected pin center on 1024x794 image: (440, 324)
+        pos: { x: 43.0, y: 40.8 },
         color: '#22c55e', // Vibrant Neon Green
         dotClass: 'bg-emerald-500',
         keywords: ['هەولێر', 'erbil', 'arbil', 'hawler', 'أربيل', 'هەولێری']
@@ -52,8 +52,8 @@ export default function KurdistanMapSection({
         badgeEn: 'Cultural Capital',
         badgeAr: 'عاصمة الثقافة',
         isCapital: false,
-        // (650, 384)
-        pos: { x: 63.5, y: 48.4 },
+        // (662, 318)
+        pos: { x: 64.6, y: 40.1 },
         color: '#f97316', // Vibrant Glowing Orange
         dotClass: 'bg-orange-500',
         keywords: ['سلێمانی', 'sulaymaniyah', 'slemani', 'sulaimani', 'السليمانية', 'سلێمانیی']
@@ -67,8 +67,8 @@ export default function KurdistanMapSection({
         badgeEn: 'Heart of Badinan',
         badgeAr: 'قلب بادينان',
         isCapital: false,
-        // (370, 184)
-        pos: { x: 36.1, y: 23.2 },
+        // (370, 174)
+        pos: { x: 36.1, y: 21.9 },
         color: '#eab308', // Bright Golden Yellow
         dotClass: 'bg-yellow-500',
         keywords: ['دهۆک', 'duhok', 'dohuk', 'دهوك', 'دهۆکی']
@@ -82,8 +82,8 @@ export default function KurdistanMapSection({
         badgeEn: 'International Gateway',
         badgeAr: 'بوابة خابور الدولية',
         isCapital: false,
-        // (214, 204)
-        pos: { x: 20.9, y: 25.7 },
+        // (225, 181)
+        pos: { x: 22.0, y: 22.8 },
         color: '#a855f7', // Vibrant Glowing Purple
         dotClass: 'bg-purple-500',
         keywords: ['زاخۆ', 'zakho', 'زاخو', 'خابوور']
@@ -97,8 +97,8 @@ export default function KurdistanMapSection({
         badgeEn: 'City of Peace & Martyrs',
         badgeAr: 'مدينة السلام والشهداء',
         isCapital: false,
-        // (737, 529)
-        pos: { x: 72.0, y: 66.6 },
+        // (757, 421)
+        pos: { x: 73.9, y: 53.0 },
         color: '#d946ef', // Vibrant Magenta / Fuchsia
         dotClass: 'bg-fuchsia-500',
         keywords: ['هەڵەبجە', 'halabja', 'حلبجة', 'هەڵەبجەی']
@@ -112,8 +112,8 @@ export default function KurdistanMapSection({
         badgeEn: 'Historic Resistance Heartland',
         badgeAr: 'معقل الصمود والتاريخ',
         isCapital: false,
-        // (789, 678)
-        pos: { x: 77.1, y: 85.4 },
+        // (804, 582)
+        pos: { x: 78.5, y: 73.3 },
         color: '#ef4444', // Deep Glowing Red
         dotClass: 'bg-red-500',
         keywords: ['گەرمیان', 'garmian', 'كرميان', 'کەلار', 'کفری', 'kalar']
@@ -127,8 +127,8 @@ export default function KurdistanMapSection({
         badgeEn: 'Gateway of Great Uprising',
         badgeAr: 'بوابة الانتفاضة العظيمة',
         isCapital: false,
-        // (601, 545)
-        pos: { x: 58.7, y: 68.6 },
+        // (617, 472)
+        pos: { x: 60.3, y: 59.4 },
         color: '#06b6d4', // Neon Cyan / Light Teal
         dotClass: 'bg-cyan-500',
         keywords: ['ڕاپەڕین', 'raparin', 'رانية', 'ڕانیە', 'قەڵادزێ', 'پشدەر']
@@ -142,8 +142,8 @@ export default function KurdistanMapSection({
         badgeEn: 'Highland Mountain Peaks',
         badgeAr: 'قمم الجبال العالية',
         isCapital: false,
-        // (562, 250)
-        pos: { x: 54.9, y: 31.5 },
+        // (589, 213)
+        pos: { x: 57.5, y: 26.8 },
         color: '#0284c7', // Electric Blue
         dotClass: 'bg-sky-600',
         keywords: ['سۆران', 'soran', 'سوران', 'ڕەواندز', 'چۆمان', 'مێرگەسۆر']
@@ -346,31 +346,32 @@ export default function KurdistanMapSection({
                   }}
                   title={getRegionName(reg)}
                 >
-                  {/* Glowing Radar Pulse Wave */}
+                  {/* Glowing Radar Pulse Wave emanating directly from the printed circle */}
                   <span
                     className={`absolute rounded-full pointer-events-none transition-all duration-300 ${
-                      isHighlighted ? 'w-10 h-10 animate-ping opacity-85' : 'w-6 h-6 animate-pulse opacity-40'
+                      isHighlighted
+                        ? 'w-9 h-9 sm:w-11 sm:h-11 animate-ping opacity-85'
+                        : 'w-6 h-6 sm:w-7 sm:h-7 animate-pulse opacity-40'
                     }`}
                     style={{ backgroundColor: reg.color }}
                   />
 
-                  {/* Outer Glowing Ring */}
+                  {/* Outer Glowing Ring aligned with printed circle */}
                   <span
-                    className={`absolute rounded-full border transition-all duration-300 pointer-events-none ${
+                    className={`absolute rounded-full border-2 transition-all duration-300 pointer-events-none ${
                       isHighlighted
-                        ? 'w-7 h-7 scale-125 border-white shadow-lg'
-                        : 'w-4 h-4 border-white/60'
+                        ? 'w-6 h-6 sm:w-7 sm:h-7 border-white shadow-xl scale-110'
+                        : 'w-5 h-5 sm:w-6 sm:h-6 border-white/50 opacity-60'
                     }`}
                     style={{
-                      borderColor: '#ffffff',
-                      boxShadow: `0 0 14px ${reg.color}`
+                      boxShadow: isHighlighted ? `0 0 16px ${reg.color}` : `0 0 6px ${reg.color}80`
                     }}
                   />
 
-                  {/* Center Solid Colored Pin Dot */}
+                  {/* Center Dot matching territory color */}
                   <span
-                    className={`relative rounded-full transition-all duration-300 border-2 border-white shadow-md ${
-                      isHighlighted ? 'w-4 h-4 scale-125' : 'w-2.5 h-2.5'
+                    className={`relative rounded-full transition-all duration-300 border border-white shadow-md ${
+                      isHighlighted ? 'w-3 h-3 sm:w-3.5 sm:h-3.5 scale-110' : 'w-2 h-2 sm:w-2.5 sm:h-2.5 opacity-90'
                     }`}
                     style={{ backgroundColor: reg.color }}
                   />
