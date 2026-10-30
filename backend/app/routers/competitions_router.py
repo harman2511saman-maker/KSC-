@@ -8,8 +8,10 @@ import json
 import os
 import shutil
 import uuid
+import time
+from collections import defaultdict
 from datetime import datetime
-from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, or_, case
 from typing import Optional, List, Dict, Any
@@ -413,8 +415,31 @@ def get_school_certificate_data(
         "date": datetime.now().strftime("%Y/%m/%d")
     }
 
+# In-memory sliding rate limiter for public search to prevent scraping / bot DoS
+_public_search_rate_limit: Dict[str, list] = defaultdict(list)
+
+def check_search_rate_limit(request: Request):
+    client_ip = request.headers.get("x-forwarded-for")
+    if client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+    elif request.headers.get("x-real-ip"):
+        client_ip = request.headers.get("x-real-ip").strip()
+    else:
+        client_ip = request.client.host if request.client else "unknown"
+
+    now = time.time()
+    # Keep attempts within the last 60 seconds
+    _public_search_rate_limit[client_ip] = [t for t in _public_search_rate_limit[client_ip] if now - t < 60]
+    if len(_public_search_rate_limit[client_ip]) >= 35:  # Max 35 search queries per minute per IP
+        raise HTTPException(
+            status_code=429,
+            detail="ژمارەی لێگەڕینەکانت لە خولەکێکدا زۆرە! لەبەر پاراستنی پلاتفۆرم کەمێکی تر هەوڵ بدەرەوە."
+        )
+    _public_search_rate_limit[client_ip].append(now)
+
 @router.get("/public-search")
 def search_student_public_result(
+    request: Request,
     student_code: Optional[str] = Query(None, description="Student code to lookup score card"),
     student_name: Optional[str] = Query(None, description="Student name to lookup score card"),
     db: Session = Depends(get_db)
@@ -423,6 +448,7 @@ def search_student_public_result(
     Public search endpoint by code OR name that returns verified score, precise rank position across Kurdistan,
     school rank, percentile, annotated OMR sheet overlay, and admin-controlled certificate data.
     """
+    check_search_rate_limit(request)
     settings = get_system_settings_dict(db)
     cert_cfg = settings.get("certificate_config", DEFAULT_SYSTEM_SETTINGS["certificate_config"])
 

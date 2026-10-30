@@ -40,6 +40,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.status === 401 && localStorage.getItem('omr_token')) {
+      if (!error.config?.url?.includes('/auth/token')) {
+        localStorage.removeItem('omr_token');
+      }
+    }
     const detail = error.response?.data?.detail;
     return Promise.reject(new Error(detail || error.message || 'هەڵەیەک ڕوویدا'));
   }
