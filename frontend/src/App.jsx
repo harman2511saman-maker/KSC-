@@ -313,6 +313,7 @@ function MainApp() {
           setActiveAnswerKeyExamId(null);
           setActiveTab(tab);
         }}
+        onOpenQuizBank={() => setShowEscapeRoom(true)}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         pendingReviewsCount={pendingReviewsCount}
@@ -322,6 +323,7 @@ function MainApp() {
       <div className="flex-1 lg:mr-64 flex flex-col min-w-0">
         <Navbar
           onOpenMobile={() => setMobileOpen(true)}
+          onOpenQuizBank={() => setShowEscapeRoom(true)}
           onQuickScan={() => {
             setActiveAnswerKeyExamId(null);
             setActiveTab('scanner');
@@ -346,7 +348,7 @@ function MainApp() {
               onOpenReview={() => setActiveTab('reviews')}
             />
           ) : activeTab === 'competitions' ? (
-            <Competitions onShowToast={showToast} />
+            <Competitions onShowToast={showToast} onOpenEscapeRoom={() => setShowEscapeRoom(true)} />
           ) : activeTab === 'exams' ? (
             <Exams
               onSelectAnswerKey={(id) => setActiveAnswerKeyExamId(id)}

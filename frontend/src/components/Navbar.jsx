@@ -1,7 +1,7 @@
 import React from 'react';
-import { Menu, Camera, CheckCircle2, ShieldCheck, Bell } from 'lucide-react';
+import { Menu, Camera, CheckCircle2, ShieldCheck, Bell, GraduationCap } from 'lucide-react';
 
-export default function Navbar({ onOpenMobile, onQuickScan, activeTitle }) {
+export default function Navbar({ onOpenMobile, onQuickScan, activeTitle, onOpenQuizBank }) {
   return (
     <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -23,13 +23,24 @@ export default function Navbar({ onOpenMobile, onQuickScan, activeTitle }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2 sm:gap-2.5">
+        <button
+          onClick={onOpenQuizBank}
+          className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-black shadow-sm shadow-amber-500/25 transition-all transform active:scale-95 cursor-pointer"
+          title="بانکی پرسیاری وەزاری پۆلی ١٢"
+        >
+          <GraduationCap className="w-4 h-4 text-slate-950" />
+          <span className="hidden xs:inline">بانکی پرسیاری وەزاری</span>
+          <span className="xs:hidden">بانکی پرسیار</span>
+        </button>
+
         <button
           onClick={onQuickScan}
           className="flex items-center gap-2 bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-700 hover:to-sky-700 text-white px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-sm shadow-brand-500/25 transition-all transform active:scale-95"
         >
           <Camera className="w-4 h-4" />
-          <span>سکانکردنی پەڕەی وەڵام</span>
+          <span className="hidden sm:inline">سکانکردنی پەڕەی وەڵام</span>
+          <span className="sm:hidden">سکانکردن</span>
         </button>
       </div>
     </header>

@@ -416,12 +416,12 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
                       : 'bg-gradient-to-r from-amber-500/15 to-yellow-500/10 text-amber-800 border border-amber-500/30'
                   }`}
                 >
-                  <Key className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                  <GraduationCap className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
                   <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
-                    {t('navEscapeGame') || 'ژووری ڕزگاربوونی KSC'}
+                    {t('navEscapeGame') || 'بانکی پرسیاری وەزاری پۆلی ١٢'}
                   </span>
                   <span className="text-[10px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-black">
-                    نوێ 🎮
+                    نوێ 🎓
                   </span>
                 </button>
 

@@ -12,13 +12,15 @@ import {
   Layers,
   HelpCircle,
   Building2,
-  Trophy
+  Trophy,
+  GraduationCap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const navItems = [
   { id: 'dashboard', label: 'داشبۆرد', icon: LayoutDashboard },
-  { id: 'competitions', label: 'پێشبڕکێ و ڕیزبەندی', icon: Trophy, highlight: true },
+  { id: 'quiz_bank', label: 'بانکی پرسیاری وەزاری', icon: GraduationCap, highlight: true, badge: 'پۆلی ١٢' },
+  { id: 'competitions', label: 'پێشبڕکێ و ڕیزبەندی', icon: Trophy },
   { id: 'exams', label: 'تاقیکردنەوەکان', icon: FileText },
   { id: 'students', label: 'قوتابیان', icon: Users },
   { id: 'schools', label: 'قوتابخانەکان', icon: Building2 },
@@ -29,7 +31,7 @@ const navItems = [
   { id: 'calibration', label: 'ڕێکخستنەکان', icon: Sliders },
 ];
 
-export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen, pendingReviewsCount = 0 }) {
+export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen, pendingReviewsCount = 0, onOpenQuizBank }) {
   const { user, logout } = useAuth();
 
   return (
@@ -72,6 +74,11 @@ export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobile
                 <button
                   key={item.id}
                   onClick={() => {
+                    if (item.id === 'quiz_bank') {
+                      if (onOpenQuizBank) onOpenQuizBank();
+                      setMobileOpen(false);
+                      return;
+                    }
                     setActiveTab(item.id);
                     setMobileOpen(false);
                   }}
@@ -79,18 +86,23 @@ export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobile
                     isActive
                       ? 'bg-brand-50 text-brand-700 font-semibold shadow-xs'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  } ${item.highlight && !isActive ? 'border border-brand-200 bg-brand-50/40 text-brand-600' : ''}`}
+                  } ${item.highlight && !isActive ? 'border border-amber-300 bg-amber-50/60 text-amber-900 shadow-xs' : ''}`}
                 >
                   <div className="flex items-center gap-3">
                     <Icon
                       className={`w-4 h-4 transition-colors ${
-                        isActive ? 'text-brand-600' : item.highlight ? 'text-brand-500' : 'text-slate-400'
+                        isActive ? 'text-brand-600' : item.highlight ? 'text-amber-500' : 'text-slate-400'
                       }`}
                     />
                     <span>{item.label}</span>
                   </div>
 
                   {/* Badges */}
+                  {item.badge && (
+                    <span className="px-2 py-0.5 text-[10px] font-black bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 rounded-full shadow-xs">
+                      {item.badge}
+                    </span>
+                  )}
                   {item.id === 'reviews' && pendingReviewsCount > 0 && (
                     <span className="px-2 py-0.5 text-xs font-bold bg-amber-500 text-white rounded-full animate-pulse">
                       {pendingReviewsCount}

@@ -378,12 +378,15 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
 
   useEffect(() => {
     if (isOpen) {
+      if (isAdmin) {
+        setView('admin');
+      }
       fetchSubjects();
       if (phoneNumber) {
         handleLoginStudent(phoneNumber, studentName, false);
       }
     }
-  }, [isOpen]);
+  }, [isOpen, isAdmin]);
 
   // Login / Resume Student by Phone
   const handleLoginStudent = async (phoneToUse, nameToUse, navigate = true) => {
