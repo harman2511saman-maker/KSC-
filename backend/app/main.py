@@ -23,7 +23,8 @@ from app.routers import (
     calibration_router,
     export_router,
     competitions_router,
-    online_exam_router
+    online_exam_router,
+    quiz_router
 )
 
 # Initialize database schema
@@ -207,6 +208,7 @@ app.include_router(calibration_router.router)
 app.include_router(export_router.router)
 app.include_router(competitions_router.router)
 app.include_router(online_exam_router.router)
+app.include_router(quiz_router.router)
 
 @app.get("/")
 def root():

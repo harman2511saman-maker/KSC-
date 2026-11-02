@@ -265,3 +265,75 @@ class OnlineExamPasscode(Base):
 
     exam = relationship("OnlineExam", back_populates="passcodes")
 
+
+# ==========================================
+# Grade 12 Ministerial Quest & Game System
+# ==========================================
+
+class QuizSubject(Base):
+    __tablename__ = "quiz_subjects"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(32), unique=True, index=True, nullable=False)
+    name_ku = Column(String(128), nullable=False)
+    grade = Column(String(32), default="12")
+    icon = Column(String(32), default="📚")
+    color = Column(String(64), default="from-blue-600 to-indigo-600")
+    order = Column(Integer, default=1)
+    is_active = Column(Boolean, default=True)
+
+    chapters = relationship("QuizChapter", back_populates="subject", cascade="all, delete-orphan", order_by="QuizChapter.order")
+    questions = relationship("QuizQuestion", back_populates="subject", cascade="all, delete-orphan")
+
+
+class QuizChapter(Base):
+    __tablename__ = "quiz_chapters"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subject_id = Column(Integer, ForeignKey("quiz_subjects.id"), nullable=False, index=True)
+    unit_title_ku = Column(String(255), nullable=False)
+    section_title_ku = Column(String(255), nullable=False)
+    order = Column(Integer, default=1)
+    required_score_to_unlock = Column(Integer, default=3)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    subject = relationship("QuizSubject", back_populates="chapters")
+    questions = relationship("QuizQuestion", back_populates="chapter", cascade="all, delete-orphan")
+
+
+class QuizQuestion(Base):
+    __tablename__ = "quiz_questions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subject_id = Column(Integer, ForeignKey("quiz_subjects.id"), nullable=False, index=True)
+    chapter_id = Column(Integer, ForeignKey("quiz_chapters.id"), nullable=False, index=True)
+    question_text = Column(Text, nullable=False)
+    option_a = Column(Text, nullable=False)
+    option_b = Column(Text, nullable=False)
+    option_c = Column(Text, nullable=False)
+    option_d = Column(Text, nullable=False)
+    correct_option = Column(String(8), nullable=False)  # "A", "B", "C", "D"
+    ministerial_year = Column(String(64), nullable=True)  # e.g. "٢٠٢٤ خولی یەکەم"
+    explanation_ku = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    subject = relationship("QuizSubject", back_populates="questions")
+    chapter = relationship("QuizChapter", back_populates="questions")
+
+
+class QuizProgress(Base):
+    __tablename__ = "quiz_progress"
+
+    id = Column(Integer, primary_key=True, index=True)
+    phone_number = Column(String(64), index=True, nullable=False)
+    student_name = Column(String(128), nullable=False)
+    subject_code = Column(String(32), index=True, nullable=False)
+    unlocked_chapter_ids_json = Column(Text, default="[]")
+    completed_chapter_ids_json = Column(Text, default="[]")
+    total_score = Column(Integer, default=0)
+    total_correct = Column(Integer, default=0)
+    total_wrong = Column(Integer, default=0)
+    badges_json = Column(Text, default="[]")
+    last_active = Column(DateTime, default=datetime.utcnow)
+
+
