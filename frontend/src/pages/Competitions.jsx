@@ -466,50 +466,6 @@ export default function Competitions({ onShowToast, onOpenEscapeRoom }) {
               <PromoSlider slides={promoSlides} />
             </div>
 
-            {/* 1.5. Escape Room Interactive Game Card with "ژوان" */}
-            <div className="w-full">
-              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-500/15 via-indigo-950/40 to-slate-900/90 border border-amber-500/30 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4 text-right">
-                  <div className="relative shrink-0 w-16 h-16 sm:w-20 sm:h-20">
-                    <img
-                      src="/game/heroine.jpg"
-                      alt="ژوان"
-                      className="w-full h-full object-cover rounded-2xl border-2 border-amber-400/50 shadow-lg"
-                    />
-                    <span className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[9px] font-black">
-                      ژوان
-                    </span>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black">
-                        نوێ • یاریی زانست 🎮
-                      </span>
-                      <span className="text-xs text-slate-400">٥ قوفڵی زێڕین</span>
-                    </div>
-                    <h4 className="text-base sm:text-lg font-black text-white mt-1">
-                      ژووری ڕزگاربوونی KSC: ئایا دەتوانیت قوفڵەکان بکەیتەوە؟
-                    </h4>
-                    <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">
-                      بە وەڵامدانەوەی دروستی ٥ پرسیاری بیرکاری، زانست، کوردی، ئینگلیزی و IQ کلیلە زێڕینەکان بەدەستبهێنە!
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onOpenEscapeRoom) onOpenEscapeRoom();
-                    else window.dispatchEvent(new CustomEvent('ksc-open-escape-room'));
-                  }}
-                  className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 shrink-0 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
-                >
-                  <Key className="w-4 h-4" />
-                  <span>دەستپێکردنی یاری</span>
-                </button>
-              </div>
-            </div>
-
             {/* 2. Online Live Exam Card & Countdown (below promo slider) */}
             <div id="online-exam-section" className="w-full scroll-mt-20">
               <OnlineExamBanner
