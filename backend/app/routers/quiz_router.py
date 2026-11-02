@@ -623,11 +623,27 @@ def submit_section_answers(chapter_id: int, payload: SubmitAnswerRequest, db: Se
         else:
             wrong_count += 1
 
+        options_dict = {
+            "A": q.option_a,
+            "B": q.option_b,
+            "C": q.option_c,
+            "D": q.option_d
+        }
+        correct_letter = q.correct_option.strip().upper()
+        user_choice_text = options_dict.get(user_choice_letter, "وەڵام نەدراوەتەوە") if user_choice_letter else "وەڵام نەدراوەتەوە"
+        correct_option_text = options_dict.get(correct_letter, "")
+
         feedback_list.append({
             "question_id": q.id,
             "question_text": q.question_text,
             "user_choice": user_choice_letter,
-            "correct_option": q.correct_option,
+            "user_choice_text": user_choice_text,
+            "correct_option": correct_letter,
+            "correct_option_text": correct_option_text,
+            "option_a": q.option_a,
+            "option_b": q.option_b,
+            "option_c": q.option_c,
+            "option_d": q.option_d,
             "is_correct": is_correct,
             "points_given": 10 if (is_correct and not already_collected) else 0,
             "already_collected_previously": already_collected,

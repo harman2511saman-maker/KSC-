@@ -651,16 +651,35 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
         next_chapter_unlocked: passed,
         newly_unlocked_chapter_title: 'کەرتی داهاتوو',
         badges: ['قوفڵشکێن 🔓', 'بلیمەتی وەزاری 🌟'],
-        feedback: questions.map((q) => ({
-          question_text: q.question_text,
-          user_choice: userAnswers[q.id] || 'A',
-          correct_option: 'A',
-          is_correct: true,
-          points_given: 10,
-          already_collected_previously: false,
-          ministerial_year: q.ministerial_year,
-          explanation_ku: 'وەڵامی دروست بەپێی کلیلەکانی وەزارەتی پەروەردەیە.'
-        }))
+        feedback: questions.map((q) => {
+          const userChoice = userAnswers[q.id] || 'A';
+          const correctOpt = q.correct_option || 'A';
+          const isCorrect = userChoice === correctOpt;
+          const optA = q.option_a || q.options?.[0]?.text || 'هەڵبژاردنی A';
+          const optB = q.option_b || q.options?.[1]?.text || 'هەڵبژاردنی B';
+          const optC = q.option_c || q.options?.[2]?.text || 'هەڵبژاردنی C';
+          const optD = q.option_d || q.options?.[3]?.text || 'هەڵبژاردنی D';
+          const map = { A: optA, B: optB, C: optC, D: optD };
+
+          return {
+            question_id: q.id,
+            question_text: q.question_text,
+            user_choice: userChoice,
+            user_choice_text: map[userChoice] || '',
+            correct_option: correctOpt,
+            correct_option_text: map[correctOpt] || '',
+            option_a: optA,
+            option_b: optB,
+            option_c: optC,
+            option_d: optD,
+            is_correct: isCorrect,
+            points_given: isCorrect ? 10 : 0,
+            already_collected_previously: false,
+            ministerial_year: q.ministerial_year,
+            explanation_ku: q.explanation_ku || 'وەڵامی دروست بەپێی کلیلەکانی وەزارەتی پەروەردەیە.',
+            image_url: q.image_url
+          };
+        })
       };
       setEvaluationResult(mockResult);
       if (passed) playSound('victory', soundEnabled);
@@ -1396,42 +1415,172 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              {/* Ministerial Explanations */}
-              <div className="space-y-2.5">
-                <h5 className="text-xs font-bold text-slate-300">شیکاریی فەرمیی پرسیارە وەزارییەکان:</h5>
-                {evaluationResult.feedback?.map((fb, idx) => (
-                  <div
-                    key={idx}
-                    className={`p-3.5 rounded-2xl border text-xs leading-relaxed ${
-                      fb.is_correct
-                        ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
-                        : 'bg-rose-950/20 border-rose-500/30 text-rose-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1 font-bold">
-                      <span>پرسیاری #{idx + 1} ({fb.ministerial_year})</span>
-                      <span>
-                        {fb.is_correct
-                          ? `✓ ڕاستە ${fb.already_collected_previously ? '(خاڵی ئەم پرسیارە پێشتر وەرگیراوە)' : '(+١٠ خاڵ)'}`
-                          : `✗ هەڵە (وەڵامی ڕاست: ${fb.correct_option})`}
-                      </span>
-                    </div>
-                    <p className="font-semibold text-white mb-1.5">{fb.question_text}</p>
-                    {fb.image_url && (
-                      <div className="my-2">
-                        <img
-                          src={fb.image_url}
-                          alt="هێڵکاری پرسیار"
-                          onClick={() => setZoomedImage(fb.image_url)}
-                          className="max-h-36 rounded-xl border border-slate-700 bg-slate-950 p-1 cursor-zoom-in hover:border-amber-400 transition-colors"
-                        />
+              {/* Detailed Ministerial Explanations & Answer Review */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <span className="text-xs text-slate-400 font-mono">
+                    کۆی پرسیارەکان: {evaluationResult.total_questions || evaluationResult.feedback?.length}
+                  </span>
+                  <h5 className="text-xs font-black text-amber-400 flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4" />
+                    <span>پێداچوونەوەی وەڵامەکان (پرسیار، هەڵەکەت، و وەڵامی دروست)</span>
+                  </h5>
+                </div>
+
+                {evaluationResult.feedback?.map((fb, idx) => {
+                  const userChoiceLetter = (fb.user_choice || '').trim().toUpperCase();
+                  const correctLetter = (fb.correct_option || '').trim().toUpperCase();
+                  const userChoiceText = fb.user_choice_text || fb[`option_${userChoiceLetter.toLowerCase()}`] || '';
+                  const correctChoiceText = fb.correct_option_text || fb[`option_${correctLetter.toLowerCase()}`] || '';
+
+                  return (
+                    <div
+                      key={idx}
+                      className={`p-4 rounded-2xl border text-xs transition-all space-y-3 text-right ${
+                        fb.is_correct
+                          ? 'bg-slate-900/90 border-emerald-500/40 shadow-lg shadow-emerald-500/5'
+                          : 'bg-slate-900/90 border-rose-500/40 shadow-lg shadow-rose-500/5'
+                      }`}
+                    >
+                      {/* Top Header of Card */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-800">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-mono text-[10px] font-bold">
+                            #{idx + 1}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-amber-400/10 text-amber-300 border border-amber-400/20 text-[10px] font-bold">
+                            {fb.ministerial_year || 'وەزاری'}
+                          </span>
+                        </div>
+
+                        {/* Result Badge */}
+                        {fb.is_correct ? (
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>وەڵامەکەت ڕاستە {fb.already_collected_previously ? '(خاڵی وەرگیراوە)' : '(+١٠ خاڵ)'}</span>
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 flex items-center gap-1.5">
+                            <XCircle className="w-3.5 h-3.5" />
+                            <span>وەڵامەکەت هەڵەیە (٠ خاڵ)</span>
+                          </span>
+                        )}
                       </div>
-                    )}
-                    <p className="text-[11px] text-slate-300 bg-slate-900/60 p-2 rounded-lg border border-slate-700/50">
-                      💡 <strong>ڕوونکردنەوەی وەزاری:</strong> {fb.explanation_ku}
-                    </p>
-                  </div>
-                ))}
+
+                      {/* Question Text */}
+                      <p className="font-bold text-white text-sm leading-relaxed">{fb.question_text}</p>
+
+                      {/* Diagram / Image */}
+                      {fb.image_url && (
+                        <div className="my-2">
+                          <img
+                            src={fb.image_url}
+                            alt="هێڵکاری پرسیار"
+                            onClick={() => setZoomedImage(fb.image_url)}
+                            className="max-h-36 rounded-xl border border-slate-700 bg-slate-950 p-1 cursor-zoom-in hover:border-amber-400 transition-colors"
+                          />
+                        </div>
+                      )}
+
+                      {/* Highlighted Answer Comparison Box */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                        {/* 1. Student's Answer */}
+                        <div className={`p-3 rounded-xl border ${
+                          fb.is_correct
+                            ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
+                            : 'bg-rose-950/30 border-rose-500/40 text-rose-200'
+                        }`}>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-bold text-slate-400">وەڵامەکەی تۆ:</span>
+                            {fb.is_correct ? (
+                              <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                                <Check className="w-3 h-3" /> ڕاستە
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-bold text-rose-400 flex items-center gap-1">
+                                <X className="w-3 h-3" /> هەڵەیە
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className={`px-2 py-0.5 rounded font-mono font-bold text-xs shrink-0 ${
+                              fb.is_correct ? 'bg-emerald-500/30 text-emerald-300' : 'bg-rose-500/30 text-rose-300'
+                            }`}>
+                              بژاردەی {userChoiceLetter || 'هیچ'}
+                            </span>
+                            <span className="font-bold text-white text-xs leading-normal">
+                              {userChoiceText || 'وەڵام دیارینەکراوە'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 2. Official Correct Answer */}
+                        <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-emerald-200">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-bold text-emerald-400">وەڵامی دروستی وەزاری:</span>
+                            <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> کلیل
+                            </span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="px-2 py-0.5 rounded font-mono font-bold text-xs bg-emerald-500/30 text-emerald-300 shrink-0">
+                              بژاردەی {correctLetter}
+                            </span>
+                            <span className="font-bold text-white text-xs leading-normal">
+                              {correctChoiceText || 'وەڵامی پەسەندکراو'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 4 Options Overview Grid */}
+                      {(fb.option_a || fb.option_b) && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] pt-1">
+                          {['A', 'B', 'C', 'D'].map((letter) => {
+                            const optText = fb[`option_${letter.toLowerCase()}`];
+                            if (!optText) return null;
+                            const isThisUserChoice = userChoiceLetter === letter;
+                            const isThisCorrect = correctLetter === letter;
+
+                            return (
+                              <div
+                                key={letter}
+                                className={`p-2 rounded-lg border flex items-center justify-between gap-1.5 ${
+                                  isThisCorrect
+                                    ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50 font-bold'
+                                    : isThisUserChoice && !fb.is_correct
+                                    ? 'bg-rose-500/20 text-rose-200 border-rose-500/50 font-bold'
+                                    : 'bg-slate-950/70 text-slate-400 border-slate-800'
+                                }`}
+                              >
+                                <span className="truncate">
+                                  <strong>{letter}:</strong> {optText}
+                                </span>
+                                {isThisCorrect && (
+                                  <span className="text-[10px] bg-emerald-500 text-slate-950 px-1.5 py-0.5 rounded font-bold shrink-0">
+                                    ڕاست ✓
+                                  </span>
+                                )}
+                                {isThisUserChoice && !fb.is_correct && (
+                                  <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.5 rounded font-bold shrink-0">
+                                    تۆ ✗
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Ministerial Explanation */}
+                      {fb.explanation_ku && (
+                        <p className="text-[11px] text-slate-300 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80 leading-relaxed">
+                          💡 <strong>ڕوونکردنەوەی وەزاری:</strong> {fb.explanation_ku}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
