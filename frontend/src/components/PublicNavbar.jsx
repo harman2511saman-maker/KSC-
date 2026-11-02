@@ -15,13 +15,14 @@ import {
   Sun,
   Moon,
   Smartphone,
-  Compass
+  Compass,
+  Key
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import LanguageSelector from './LanguageSelector';
 
-export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecretLogoClick, onOpenInstall }) {
+export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecretLogoClick, onOpenInstall, onOpenEscapeRoom }) {
   const { t, isRTL, lang } = useLanguage();
   const { isDark, toggleTheme } = useTheme();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -188,8 +189,20 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
           </div>
         </div>
 
-        {/* Left side (RTL end / LTR end): Sun/Moon Button + Language Pill */}
+        {/* Left side (RTL end / LTR end): Game Button + Sun/Moon Button + Language Pill */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          {/* Escape Room Game Trigger Button */}
+          <button
+            type="button"
+            onClick={onOpenEscapeRoom}
+            title={t('navEscapeGame') || 'یاریی ڕزگاربوونی KSC'}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-500/10 hover:from-amber-500/30 hover:to-yellow-500/25 text-amber-400 border border-amber-400/40 text-xs font-bold shadow-md shadow-amber-500/10 transition-all active:scale-95 group cursor-pointer"
+          >
+            <Key className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform animate-pulse" />
+            <span className="hidden sm:inline">{t('navEscapeGame') || 'یاریی ڕزگاربوون'}</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-amber-400 text-slate-950 font-black">نوێ 🎮</span>
+          </button>
+
           {/* Sun / Moon Theme Toggle Button */}
           <button
             type="button"
@@ -402,6 +415,27 @@ export default function PublicNavbar({ onOpenAdminModal, onOpenOMRGuide, onSecre
                     {t('servicesAndTools')}
                   </span>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDrawerOpen(false);
+                    if (onOpenEscapeRoom) onOpenEscapeRoom();
+                  }}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    isDark
+                      ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/10 text-amber-300 border border-amber-400/30'
+                      : 'bg-gradient-to-r from-amber-500/15 to-yellow-500/10 text-amber-800 border border-amber-500/30'
+                  }`}
+                >
+                  <Key className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                  <span className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                    {t('navEscapeGame') || 'ژووری ڕزگاربوونی KSC'}
+                  </span>
+                  <span className="text-[10px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-black">
+                    نوێ 🎮
+                  </span>
+                </button>
 
                 <button
                   onClick={() => scrollTo('online-exam-section')}

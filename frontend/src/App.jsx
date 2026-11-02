@@ -11,6 +11,7 @@ import AnnouncementBar from './components/AnnouncementBar';
 import PublicNavbar from './components/PublicNavbar';
 import OMRGuideModal from './components/OMRGuideModal';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import EscapeRoomModal from './components/EscapeRoomModal';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -152,6 +153,13 @@ function MainApp() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
+  const [showEscapeRoom, setShowEscapeRoom] = useState(false);
+
+  useEffect(() => {
+    const handleOpenGame = () => setShowEscapeRoom(true);
+    window.addEventListener('ksc-open-escape-room', handleOpenGame);
+    return () => window.removeEventListener('ksc-open-escape-room', handleOpenGame);
+  }, []);
 
   // Cross-page selections
   const [selectedExamIdForScan, setSelectedExamIdForScan] = useState(null);
@@ -258,14 +266,20 @@ function MainApp() {
           onOpenAdminModal={() => setShowAdminModal(true)}
           onOpenOMRGuide={() => setShowGuideModal(true)}
           onOpenInstall={() => setShowInstallModal(true)}
+          onOpenEscapeRoom={() => setShowEscapeRoom(true)}
           onSecretLogoClick={handleSecretLogoClick}
         />
 
         <main className="flex-1 w-full max-w-full overflow-x-hidden min-w-0">
-          <Competitions onShowToast={showToast} />
+          <Competitions onShowToast={showToast} onOpenEscapeRoom={() => setShowEscapeRoom(true)} />
         </main>
 
         <Footer />
+
+        <EscapeRoomModal
+          isOpen={showEscapeRoom}
+          onClose={() => setShowEscapeRoom(false)}
+        />
 
         <AdminLoginModal
           isOpen={showAdminModal}
@@ -382,6 +396,12 @@ function MainApp() {
           ) : null}
         </main>
       </div>
+
+      {/* Escape Room Modal */}
+      <EscapeRoomModal
+        isOpen={showEscapeRoom}
+        onClose={() => setShowEscapeRoom(false)}
+      />
 
       {/* Global Toast */}
       <Toast toast={toast} onClose={() => setToast(null)} />

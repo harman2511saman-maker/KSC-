@@ -21,6 +21,7 @@ export const translations = {
     navLeaderboard: 'ڕیزبەندی گشتی',
     navKurdistanMap: 'نەخشەی کوردستان',
     navOnlineExam: 'تاقیکردنەوەی ئۆنلاین',
+    navEscapeGame: 'یاریی ڕزگاربوون',
     navOMRGuide: 'ڕێبەری OMR',
     navMenu: 'مینو',
 
@@ -287,6 +288,7 @@ export const translations = {
     navLeaderboard: 'Ranking',
     navKurdistanMap: 'Kurdistan Map',
     navOnlineExam: 'Online Exam',
+    navEscapeGame: 'Escape Game',
     navOMRGuide: 'Guide',
     navMenu: 'Menu',
 
@@ -553,6 +555,7 @@ export const translations = {
     navLeaderboard: 'الترتيب العام',
     navKurdistanMap: 'خريطة كوردستان',
     navOnlineExam: 'امتحان أونلاين',
+    navEscapeGame: 'لعبة الهروب',
     navOMRGuide: 'دليل OMR',
     navMenu: 'القائمة',
 
