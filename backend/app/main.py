@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.config import DATA_DIR, UPLOADS_ORIGINAL_DIR, UPLOADS_NORMALIZED_DIR, UPLOADS_DEBUG_DIR, UPLOADS_SHEETS_DIR, UPLOADS_PROMO_DIR, UPLOADS_ONLINE_EXAMS_DIR, EXPORTS_DIR
+from app.config import DATA_DIR, UPLOADS_ORIGINAL_DIR, UPLOADS_NORMALIZED_DIR, UPLOADS_DEBUG_DIR, UPLOADS_SHEETS_DIR, UPLOADS_PROMO_DIR, UPLOADS_ONLINE_EXAMS_DIR, UPLOADS_QUIZ_DIR, EXPORTS_DIR
 from app.database import engine, Base, SessionLocal
 from app.crud import init_seed_data
 from app.routers import (
@@ -109,6 +109,12 @@ for col in ["answered_question_ids_json", "saved_sessions_json"]:
             conn.commit()
     except Exception:
         pass
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE quiz_questions ADD COLUMN image_url TEXT"))
+        conn.commit()
+except Exception:
+    pass
 
 # Ensure complete isolation of Online Exams from Paper OMR tables (Schools, Exams, Students, Results)
 try:
@@ -200,6 +206,7 @@ app.mount("/uploads/debug", StaticFiles(directory=str(UPLOADS_DEBUG_DIR)), name=
 app.mount("/uploads/sheets", StaticFiles(directory=str(UPLOADS_SHEETS_DIR)), name="sheets_uploads")
 app.mount("/uploads/promo", StaticFiles(directory=str(UPLOADS_PROMO_DIR)), name="promo_uploads")
 app.mount("/uploads/online_exams", StaticFiles(directory=str(UPLOADS_ONLINE_EXAMS_DIR)), name="online_exams_uploads")
+app.mount("/uploads/quiz", StaticFiles(directory=str(UPLOADS_QUIZ_DIR)), name="quiz_uploads")
 
 # Include Routers
 app.include_router(auth_router.router)

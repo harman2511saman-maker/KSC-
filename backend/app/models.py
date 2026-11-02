@@ -315,6 +315,7 @@ class QuizQuestion(Base):
     correct_option = Column(String(8), nullable=False)  # "A", "B", "C", "D"
     ministerial_year = Column(String(64), nullable=True)  # e.g. "٢٠٢٤ خولی یەکەم"
     explanation_ku = Column(Text, nullable=True)
+    image_url = Column(String(512), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     subject = relationship("QuizSubject", back_populates="questions")

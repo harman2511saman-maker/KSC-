@@ -34,7 +34,11 @@ import {
   Medal,
   Crown,
   TrendingUp,
-  Percent
+  Percent,
+  ZoomIn,
+  ZoomOut,
+  UploadCloud,
+  Image as ImageIcon
 } from 'lucide-react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -156,6 +160,11 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
   const [leaderboardData, setLeaderboardData] = useState({ top_students: [], my_stats: null });
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
+  // Lightbox Image Zoom Modal
+  const [zoomedImage, setZoomedImage] = useState(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadedImageInfo, setUploadedImageInfo] = useState(null);
+
   // Admin Question Management State
   const [newQuestion, setNewQuestion] = useState({
     subject_id: 1,
@@ -167,7 +176,8 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
     option_d: '',
     correct_option: 'A',
     ministerial_year: '٢٠٢٤ خولی یەکەم',
-    explanation_ku: ''
+    explanation_ku: '',
+    image_url: ''
   });
 
   const timerRef = useRef(null);
@@ -509,6 +519,28 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
     }
   };
 
+  // Admin Upload Question Diagram / Image (Auto-compressed to tiny WebP)
+  const handleUploadQuestionImage = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsUploadingImage(true);
+    try {
+      const res = await api.post('/quiz/admin/upload-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setNewQuestion((prev) => ({ ...prev, image_url: res.data.url }));
+      setUploadedImageInfo({ url: res.data.url, size_kb: res.data.size_kb });
+    } catch (err) {
+      alert(err.response?.data?.detail || 'هەڵە لە بارکردنی وێنە');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   // Admin Create Question
   const handleAdminSaveQuestion = async (e) => {
     e.preventDefault();
@@ -522,8 +554,10 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
         option_b: '',
         option_c: '',
         option_d: '',
-        explanation_ku: ''
+        explanation_ku: '',
+        image_url: ''
       });
+      setUploadedImageInfo(null);
     } catch (err) {
       alert('هەڵە لە زیادکردنی پرسیار');
     }
@@ -533,75 +567,120 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn overflow-y-auto">
+      
+      {/* Lightbox Image Zoom Modal */}
+      {zoomedImage && (
+        <div 
+          onClick={() => setZoomedImage(null)}
+          className="fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-fadeIn"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-3xl max-h-[90vh] bg-slate-900 border border-amber-400/40 rounded-3xl p-3 shadow-2xl flex flex-col items-center"
+          >
+            <button
+              onClick={() => setZoomedImage(null)}
+              className="absolute top-3 left-3 p-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-slate-700 cursor-pointer transition-colors"
+            >
+              <X className="w-5 h-5 text-rose-400 stroke-[2.5]" />
+            </button>
+            <img
+              src={zoomedImage}
+              alt="شێوەکاری پرسیار بە قەبارەی گەورە"
+              className="max-h-[75vh] w-auto object-contain rounded-2xl"
+            />
+            <span className="text-xs text-slate-400 mt-2">
+              کلیک لە داخستن یان دەرەوەی وێنەکە بکە بۆ داخستنی ئەم پەنجەرەیە
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="relative w-full max-w-4xl bg-slate-900 border border-amber-500/30 rounded-3xl shadow-2xl shadow-amber-500/10 overflow-hidden flex flex-col max-h-[96vh]">
         
-        {/* Top Header */}
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-b border-amber-500/20 px-4 sm:px-6 py-3 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 p-0.5 shadow-lg shadow-amber-500/30">
-              <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center">
-                <GraduationCap className="w-5 h-5 text-amber-400 animate-pulse" />
+        {/* Top Header - Fully Mobile-Responsive & Prominent Controls */}
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-b border-amber-500/20 px-3 sm:px-6 py-2.5 sm:py-3 shrink-0">
+          <div className="flex items-center justify-between gap-2">
+            
+            {/* Brand Title */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 p-0.5 shadow-lg shadow-amber-500/30 shrink-0">
+                <div className="w-full h-full bg-slate-900 rounded-[10px] sm:rounded-[14px] flex items-center justify-center">
+                  <GraduationCap className="w-5 h-5 text-amber-400 animate-pulse" />
+                </div>
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h3 className="text-sm sm:text-base font-black text-white truncate">
+                    بانکی پرسیاری وەزاریی پۆلی ١٢
+                  </h3>
+                  <span className="hidden md:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30 shrink-0">
+                    ١٠ خاڵ بۆ هەر پرسیارێک
+                  </span>
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
+                  منافەسەی پێشەنگان و شکاندنی قوفڵی کەرتەکان
+                </p>
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-black text-white">
-                  بانکی پرسیاری وەزاریی پۆلی ١٢ • KSC
-                </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                  ١٠ خاڵ بۆ هەر پرسیارێک
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400">منافەسەی پێشەنگان و شکاندنی قوفڵی کەرتەکان</p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            {/* Competitive Leaderboard Button */}
-            <button
-              onClick={() => {
-                fetchLeaderboard();
-                setView(view === 'leaderboard' ? 'subjects' : 'leaderboard');
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 cursor-pointer ${
-                view === 'leaderboard'
-                  ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-md shadow-amber-500/25'
-                  : 'bg-slate-800 text-amber-400 border-amber-400/30 hover:bg-slate-700'
-              }`}
-            >
-              <Trophy className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">ڕیزبەندی و منافەسە</span>
-              <span className="sm:hidden">ڕیزبەندی</span>
-            </button>
-
-            {isAdmin && (
+            {/* Actions: Leaderboard, Sound, and High-Contrast Close */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* Leaderboard Button */}
               <button
-                onClick={() => setView(view === 'admin' ? 'subjects' : 'admin')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  view === 'admin'
-                    ? 'bg-amber-400 text-slate-950 border-amber-400'
+                onClick={() => {
+                  fetchLeaderboard();
+                  setView(view === 'leaderboard' ? 'subjects' : 'leaderboard');
+                }}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1 cursor-pointer shrink-0 ${
+                  view === 'leaderboard'
+                    ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-md shadow-amber-500/25'
                     : 'bg-slate-800 text-amber-400 border-amber-400/30 hover:bg-slate-700'
                 }`}
+                title="ڕیزبەندی و منافەسە"
               >
-                <Settings className="w-3.5 h-3.5" />
-                <span>ئەدمین</span>
+                <Trophy className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden xs:inline">ڕیزبەندی</span>
               </button>
-            )}
 
-            <button
-              onClick={() => setSoundEnabled(!soundEnabled)}
-              title={soundEnabled ? 'بێدەنگکردن' : 'چالاککردنی دەنگ'}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 cursor-pointer"
-            >
-              {soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
-            </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setView(view === 'admin' ? 'subjects' : 'admin')}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1 cursor-pointer shrink-0 ${
+                    view === 'admin'
+                      ? 'bg-amber-400 text-slate-950 border-amber-400'
+                      : 'bg-slate-800 text-amber-400 border-amber-400/30 hover:bg-slate-700'
+                  }`}
+                  title="پنێڵی ئەدمین"
+                >
+                  <Settings className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden sm:inline">ئەدمین</span>
+                </button>
+              )}
 
-            <button
-              onClick={onClose}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 transition-colors border border-slate-700 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+              {/* Sound Toggle */}
+              <button
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                title={soundEnabled ? 'بێدەنگکردن' : 'چالاککردنی دەنگ'}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700 flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
+              >
+                {soundEnabled ? (
+                  <Volume2 className="w-4 h-4 text-amber-400 shrink-0" />
+                ) : (
+                  <VolumeX className="w-4 h-4 text-slate-400 shrink-0" />
+                )}
+              </button>
+
+              {/* Prominent High-Contrast Close Button */}
+              <button
+                onClick={onClose}
+                className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 hover:text-white transition-all border border-rose-500/40 flex items-center gap-1 text-xs font-black shrink-0 cursor-pointer active:scale-95 shadow-sm"
+                title="داخستن و چوونەدەرەوە"
+              >
+                <X className="w-4 h-4 text-rose-400 stroke-[2.5] shrink-0" />
+                <span className="text-[11px] font-bold">داخستن</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -948,6 +1027,28 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
                     {questions[currentQuestionIndex].question_text}
                   </h4>
 
+                  {/* Question Diagram / Image Display (Ultra-lightweight WebP) */}
+                  {questions[currentQuestionIndex].image_url && (
+                    <div className="my-3 flex flex-col items-center justify-center">
+                      <div 
+                        onClick={() => setZoomedImage(questions[currentQuestionIndex].image_url)}
+                        className="relative group cursor-zoom-in rounded-2xl overflow-hidden border border-amber-400/30 bg-slate-950 p-1.5 shadow-lg max-h-72 transition-all hover:border-amber-400"
+                        title="کلیک بکە بۆ گەورەکردنی هێڵکاری"
+                      >
+                        <img
+                          src={questions[currentQuestionIndex].image_url}
+                          alt="هێڵکاری پرسیارەکە"
+                          className="rounded-xl max-h-64 object-contain mx-auto"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-xs font-bold text-amber-300">
+                          <ZoomIn className="w-4 h-4 text-amber-400" />
+                          <span>گەورەکردنی هێڵکاری</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* 4 Options */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                     {questions[currentQuestionIndex].options.map((opt, optIdx) => {
@@ -1099,6 +1200,16 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
                       </span>
                     </div>
                     <p className="font-semibold text-white mb-1.5">{fb.question_text}</p>
+                    {fb.image_url && (
+                      <div className="my-2">
+                        <img
+                          src={fb.image_url}
+                          alt="هێڵکاری پرسیار"
+                          onClick={() => setZoomedImage(fb.image_url)}
+                          className="max-h-36 rounded-xl border border-slate-700 bg-slate-950 p-1 cursor-zoom-in hover:border-amber-400 transition-colors"
+                        />
+                      </div>
+                    )}
                     <p className="text-[11px] text-slate-300 bg-slate-900/60 p-2 rounded-lg border border-slate-700/50">
                       💡 <strong>ڕوونکردنەوەی وەزاری:</strong> {fb.explanation_ku}
                     </p>
@@ -1304,6 +1415,78 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
                     required
                     className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
                   />
+                </div>
+
+                {/* Image Upload for Diagrams (Ultra-compressed WebP) */}
+                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-700/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-amber-400 font-bold flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4" />
+                      <span>وێنەی هێڵکاری / دیاگرام (ئارەزوومەندانە):</span>
+                    </span>
+                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 font-bold">
+                      ⚡ چڕکردنەوەی خۆکار بۆ WebP (کەمتر لە ٢٥ کیلۆبایت!)
+                    </span>
+                  </div>
+
+                  {newQuestion.image_url ? (
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800 border border-amber-400/30">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={newQuestion.image_url}
+                          alt="پێشبینینی وێنە"
+                          className="w-16 h-16 rounded-lg object-contain bg-slate-950 border border-slate-700 cursor-zoom-in"
+                          onClick={() => setZoomedImage(newQuestion.image_url)}
+                          title="کلیک بکە بۆ بینینی بە قەبارەی تەواو"
+                        />
+                        <div className="text-right">
+                          <span className="text-xs font-bold text-white block">وێنەکە بە سەرکەوتوویی بارکرا</span>
+                          <span className="text-[11px] text-emerald-400 font-mono font-bold">
+                            قەبارە: {uploadedImageInfo?.size_kb || 'کەمتر لە ٢٥'} KB (زۆر کەم و پارێزراو بۆ داتابەیس)
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewQuestion({ ...newQuestion, image_url: '' });
+                          setUploadedImageInfo(null);
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs font-bold flex items-center gap-1 border border-rose-500/30 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>سڕینەوە</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-slate-700 hover:border-amber-400/60 rounded-xl cursor-pointer bg-slate-900/50 hover:bg-slate-800/40 transition-colors">
+                        <div className="flex items-center gap-2 text-slate-300 text-xs font-bold">
+                          {isUploadingImage ? (
+                            <div className="flex items-center gap-2 text-amber-400 animate-pulse">
+                              <Sparkles className="w-4 h-4 animate-spin" />
+                              <span>چڕکردنەوە و پاشەکەوتکردنی وێنە...</span>
+                            </div>
+                          ) : (
+                            <>
+                              <UploadCloud className="w-5 h-5 text-amber-400" />
+                              <span>هەڵبژاردنی وێنەی دیاگرام لە ئامێرەکەت</span>
+                            </>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-500 mt-1">
+                          PNG, JPG, WEBP — بە شێوەیەکی خۆکار قەبارەکەی زۆر کەم دەکرێتەوە تا داتابەیس قورس نەکات
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={isUploadingImage}
+                          onChange={handleUploadQuestionImage}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

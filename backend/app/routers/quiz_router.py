@@ -5,13 +5,17 @@ unique 10-points scoring (anti-duplication), pause-and-resume saving, >50% passi
 competitive student leaderboard with personal ranking, and full admin management.
 """
 
+import io
 import json
+import uuid
 from typing import List, Optional, Dict
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from PIL import Image
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.config import UPLOADS_QUIZ_DIR
 from app.database import get_db
 from app.models import QuizSubject, QuizChapter, QuizQuestion, QuizProgress, User
 from app.auth import get_current_user
@@ -57,6 +61,7 @@ class AdminQuestionCreate(BaseModel):
     correct_option: str
     ministerial_year: Optional[str] = "٢٠٢٤ خولی یەکەم"
     explanation_ku: Optional[str] = None
+    image_url: Optional[str] = None
 
 class AdminChapterCreate(BaseModel):
     subject_id: int
@@ -493,7 +498,8 @@ def get_section_questions(chapter_id: int, phone_number: Optional[str] = None, d
                 "id": q.id,
                 "question_text": q.question_text,
                 "options": [q.option_a, q.option_b, q.option_c, q.option_d],
-                "ministerial_year": q.ministerial_year or "پرسیاری فەرمیی وەزاری"
+                "ministerial_year": q.ministerial_year or "پرسیاری فەرمیی وەزاری",
+                "image_url": q.image_url
             }
             for q in questions
         ]
@@ -679,7 +685,8 @@ def submit_section_answers(chapter_id: int, payload: SubmitAnswerRequest, db: Se
             "points_given": 10 if (is_correct and not already_collected) else 0,
             "already_collected_previously": already_collected,
             "ministerial_year": q.ministerial_year,
-            "explanation_ku": q.explanation_ku or "وەڵامی دروست بەپێی کلیلەکانی وەزارەتی پەروەردە دیاریکراوە."
+            "explanation_ku": q.explanation_ku or "وەڵامی دروست بەپێی کلیلەکانی وەزارەتی پەروەردە دیاریکراوە.",
+            "image_url": q.image_url
         })
 
     total_q = len(questions)
@@ -830,6 +837,55 @@ def admin_create_chapter(payload: AdminChapterCreate, current_user: User = Depen
     return {"status": "success", "chapter_id": ch.id}
 
 
+@router.post("/admin/upload-image")
+async def admin_upload_quiz_image(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    """
+    Uploads and ultra-compresses ministerial question diagram/image.
+    Resizes to max 800x800 and converts to WebP (quality=70).
+    Results in crystal-clear diagrams taking only ~15-25 KB of disk storage!
+    """
+    allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif"]
+    if file.content_type and file.content_type.lower() not in allowed_types:
+        raise HTTPException(status_code=400, detail="تکایە تەنها وێنەی (PNG, JPG, WEBP) بەکاربهێنە")
+
+    try:
+        content = await file.read()
+        if len(content) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="قەبارەی وێنە پێش چڕکردنەوە نابێت زیاتر بێت لە ١٠ مێگابایت")
+
+        img = Image.open(io.BytesIO(content))
+
+        # Convert to RGB (handle RGBA / palette / transparency gracefully with white background)
+        if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+            img = img.convert("RGBA")
+            bg = Image.new("RGB", img.size, (255, 255, 255))
+            bg.paste(img, mask=img.split()[-1])
+            img = bg
+        elif img.mode != "RGB":
+            img = img.convert("RGB")
+
+        # High-quality resize maintaining aspect ratio up to max 800x800
+        img.thumbnail((800, 800), Image.Resampling.LANCZOS)
+
+        # Save to WebP with 70 quality (optimal balance of sharpness and tiny ~15-25 KB file size)
+        filename = f"quiz_{uuid.uuid4().hex[:12]}.webp"
+        out_path = UPLOADS_QUIZ_DIR / filename
+        img.save(out_path, format="WEBP", quality=70, method=6)
+
+        size_kb = round(out_path.stat().st_size / 1024.0, 1)
+
+        return {
+            "status": "success",
+            "url": f"/uploads/quiz/{filename}",
+            "size_kb": size_kb,
+            "message": f"وێنەکە بە قەبارەی زۆر کەم ({size_kb} KB) پاشەکەوتکرا"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"هەڵە لە چڕکردنەوەی وێنە: {str(e)}")
+
+
 @router.post("/admin/question")
 def admin_create_question(payload: AdminQuestionCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Admin endpoint to create a new ministerial question."""
@@ -843,7 +899,8 @@ def admin_create_question(payload: AdminQuestionCreate, current_user: User = Dep
         option_d=payload.option_d.strip(),
         correct_option=payload.correct_option.strip().upper(),
         ministerial_year=payload.ministerial_year,
-        explanation_ku=payload.explanation_ku
+        explanation_ku=payload.explanation_ku,
+        image_url=payload.image_url
     )
     db.add(q)
     db.commit()

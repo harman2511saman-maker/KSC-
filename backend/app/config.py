@@ -13,6 +13,7 @@ UPLOADS_DEBUG_DIR = DATA_DIR / "uploads" / "debug"
 UPLOADS_SHEETS_DIR = DATA_DIR / "uploads" / "sheets"
 UPLOADS_PROMO_DIR = DATA_DIR / "uploads" / "promo"
 UPLOADS_ONLINE_EXAMS_DIR = DATA_DIR / "uploads" / "online_exams"
+UPLOADS_QUIZ_DIR = DATA_DIR / "uploads" / "quiz"
 EXPORTS_DIR = DATA_DIR / "exports"
 
 for directory in [
@@ -23,6 +24,7 @@ for directory in [
     UPLOADS_SHEETS_DIR,
     UPLOADS_PROMO_DIR,
     UPLOADS_ONLINE_EXAMS_DIR,
+    UPLOADS_QUIZ_DIR,
     EXPORTS_DIR,
 ]:
     directory.mkdir(parents=True, exist_ok=True)
