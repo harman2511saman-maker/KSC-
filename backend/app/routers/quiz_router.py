@@ -70,6 +70,9 @@ class AdminChapterCreate(BaseModel):
     order: int = 1
     required_score_to_unlock: int = 3
 
+class AdminResetDataRequest(BaseModel):
+    mode: str = "all"  # "all" | "progress" | "questions"
+
 # ==========================================
 # Initial Seeding Utility for Grade 12
 # ==========================================
@@ -85,42 +88,12 @@ DEFAULT_SUBJECTS = [
             {
                 "unit": "بەشی ١: بارگە کارەباییەکان و هێزی کارەبایی",
                 "section": "کەرتی ١: بارگە کارەباییەکان و گەیەنەرەکان",
-                "questions": [
-                    {
-                        "text": "کام لەم تەنۆلکانە بارگەی کارەبایی نەرێنی هەڵدەگرێت لەناو گەردیلەدا؟",
-                        "a": "ئەلیکترۆن", "b": "پڕۆتۆن", "c": "نیوترۆن", "d": "فۆتۆن",
-                        "correct": "A",
-                        "year": "وەزاری ٢٠٢٣ خولی یەکەم",
-                        "exp": "ئەلیکترۆن بارگەی نەرێنییە (-1.6 × 10^-19 C) و بە دەوری ناوکدا دەسووڕێتەوە."
-                    },
-                    {
-                        "text": "هێزی کارەبایی نێوان دوو بارگەی خاڵی بەپێی کام یاسای فیزیکی دیاری دەکرێت؟",
-                        "a": "یاسای کۆڵۆم (Coulomb's Law)", "b": "یاسای ئۆم", "c": "یاسای فارادای", "d": "یاسای لێنز",
-                        "correct": "A",
-                        "year": "وەزاری ٢٠٢٤ خولی دووەم",
-                        "exp": "یاسای کۆڵۆم بریتییە لە: F = k * |q1 * q2| / r^2"
-                    },
-                    {
-                        "text": "ئەگەر دووری نێوان دوو بارگە دوو هێندە زیاد بکرێت، هێزی کارەبایی نێوانیان چی بەسەر دێت؟",
-                        "a": "چوار یەکی لێ دێت (دەبێتە 1/4)", "b": "دوو هێندە زیاد دەکات", "c": "ناگۆڕێت", "d": "نیوە دەبێتەوە",
-                        "correct": "A",
-                        "year": "وەزاری ٢٠٢٢ خولی یەکەم",
-                        "exp": "چونکە هێز پێچەوانە دەگۆڕێت لەگەڵ دووجای دووری (r^2)، زیادبوونی دووری بە ٢ هێندە هێز دەکاتە ١/٤."
-                    }
-                ]
+                "questions": []
             },
             {
                 "unit": "بەشی ١: بارگە کارەباییەکان و هێزی کارەبایی",
                 "section": "کەرتی ٢: بواری کارەبایی و هێڵەکانی بوار",
-                "questions": [
-                    {
-                        "text": "ئاراستەی هێڵەکانی بواری کارەبایی لە بارگەی ئەرێنییەوە بەرەو کوێیە؟",
-                        "a": "لە بارگەی ئەرێنی دەردەچێت و بەرەو دەرەوەیە", "b": "بەرەو ناوەوەی بارگەی ئەرێنییە", "c": "شێوەی بازنەییە بە دەوری بارگەکەدا", "d": "هێڵەکانی بوار بوونیان نییە",
-                        "correct": "A",
-                        "year": "وەزاری ٢٠٢١ خولی یەکەم",
-                        "exp": "هێڵەکانی بواری کارەبایی هەمیشە لە بارگەی ئەرێنی بەرەو دەرەوە ئاراستە دەکرێن."
-                    }
-                ]
+                "questions": []
             }
         ]
     },
@@ -134,22 +107,7 @@ DEFAULT_SUBJECTS = [
             {
                 "unit": "بەشی ١: پەیکەرە کۆئەندام و ماسوولکە کۆئەندام",
                 "section": "کەرتی ١: ئێسکە پەیکەر و پێکهاتەی ئێسک",
-                "questions": [
-                    {
-                        "text": "کۆی ژمارەی ئێسکەکانی لەشی مرۆڤی پێگەیشتوو چەند ئێسکە؟",
-                        "a": "٢٠٦ ئێسک", "b": "٣٠٠ ئێسک", "c": "١٥٠ ئێسک", "d": "٢٥٠ ئێسک",
-                        "correct": "A",
-                        "year": "وەزاری ٢٠٢٤ خولی یەکەم",
-                        "exp": "لەشی مرۆڤی پێگەیشتوو لە ٢٠٦ ئێسک پێکدێت."
-                    },
-                    {
-                        "text": "مۆخی سووری ئێسک بەرپرسە لە دروستکردنی کام لەمانە؟",
-                        "a": "خڕۆکەکانی خوێن", "b": "چەوری لەش", "c": "هۆڕمۆنی گەشە", "d": "کالسیۆمی ئێسک",
-                        "correct": "A",
-                        "year": "وەزاری ٢٠٢٣ خولی دووەم",
-                        "exp": "مۆخی سوور هەردوو خڕۆکەی سوور و سپی و پەڕەکانی خوێن دروست دەکات."
-                    }
-                ]
+                "questions": []
             }
         ]
     },
@@ -163,15 +121,7 @@ DEFAULT_SUBJECTS = [
             {
                 "unit": "بەشی ١: ترش و تفتەکان",
                 "section": "کەرتی ١: پێناسەی ترش و تفت بەپێی ئارینۆس و برۆنشتد-لۆری",
-                "questions": [
-                    {
-                        "text": "بەپێی تیۆری برۆنشتد-لۆری، کام ماددە بە 'ترش' دادەنرێت؟",
-                        "a": "بەخشەری پڕۆتۆن (H+)", "b": "وەرگری پڕۆتۆن", "c": "بەخشەری ئەلیکترۆن", "d": "وەرگری هایدرۆکسید",
-                        "correct": "A",
-                        "year": "وەزاری ٢٠٢٤ خولی یەکەم",
-                        "exp": "ترش بەپێی برۆنشتد بریتییە لە بەخشەری پڕۆتۆن (Proton Donor)."
-                    }
-                ]
+                "questions": []
             }
         ]
     },
@@ -185,15 +135,7 @@ DEFAULT_SUBJECTS = [
             {
                 "unit": "بەشی ١: نەخشەکان و بەها سەرەکییەکان",
                 "section": "کەرتی ١: مەودا و بواری نەخشەکان",
-                "questions": [
-                    {
-                        "text": "بواری نەخشەی f(x) = √(x - 3) بریتییە لە:",
-                        "a": "[3, ∞)", "b": "(3, ∞)", "c": "(-∞, 3]", "d": "هەموو ژمارە ڕاستەقینەکان R",
-                        "correct": "A",
-                        "year": "وەزاری ٢٠٢٣ خولی یەکەم",
-                        "exp": "ژێر ڕەگی جووت دەبێت گەورەتر یان یەکسان بێت بە سفر: x - 3 ≥ 0 کەواتە x ≥ 3."
-                    }
-                ]
+                "questions": []
             }
         ]
     },
@@ -207,15 +149,7 @@ DEFAULT_SUBJECTS = [
             {
                 "unit": "بەشی ئەدەب: ڕێبازی کلاسیک",
                 "section": "کەرتی ١: شاعیرانی چوارینەی بابان",
-                "questions": [
-                    {
-                        "text": "سێکوچکەی بابان لە کام شاعیرانە پێکهاتوون؟",
-                        "a": "نالی، سالم، کوردی", "b": "مەحوی، حەریق، وەفایی", "c": "گۆران، بێکەس، پیرەمێرد", "d": "خانی، جزیری، فەقێ",
-                        "correct": "A",
-                        "year": "وەزاری ٢٠٢٤ خولی دووەم",
-                        "exp": "سێکوچکەی بابان بریتین لە شاعیرانی کلاسیکی شاری سلێمانی: نالی و سالم و کوردی."
-                    }
-                ]
+                "questions": []
             }
         ]
     },
@@ -229,18 +163,7 @@ DEFAULT_SUBJECTS = [
             {
                 "unit": "Unit 1: World Heritage",
                 "section": "Grammar: Present Perfect Continuous vs Simple",
-                "questions": [
-                    {
-                        "text": "Choose the correct sentence:",
-                        "a": "She has been working on this project since 9 AM.",
-                        "b": "She have been working on this project since 9 AM.",
-                        "c": "She has working on this project for 9 AM.",
-                        "d": "She is work on this project since 9 AM.",
-                        "correct": "A",
-                        "year": "Ministerial 2024 Round 1",
-                        "exp": "Subject 'She' takes 'has been + V-ing' with 'since' for a starting point."
-                    }
-                ]
+                "questions": []
             }
         ]
     },
@@ -254,22 +177,14 @@ DEFAULT_SUBJECTS = [
             {
                 "unit": "الوحدة الأولى: القواعد",
                 "section": "أسلوب الاستثناء",
-                "questions": [
-                    {
-                        "text": "ما حكم المستثنى في جملة: 'حضر الطلابُ إلا زيداً'؟",
-                        "a": "واجب النصب", "b": "جائز النصب والاتباع", "c": "يعرب حسب موقعه في الجملة", "d": "مجرور بالإضافة",
-                        "correct": "A",
-                        "year": "الوزاري ٢٠٢٣ الدور الأول",
-                        "exp": "الكلام تام مثبت، فيكون المستثنى واجب النصب."
-                    }
-                ]
+                "questions": []
             }
         ]
     }
 ]
 
 def auto_seed_grade12_data(db: Session):
-    """Seed default Grade 12 subjects and sample ministerial questions if empty."""
+    """Seed default Grade 12 subjects and empty chapters if none exist."""
     if db.query(QuizSubject).count() > 0:
         return
 
@@ -297,7 +212,7 @@ def auto_seed_grade12_data(db: Session):
             db.add(ch)
             db.flush()
 
-            for q_data in ch_data["questions"]:
+            for q_data in ch_data.get("questions", []):
                 q = QuizQuestion(
                     subject_id=subj.id,
                     chapter_id=ch.id,
@@ -932,4 +847,44 @@ def admin_get_stats(current_user: User = Depends(get_current_user), db: Session 
         "total_chapters": total_chapters,
         "total_questions": total_questions,
         "total_active_students": total_students
+    }
+
+
+@router.post("/admin/reset-data")
+def admin_reset_data(
+    payload: Optional[AdminResetDataRequest] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Admin endpoint to delete all test/dummy data from the quiz system.
+    - mode="all": Deletes all QuizProgress (test student scores, sessions, leaderboards) 
+      AND all QuizQuestion (dummy test questions), and removes uploaded test images.
+    - mode="progress": Deletes all QuizProgress only.
+    - mode="questions": Deletes all QuizQuestion only.
+    """
+    mode = payload.mode if payload else "all"
+    deleted_progress = 0
+    deleted_questions = 0
+
+    if mode in ("all", "progress"):
+        deleted_progress = db.query(QuizProgress).delete()
+
+    if mode in ("all", "questions"):
+        deleted_questions = db.query(QuizQuestion).delete()
+        try:
+            for f in UPLOADS_QUIZ_DIR.glob("*.*"):
+                if f.is_file():
+                    f.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": "سەرجەم داتا تاقیکارییەکان بە سەرکەوتوویی سڕدرانەوە",
+        "deleted_progress": deleted_progress,
+        "deleted_questions": deleted_questions,
+        "mode": mode
     }

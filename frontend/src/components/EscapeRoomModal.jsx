@@ -113,13 +113,13 @@ function playSound(type, soundEnabled = true) {
 
 // Fallback Subjects for Grade 12
 const FALLBACK_SUBJECTS = [
-  { code: 'physics', name_ku: 'فیزیا (Physics)', icon: '⚛️', color: 'from-cyan-600 to-blue-600', chaptersCount: 6, questionsCount: 45 },
-  { code: 'biology', name_ku: 'زیندەزانی (Biology)', icon: '🔬', color: 'from-emerald-600 to-teal-600', chaptersCount: 8, questionsCount: 60 },
-  { code: 'chemistry', name_ku: 'کیمیا (Chemistry)', icon: '🧪', color: 'from-amber-600 to-orange-600', chaptersCount: 7, questionsCount: 50 },
-  { code: 'math', name_ku: 'بیرکاری (Mathematics)', icon: '📐', color: 'from-indigo-600 to-purple-600', chaptersCount: 6, questionsCount: 40 },
-  { code: 'kurdish', name_ku: 'زمانی کوردی (Kurdish)', icon: '📚', color: 'from-rose-600 to-pink-600', chaptersCount: 5, questionsCount: 35 },
-  { code: 'english', name_ku: 'ئینگلیزی (Sunrise 12)', icon: '🌍', color: 'from-teal-600 to-emerald-600', chaptersCount: 6, questionsCount: 42 },
-  { code: 'arabic', name_ku: 'عەرەبی (Arabic)', icon: '📖', color: 'from-amber-700 to-yellow-600', chaptersCount: 5, questionsCount: 30 }
+  { code: 'physics', name_ku: 'فیزیا (Physics)', icon: '⚛️', color: 'from-cyan-600 to-blue-600', chaptersCount: 0, questionsCount: 0 },
+  { code: 'biology', name_ku: 'زیندەزانی (Biology)', icon: '🔬', color: 'from-emerald-600 to-teal-600', chaptersCount: 0, questionsCount: 0 },
+  { code: 'chemistry', name_ku: 'کیمیا (Chemistry)', icon: '🧪', color: 'from-amber-600 to-orange-600', chaptersCount: 0, questionsCount: 0 },
+  { code: 'math', name_ku: 'بیرکاری (Mathematics)', icon: '📐', color: 'from-indigo-600 to-purple-600', chaptersCount: 0, questionsCount: 0 },
+  { code: 'kurdish', name_ku: 'زمانی کوردی (Kurdish)', icon: '📚', color: 'from-rose-600 to-pink-600', chaptersCount: 0, questionsCount: 0 },
+  { code: 'english', name_ku: 'ئینگلیزی (Sunrise 12)', icon: '🌍', color: 'from-teal-600 to-emerald-600', chaptersCount: 0, questionsCount: 0 },
+  { code: 'arabic', name_ku: 'عەرەبی (Arabic)', icon: '📖', color: 'from-amber-700 to-yellow-600', chaptersCount: 0, questionsCount: 0 }
 ];
 
 export default function EscapeRoomModal({ isOpen, onClose }) {
@@ -206,21 +206,10 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
       });
       setLeaderboardData(res.data);
     } catch (e) {
-      // Fallback leaderboard
+      // Empty leaderboard fallback when no real students yet
       setLeaderboardData({
-        top_students: [
-          { rank: 1, student_name: 'شەیما کاروان عەزیز', phone_masked: '0750***123', total_score: 340, completed_sections_count: 8, badges: ['پێشەنگی پۆلی ١٢ 🎓', 'مامۆستای بەشەکان 🏆'] },
-          { rank: 2, student_name: 'دانا ئەحمەد حەسەن', phone_masked: '0770***456', total_score: 290, completed_sections_count: 7, badges: ['بلیمەتی وەزاری 🌟'] },
-          { rank: 3, student_name: 'سارە پشتیوان مەحمود', phone_masked: '0751***789', total_score: 250, completed_sections_count: 6, badges: ['قوفڵشکێن 🔓'] }
-        ],
-        my_stats: {
-          rank: 12,
-          total_participants: 184,
-          total_score: studentProgress?.total_score || 120,
-          student_name: studentProgress?.student_name || 'قوتابی پۆلی ١٢',
-          percentile: 93.5,
-          completed_count: studentProgress?.completed_chapter_ids?.length || 2
-        }
+        top_students: [],
+        my_stats: null
       });
     } finally {
       setLeaderboardLoading(false);
@@ -260,9 +249,9 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
       const mockProgress = {
         phone_number: cleanPhone,
         student_name: nameToUse || studentName || 'قوتابی پۆلی ١٢',
-        total_score: 120,
-        unlocked_chapter_ids: [1, 2],
-        completed_chapter_ids: [1],
+        total_score: 0,
+        unlocked_chapter_ids: [1],
+        completed_chapter_ids: [],
         badges: ['پێشەنگی پۆلی ١٢ 🎓'],
         saved_sessions: {}
       };
@@ -560,6 +549,32 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
       setUploadedImageInfo(null);
     } catch (err) {
       alert('هەڵە لە زیادکردنی پرسیار');
+    }
+  };
+
+  // Admin Reset / Wipe All Test Data
+  const handleResetQuizData = async (mode = 'all') => {
+    const confirmMsg = mode === 'all'
+      ? 'ئایا دڵنیایت لە سڕینەوەی هەموو داتاکانی تاقیکردنەوە (گشت پرسیارەکان، و خاڵ و ڕیزبەندیی قوتابییان)؟'
+      : 'ئایا دڵنیایت لە سڕینەوە و ڕیسێتکردنی هەموو خاڵ و پێشکەوتنی قوتابییان؟';
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const res = await api.post('/quiz/admin/reset-data', { mode });
+      alert(res.data?.message || 'سەرجەم داتاکان بە سەرکەوتوویی سڕدرانەوە');
+      localStorage.removeItem('ksc_student_phone');
+      localStorage.removeItem('ksc_student_name');
+      setPhoneNumber('');
+      setStudentName('');
+      setStudentProgress(null);
+      setUserAnswers({});
+      setQuestions([]);
+      fetchSubjects();
+      fetchLeaderboard();
+      setView('subjects');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'هەڵە لە سڕینەوەی داتاکان');
     }
   };
 
@@ -1294,62 +1309,72 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
                   <span>کۆی خاڵ</span>
                 </div>
 
-                <div className="divide-y divide-slate-700/60">
-                  {leaderboardData.top_students?.map((st) => {
-                    const isTop1 = st.rank === 1;
-                    const isTop2 = st.rank === 2;
-                    const isTop3 = st.rank === 3;
+                {(!leaderboardData.top_students || leaderboardData.top_students.length === 0) ? (
+                  <div className="p-8 text-center space-y-2">
+                    <Trophy className="w-10 h-10 text-slate-600 mx-auto" />
+                    <h5 className="text-sm font-bold text-slate-300">هێشتا هیچ بەشداربوویەک نییە</h5>
+                    <p className="text-xs text-slate-500">
+                      یەکەم کەس بە کە پرسیارەکان بە دروستی وەڵام بداتەوە و ناوت لە پێشەنگەکاندا بنووسرێت!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-700/60">
+                    {leaderboardData.top_students.map((st) => {
+                      const isTop1 = st.rank === 1;
+                      const isTop2 = st.rank === 2;
+                      const isTop3 = st.rank === 3;
 
-                    return (
-                      <div
-                        key={st.rank}
-                        className={`p-3.5 flex items-center justify-between text-xs transition-colors ${
-                          isTop1
-                            ? 'bg-amber-400/10'
-                            : isTop2
-                            ? 'bg-slate-400/10'
-                            : isTop3
-                            ? 'bg-amber-700/10'
-                            : 'hover:bg-slate-750'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs font-mono shrink-0 ${
-                              isTop1
-                                ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-500/30'
-                                : isTop2
-                                ? 'bg-slate-300 text-slate-950'
-                                : isTop3
-                                ? 'bg-amber-700 text-white'
-                                : 'bg-slate-800 text-slate-400'
-                            }`}
-                          >
-                            {isTop1 ? <Crown className="w-4 h-4" /> : `#${st.rank}`}
+                      return (
+                        <div
+                          key={st.rank}
+                          className={`p-3.5 flex items-center justify-between text-xs transition-colors ${
+                            isTop1
+                              ? 'bg-amber-400/10'
+                              : isTop2
+                              ? 'bg-slate-400/10'
+                              : isTop3
+                              ? 'bg-amber-700/10'
+                              : 'hover:bg-slate-750'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs font-mono shrink-0 ${
+                                isTop1
+                                  ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-500/30'
+                                  : isTop2
+                                  ? 'bg-slate-300 text-slate-950'
+                                  : isTop3
+                                  ? 'bg-amber-700 text-white'
+                                  : 'bg-slate-800 text-slate-400'
+                              }`}
+                            >
+                              {isTop1 ? <Crown className="w-4 h-4" /> : `#${st.rank}`}
+                            </div>
+
+                            <div>
+                              <span className="font-bold text-white block">{st.student_name}</span>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                {st.phone_masked} • {st.completed_sections_count} کەرت
+                              </span>
+                            </div>
                           </div>
 
-                          <div>
-                            <span className="font-bold text-white block">{st.student_name}</span>
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              {st.phone_masked} • {st.completed_sections_count} کەرت
+                          <div className="flex items-center gap-2">
+                            {st.badges?.slice(0, 1).map((b, bIdx) => (
+                              <span key={bIdx} className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] bg-slate-900 text-amber-300 border border-slate-700 font-bold">
+                                {b}
+                              </span>
+                            ))}
+                            <span className="font-black text-sm text-amber-400 font-mono">
+                              {st.total_score} خاڵ
                             </span>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                          {st.badges?.slice(0, 1).map((b, bIdx) => (
-                            <span key={bIdx} className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] bg-slate-900 text-amber-300 border border-slate-700 font-bold">
-                              {b}
-                            </span>
-                          ))}
-                          <span className="font-black text-sm text-amber-400 font-mono">
-                            {st.total_score} خاڵ
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1366,7 +1391,41 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
                 </button>
                 <div className="text-right">
                   <h4 className="text-base font-black text-amber-400">پنێڵی کارگێڕی پرسیارەکانی وەزاری</h4>
-                  <p className="text-xs text-slate-400">زیادکردن و بەڕێوەبردنی بەش، کەرت، و پرسیارە هەڵبژاردنەکان</p>
+                  <p className="text-xs text-slate-400">زیادکردن، بەڕێوەبردن، و سڕینەوەی داتا تاقیکارییەکان</p>
+                </div>
+              </div>
+
+              {/* Danger Zone: Wipe / Reset All Test Data */}
+              <div className="p-4 rounded-2xl bg-rose-950/20 border border-rose-500/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-rose-300 flex items-center gap-1.5">
+                    <Trash2 className="w-4 h-4 text-rose-400" />
+                    <span>سڕینەوەی داتا تاقیکارییەکان (Wipe Test Data)</span>
+                  </span>
+                  <span className="text-[10px] text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 font-bold">
+                    تایبەت بە ئەدمین
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  بۆ ئەوەی سیستەمی یاری و تاقیکردنەوە بە تەواوی خاوێن بێت بۆ دەستپێکردنی فەرمی، دەتوانیت لێرەوە هەموو خاڵەکانی تاقیکاری و پرسیارە تاقیکارییەکان بسڕیتەوە تا هیچ داتایەکی کۆن نەمێنێت.
+                </p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleResetQuizData('all')}
+                    className="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>سڕینەوەی گشت داتاکان (پرسیار و خاڵەکان)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleResetQuizData('progress')}
+                    className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-400/30 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>تەنها سڕینەوەی خاڵ و ڕیزبەندیی قوتابییان</span>
+                  </button>
                 </div>
               </div>
 
