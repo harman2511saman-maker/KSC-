@@ -166,6 +166,16 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
   const [uploadedImageInfo, setUploadedImageInfo] = useState(null);
 
   // Admin Question Management State
+  const [adminChapters, setAdminChapters] = useState([]);
+  const [adminQuestions, setAdminQuestions] = useState([]);
+  const [loadingAdminQuestions, setLoadingAdminQuestions] = useState(false);
+  const [showAddChapterModal, setShowAddChapterModal] = useState(false);
+  const [newChapterData, setNewChapterData] = useState({
+    unit_title_ku: '',
+    section_title_ku: '',
+    order: 1
+  });
+
   const [newQuestion, setNewQuestion] = useState({
     subject_id: 1,
     chapter_id: 1,
@@ -215,6 +225,80 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
       setLeaderboardLoading(false);
     }
   };
+
+  // Admin Methods to Load Chapters & Questions
+  const fetchAdminChapters = async (subjId) => {
+    const subj = subjects.find(s => s.id === subjId || s.code === subjId) || subjects[0];
+    if (!subj) return;
+    try {
+      const res = await api.get(`/quiz/subject/${subj.code}/chapters`);
+      const chList = res.data?.chapters || [];
+      setAdminChapters(chList);
+      if (chList.length > 0) {
+        setNewQuestion(prev => ({ ...prev, subject_id: subj.id || prev.subject_id, chapter_id: chList[0].id }));
+        fetchAdminQuestions(chList[0].id);
+      } else {
+        setAdminQuestions([]);
+      }
+    } catch (e) {
+      setAdminChapters([]);
+      setAdminQuestions([]);
+    }
+  };
+
+  const fetchAdminQuestions = async (chapterId) => {
+    if (!chapterId) return;
+    setLoadingAdminQuestions(true);
+    try {
+      const res = await api.get('/quiz/admin/questions', { params: { chapter_id: chapterId } });
+      setAdminQuestions(res.data || []);
+    } catch (e) {
+      setAdminQuestions([]);
+    } finally {
+      setLoadingAdminQuestions(false);
+    }
+  };
+
+  const handleAdminSaveChapter = async (e) => {
+    e.preventDefault();
+    if (!newChapterData.unit_title_ku.trim() || !newChapterData.section_title_ku.trim()) {
+      alert('تکایە ناونیشانی بەش و کەرت بنووسە');
+      return;
+    }
+    try {
+      await api.post('/quiz/admin/chapter', {
+        subject_id: newQuestion.subject_id || subjects[0]?.id || 1,
+        unit_title_ku: newChapterData.unit_title_ku.trim(),
+        section_title_ku: newChapterData.section_title_ku.trim(),
+        order: parseInt(newChapterData.order) || (adminChapters.length + 1)
+      });
+      alert('کەرتەکە بە سەرکەوتوویی دروستکرا!');
+      setShowAddChapterModal(false);
+      setNewChapterData({ unit_title_ku: '', section_title_ku: '', order: 1 });
+      fetchAdminChapters(newQuestion.subject_id || subjects[0]?.id || 1);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'هەڵە لە دروستکردنی کەرت');
+    }
+  };
+
+  const handleAdminDeleteQuestion = async (qId) => {
+    if (!window.confirm('ئایا دڵنیایت لە سڕینەوەی ئەم پرسیارە؟')) return;
+    try {
+      await api.delete(`/quiz/admin/question/${qId}`);
+      alert('پرسیارەکە بە سەرکەوتوویی سڕدرایەوە');
+      fetchAdminQuestions(newQuestion.chapter_id);
+      fetchSubjects();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'هەڵە لە سڕینەوەی پرسیار');
+    }
+  };
+
+  useEffect(() => {
+    if (view === 'admin') {
+      const targetSubjId = newQuestion.subject_id || subjects[0]?.id || 1;
+      fetchAdminChapters(targetSubjId);
+    }
+  }, [view]);
 
   useEffect(() => {
     if (isOpen) {
@@ -547,6 +631,10 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
         image_url: ''
       });
       setUploadedImageInfo(null);
+      if (newQuestion.chapter_id) {
+        fetchAdminQuestions(newQuestion.chapter_id);
+      }
+      fetchSubjects();
     } catch (err) {
       alert('هەڵە لە زیادکردنی پرسیار');
     }
@@ -1436,12 +1524,16 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
                   <Plus className="w-4 h-4 text-amber-400" />
                 </h5>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1">بابەت:</label>
                     <select
                       value={newQuestion.subject_id}
-                      onChange={(e) => setNewQuestion({ ...newQuestion, subject_id: parseInt(e.target.value) })}
+                      onChange={(e) => {
+                        const sId = parseInt(e.target.value);
+                        setNewQuestion({ ...newQuestion, subject_id: sId });
+                        fetchAdminChapters(sId);
+                      }}
                       className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
                     >
                       {subjects.map((s) => (
@@ -1449,6 +1541,40 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
                           {s.name_ku}
                         </option>
                       ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-300">بەش و کەرت:</label>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddChapterModal(true)}
+                        className="text-[11px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
+                        title="زیادکردنی بەش یان کەرتی نوێ بۆ ئەم بابەتە"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>+ کەرتی نوێ</span>
+                      </button>
+                    </div>
+                    <select
+                      value={newQuestion.chapter_id}
+                      onChange={(e) => {
+                        const chId = parseInt(e.target.value);
+                        setNewQuestion({ ...newQuestion, chapter_id: chId });
+                        fetchAdminQuestions(chId);
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
+                    >
+                      {adminChapters.length === 0 ? (
+                        <option value="">(هیچ کەرتێک نییە - کلیک لە + بکە)</option>
+                      ) : (
+                        adminChapters.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.unit_title_ku} • {c.section_title_ku} ({c.question_count} پرسیار)
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
 
@@ -1625,6 +1751,171 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
                   تۆمارکردنی پرسیاری وەزاری لە داتابەیس
                 </button>
               </form>
+
+              {/* Add Chapter / Section Modal */}
+              {showAddChapterModal && (
+                <div 
+                  onClick={() => setShowAddChapterModal(false)}
+                  className="fixed inset-0 z-[70] bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
+                >
+                  <div 
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full max-w-md bg-slate-900 border border-amber-400/40 rounded-3xl p-5 shadow-2xl text-right space-y-4"
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddChapterModal(false)}
+                        className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <h5 className="text-sm font-black text-amber-400 flex items-center gap-1.5">
+                        <Plus className="w-4 h-4" />
+                        <span>دروستکردنی بەش یان کەرتی نوێ</span>
+                      </h5>
+                    </div>
+
+                    <form onSubmit={handleAdminSaveChapter} className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 mb-1">ناونیشانی بەش (Unit):</label>
+                        <input
+                          type="text"
+                          value={newChapterData.unit_title_ku}
+                          onChange={(e) => setNewChapterData({ ...newChapterData, unit_title_ku: e.target.value })}
+                          placeholder="نموونە: بەشی ٢: تەوژمی کارەبایی و موگناتیسی"
+                          required
+                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 mb-1">ناونیشانی کەرت (Section):</label>
+                        <input
+                          type="text"
+                          value={newChapterData.section_title_ku}
+                          onChange={(e) => setNewChapterData({ ...newChapterData, section_title_ku: e.target.value })}
+                          placeholder="نموونە: کەرتی ١: هێزی موگناتیسی لەسەر تەزوو"
+                          required
+                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 mb-1">ڕیزبەندی کەرتەکە (Order):</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={newChapterData.order}
+                          onChange={(e) => setNewChapterData({ ...newChapterData, order: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none"
+                        />
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          type="submit"
+                          className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-xs shadow-md cursor-pointer"
+                        >
+                          تۆمارکردن لە داتابەیس
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddChapterModal(false)}
+                          className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700 cursor-pointer"
+                        >
+                          پەشیمانبوونەوە
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Questions Already in This Chapter / Section */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <span className="text-xs text-slate-400 font-mono">
+                    کۆی پرسیارەکان: {adminQuestions.length}
+                  </span>
+                  <h5 className="text-xs font-black text-amber-400 flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4" />
+                    <span>پرسیارە تۆمارکراوەکانی ئەم کەرتە</span>
+                  </h5>
+                </div>
+
+                {loadingAdminQuestions ? (
+                  <div className="p-6 text-center text-xs text-amber-400 animate-pulse">
+                    چاوەڕوانبە، پرسیارەکان دەهێنرێن...
+                  </div>
+                ) : adminQuestions.length === 0 ? (
+                  <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 text-center space-y-1">
+                    <p className="text-xs text-slate-300 font-bold">هیچ پرسیارێک لەم کەرتەدا تۆمار نەکراوە</p>
+                    <p className="text-[11px] text-slate-500">فۆڕمەکەی سەرەوە پڕبکەرەوە بۆ زیادکردنی یەکەم پرسیار بۆ ئەم کەرتە.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+                    {adminQuestions.map((q, qIdx) => (
+                      <div
+                        key={q.id}
+                        className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-700/80 hover:border-slate-600 transition-colors space-y-2 text-right"
+                      >
+                        <div className="flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={() => handleAdminDeleteQuestion(q.id)}
+                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                            title="سڕینەوەی ئەم پرسیارە"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>سڕینەوە</span>
+                          </button>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-slate-400 font-mono">#{qIdx + 1}</span>
+                            <span className="px-2 py-0.5 rounded-md bg-amber-400/10 text-amber-300 border border-amber-400/20 text-[10px] font-bold">
+                              {q.ministerial_year || 'وەزاری'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <p className="text-xs font-bold text-white leading-relaxed">{q.question_text}</p>
+
+                        {q.image_url && (
+                          <div className="my-1.5">
+                            <img
+                              src={q.image_url}
+                              alt="هێڵکاری"
+                              onClick={() => setZoomedImage(q.image_url)}
+                              className="h-20 rounded-lg object-contain bg-slate-950 border border-slate-700 p-1 cursor-zoom-in"
+                            />
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-1.5 text-[11px] pt-1 border-t border-slate-800">
+                          <span className={`p-1.5 rounded-lg border ${q.correct_option === 'A' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'}`}>
+                            A: {q.option_a}
+                          </span>
+                          <span className={`p-1.5 rounded-lg border ${q.correct_option === 'B' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'}`}>
+                            B: {q.option_b}
+                          </span>
+                          <span className={`p-1.5 rounded-lg border ${q.correct_option === 'C' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'}`}>
+                            C: {q.option_c}
+                          </span>
+                          <span className={`p-1.5 rounded-lg border ${q.correct_option === 'D' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'}`}>
+                            D: {q.option_d}
+                          </span>
+                        </div>
+
+                        {q.explanation_ku && (
+                          <p className="text-[10px] text-slate-400 bg-slate-950/60 p-1.5 rounded-lg border border-slate-800/80">
+                            💡 {q.explanation_ku}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

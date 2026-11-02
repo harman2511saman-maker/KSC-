@@ -834,6 +834,27 @@ def admin_delete_question(question_id: int, current_user: User = Depends(get_cur
     return {"status": "success", "message": "پرسیارەکە بە سەرکەوتوویی سڕدرایەوە"}
 
 
+@router.get("/admin/questions")
+def admin_get_questions(chapter_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Admin endpoint to list questions in a section with full details including correct option and explanation."""
+    questions = db.query(QuizQuestion).filter(QuizQuestion.chapter_id == chapter_id).all()
+    return [
+        {
+            "id": q.id,
+            "question_text": q.question_text,
+            "option_a": q.option_a,
+            "option_b": q.option_b,
+            "option_c": q.option_c,
+            "option_d": q.option_d,
+            "correct_option": q.correct_option,
+            "ministerial_year": q.ministerial_year,
+            "explanation_ku": q.explanation_ku,
+            "image_url": q.image_url
+        }
+        for q in questions
+    ]
+
+
 @router.get("/admin/stats")
 def admin_get_stats(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Admin overview of subjects, questions, chapters, and registered playing students."""
