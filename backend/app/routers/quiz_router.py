@@ -1,7 +1,8 @@
 """
 API Router for Grade 12 Ministerial Quest & Educational Game System.
 Supports subjects, chapters, ministerial questions, progress tracking by phone number,
-and full admin question/chapter management.
+unique 10-points scoring (anti-duplication), pause-and-resume saving, >50% passing threshold,
+competitive student leaderboard with personal ranking, and full admin management.
 """
 
 import json
@@ -25,6 +26,19 @@ class StudentLoginRequest(BaseModel):
     phone_number: str
     student_name: str
     subject_code: str = "physics"
+
+class SaveSessionRequest(BaseModel):
+    phone_number: str
+    student_name: str
+    current_question_index: int
+    answers: Dict[int, str]  # question_id -> option
+    time_spent_seconds: int = 0
+
+class InstantAnswerRequest(BaseModel):
+    phone_number: str
+    student_name: str
+    question_id: int
+    chosen_option: str  # "A", "B", "C", "D"
 
 class SubmitAnswerRequest(BaseModel):
     phone_number: str
@@ -327,7 +341,7 @@ def get_subjects(db: Session = Depends(get_db)):
 def student_login(payload: StudentLoginRequest, db: Session = Depends(get_db)):
     """
     Log in or resume student progress using Phone Number.
-    Preserves exact unlocked and completed sections across sessions.
+    Preserves exact unlocked, completed, answered question IDs and saved sessions across visits.
     """
     auto_seed_grade12_data(db)
 
@@ -340,7 +354,6 @@ def student_login(payload: StudentLoginRequest, db: Session = Depends(get_db)):
         QuizProgress.subject_code == payload.subject_code
     ).first()
 
-    # Get all chapters for this subject
     subj = db.query(QuizSubject).filter(QuizSubject.code == payload.subject_code).first()
     if not subj:
         raise HTTPException(status_code=404, detail="بابەتەکە نەدۆزرایەوە")
@@ -349,13 +362,14 @@ def student_login(payload: StudentLoginRequest, db: Session = Depends(get_db)):
     first_ch_id = first_chapter.id if first_chapter else 1
 
     if not progress:
-        # Create new student profile with the first section unlocked
         progress = QuizProgress(
             phone_number=clean_phone,
             student_name=payload.student_name.strip() or "قوتابی پۆلی ١٢",
             subject_code=payload.subject_code,
             unlocked_chapter_ids_json=json.dumps([first_ch_id]),
             completed_chapter_ids_json=json.dumps([]),
+            answered_question_ids_json=json.dumps([]),
+            saved_sessions_json=json.dumps({}),
             total_score=0,
             total_correct=0,
             total_wrong=0,
@@ -365,7 +379,6 @@ def student_login(payload: StudentLoginRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(progress)
     else:
-        # Update name if changed and touch last_active
         if payload.student_name and payload.student_name.strip():
             progress.student_name = payload.student_name.strip()
         progress.last_active = datetime.utcnow()
@@ -386,13 +399,14 @@ def student_login(payload: StudentLoginRequest, db: Session = Depends(get_db)):
         "total_score": progress.total_score,
         "total_correct": progress.total_correct,
         "total_wrong": progress.total_wrong,
-        "badges": json.loads(progress.badges_json or "[]")
+        "badges": json.loads(progress.badges_json or "[]"),
+        "saved_sessions": json.loads(progress.saved_sessions_json or "{}")
     }
 
 
 @router.get("/subject/{subject_code}/chapters")
 def get_subject_chapters(subject_code: str, phone_number: Optional[str] = None, db: Session = Depends(get_db)):
-    """List all units & sections for a subject, indicating locked/unlocked state for this phone."""
+    """List all units & sections for a subject, indicating locked/unlocked state and saved attempts."""
     auto_seed_grade12_data(db)
 
     subj = db.query(QuizSubject).filter(QuizSubject.code == subject_code).first()
@@ -403,6 +417,7 @@ def get_subject_chapters(subject_code: str, phone_number: Optional[str] = None, 
 
     unlocked_ids = set()
     completed_ids = set()
+    saved_sessions = {}
 
     if phone_number:
         clean_phone = phone_number.strip().replace(" ", "").replace("-", "")
@@ -413,6 +428,7 @@ def get_subject_chapters(subject_code: str, phone_number: Optional[str] = None, 
         if progress:
             unlocked_ids = set(json.loads(progress.unlocked_chapter_ids_json or "[]"))
             completed_ids = set(json.loads(progress.completed_chapter_ids_json or "[]"))
+            saved_sessions = json.loads(progress.saved_sessions_json or "{}")
 
     # Always ensure first chapter is unlocked
     if chapters and chapters[0].id not in unlocked_ids:
@@ -421,6 +437,7 @@ def get_subject_chapters(subject_code: str, phone_number: Optional[str] = None, 
     res = []
     for ch in chapters:
         q_count = db.query(QuizQuestion).filter(QuizQuestion.chapter_id == ch.id).count()
+        ch_saved = saved_sessions.get(str(ch.id))
         res.append({
             "id": ch.id,
             "unit_title_ku": ch.unit_title_ku,
@@ -429,7 +446,9 @@ def get_subject_chapters(subject_code: str, phone_number: Optional[str] = None, 
             "question_count": q_count,
             "required_score": ch.required_score_to_unlock,
             "is_unlocked": ch.id in unlocked_ids,
-            "is_completed": ch.id in completed_ids
+            "is_completed": ch.id in completed_ids,
+            "has_saved_session": bool(ch_saved),
+            "saved_answered_count": len(ch_saved.get("answers", {})) if ch_saved else 0
         })
     return {
         "subject": {
@@ -444,17 +463,31 @@ def get_subject_chapters(subject_code: str, phone_number: Optional[str] = None, 
 
 
 @router.get("/section/{chapter_id}/questions")
-def get_section_questions(chapter_id: int, db: Session = Depends(get_db)):
-    """Fetch ministerial questions for an unlocked section (without leaking correct answers)."""
+def get_section_questions(chapter_id: int, phone_number: Optional[str] = None, db: Session = Depends(get_db)):
+    """Fetch ministerial questions for an unlocked section with saved in-progress state if paused previously."""
     ch = db.query(QuizChapter).filter(QuizChapter.id == chapter_id).first()
     if not ch:
         raise HTTPException(status_code=404, detail="کەرتەکە نەدۆزرایەوە")
 
     questions = db.query(QuizQuestion).filter(QuizQuestion.chapter_id == chapter_id).all()
+
+    saved_session = None
+    if phone_number:
+        clean_phone = phone_number.strip().replace(" ", "").replace("-", "")
+        subj = db.query(QuizSubject).filter(QuizSubject.id == ch.subject_id).first()
+        progress = db.query(QuizProgress).filter(
+            QuizProgress.phone_number == clean_phone,
+            QuizProgress.subject_code == (subj.code if subj else "physics")
+        ).first()
+        if progress:
+            sessions = json.loads(progress.saved_sessions_json or "{}")
+            saved_session = sessions.get(str(chapter_id))
+
     return {
         "chapter_id": ch.id,
         "unit_title_ku": ch.unit_title_ku,
         "section_title_ku": ch.section_title_ku,
+        "saved_session": saved_session,
         "questions": [
             {
                 "id": q.id,
@@ -467,11 +500,121 @@ def get_section_questions(chapter_id: int, db: Session = Depends(get_db)):
     }
 
 
+@router.post("/section/{chapter_id}/save-progress")
+def save_section_progress(chapter_id: int, payload: SaveSessionRequest, db: Session = Depends(get_db)):
+    """
+    Pause & Save endpoint ("دواتر تاقیکردنەوە تەواو دەکەم").
+    Stores the student's exact current question index and answers so they never lose their place or points.
+    """
+    clean_phone = payload.phone_number.strip().replace(" ", "").replace("-", "")
+    ch = db.query(QuizChapter).filter(QuizChapter.id == chapter_id).first()
+    if not ch:
+        raise HTTPException(status_code=404, detail="کەرتەکە نەدۆزرایەوە")
+
+    subj = db.query(QuizSubject).filter(QuizSubject.id == ch.subject_id).first()
+    progress = db.query(QuizProgress).filter(
+        QuizProgress.phone_number == clean_phone,
+        QuizProgress.subject_code == (subj.code if subj else "physics")
+    ).first()
+
+    if not progress:
+        progress = QuizProgress(
+            phone_number=clean_phone,
+            student_name=payload.student_name.strip() or "قوتابی پۆلی ١٢",
+            subject_code=subj.code if subj else "physics",
+            unlocked_chapter_ids_json=json.dumps([ch.id]),
+            completed_chapter_ids_json=json.dumps([]),
+            saved_sessions_json=json.dumps({}),
+            total_score=0
+        )
+        db.add(progress)
+        db.flush()
+
+    sessions = json.loads(progress.saved_sessions_json or "{}")
+    sessions[str(chapter_id)] = {
+        "current_question_index": payload.current_question_index,
+        "answers": payload.answers,
+        "time_spent_seconds": payload.time_spent_seconds,
+        "saved_at": datetime.utcnow().isoformat()
+    }
+    progress.saved_sessions_json = json.dumps(sessions)
+    progress.last_active = datetime.utcnow()
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": "پێشکەوتنەکەت پاشەکەوتکرا! هەر کاتێک بێیتەوە لەم پرسیارەوە دەست پێدەکەیتەوە.",
+        "saved_session": sessions[str(chapter_id)]
+    }
+
+
+@router.post("/answer-instant")
+def answer_instant(payload: InstantAnswerRequest, db: Session = Depends(get_db)):
+    """
+    Instantly awards 10 points when student chooses correct answer.
+    Enforces anti-duplication: each question can only be awarded 10 points ONCE per student!
+    """
+    clean_phone = payload.phone_number.strip().replace(" ", "").replace("-", "")
+    q = db.query(QuizQuestion).filter(QuizQuestion.id == payload.question_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="پرسیارەکە نەدۆزرایەوە")
+
+    subj = db.query(QuizSubject).filter(QuizSubject.id == q.subject_id).first()
+    progress = db.query(QuizProgress).filter(
+        QuizProgress.phone_number == clean_phone,
+        QuizProgress.subject_code == (subj.code if subj else "physics")
+    ).first()
+
+    if not progress:
+        progress = QuizProgress(
+            phone_number=clean_phone,
+            student_name=payload.student_name.strip() or "قوتابی پۆلی ١٢",
+            subject_code=subj.code if subj else "physics",
+            unlocked_chapter_ids_json=json.dumps([q.chapter_id]),
+            completed_chapter_ids_json=json.dumps([]),
+            answered_question_ids_json=json.dumps([]),
+            total_score=0
+        )
+        db.add(progress)
+        db.flush()
+
+    is_correct = payload.chosen_option.strip().upper() == q.correct_option.strip().upper()
+    answered_ids = set(json.loads(progress.answered_question_ids_json or "[]"))
+
+    points_added = 0
+    already_awarded = q.id in answered_ids
+
+    if is_correct:
+        if not already_awarded:
+            points_added = 10
+            progress.total_score += 10
+            progress.total_correct += 1
+            answered_ids.add(q.id)
+            progress.answered_question_ids_json = json.dumps(list(answered_ids))
+        progress.last_active = datetime.utcnow()
+        db.commit()
+    else:
+        progress.total_wrong += 1
+        progress.last_active = datetime.utcnow()
+        db.commit()
+
+    return {
+        "is_correct": is_correct,
+        "correct_option": q.correct_option,
+        "points_added": points_added,
+        "total_score": progress.total_score,
+        "already_awarded": already_awarded,
+        "explanation_ku": q.explanation_ku or "وەڵامی دروست بەپێی کلیلەکانی وەزارەتی پەروەردە دیاریکراوە."
+    }
+
+
 @router.post("/section/{chapter_id}/submit")
 def submit_section_answers(chapter_id: int, payload: SubmitAnswerRequest, db: Session = Depends(get_db)):
     """
-    Submits student answers for a section.
-    Computes score, unlocks the next section if passed, and awards badges.
+    Finalizes a section attempt.
+    - Each correct question awards 10 points (if not previously awarded).
+    - Unlocks next section ONLY IF correct percentage > 50% (نیوەی زیاتر دروست بێت).
+    - Clears saved session for this chapter upon completion.
     """
     ch = db.query(QuizChapter).filter(QuizChapter.id == chapter_id).first()
     if not ch:
@@ -496,30 +639,34 @@ def submit_section_answers(chapter_id: int, payload: SubmitAnswerRequest, db: Se
             subject_code=subj.code if subj else "physics",
             unlocked_chapter_ids_json=json.dumps([ch.id]),
             completed_chapter_ids_json=json.dumps([]),
-            total_score=0,
-            total_correct=0,
-            total_wrong=0,
-            badges_json=json.dumps(["پێشەنگی پۆلی ١٢ 🎓"])
+            answered_question_ids_json=json.dumps([]),
+            total_score=0
         )
         db.add(progress)
         db.flush()
 
+    answered_ids = set(json.loads(progress.answered_question_ids_json or "[]"))
     correct_count = 0
     wrong_count = 0
+    new_points_awarded = 0
     feedback_list = []
     option_letters = ["A", "B", "C", "D"]
 
     for q in questions:
         user_choice = payload.answers.get(q.id)
-        # Normalize choice (could be 'A' or '0')
         if isinstance(user_choice, int):
             user_choice_letter = option_letters[user_choice] if 0 <= user_choice < 4 else ""
         else:
             user_choice_letter = str(user_choice).strip().upper() if user_choice else ""
 
         is_correct = user_choice_letter == q.correct_option.strip().upper()
+        already_collected = q.id in answered_ids
+
         if is_correct:
             correct_count += 1
+            if not already_collected:
+                new_points_awarded += 10
+                answered_ids.add(q.id)
         else:
             wrong_count += 1
 
@@ -529,12 +676,17 @@ def submit_section_answers(chapter_id: int, payload: SubmitAnswerRequest, db: Se
             "user_choice": user_choice_letter,
             "correct_option": q.correct_option,
             "is_correct": is_correct,
+            "points_given": 10 if (is_correct and not already_collected) else 0,
+            "already_collected_previously": already_collected,
             "ministerial_year": q.ministerial_year,
             "explanation_ku": q.explanation_ku or "وەڵامی دروست بەپێی کلیلەکانی وەزارەتی پەروەردە دیاریکراوە."
         })
 
-    # Passing criteria: >= 60% or >= required_score_to_unlock
-    passed = correct_count >= min(ch.required_score_to_unlock, len(questions))
+    total_q = len(questions)
+    percentage = (correct_count / total_q) * 100.0 if total_q > 0 else 0
+
+    # User rule: Next chapter requires STRICTLY MORE THAN 50% correct (> 50%)
+    passed = percentage > 50.0
 
     unlocked_ids = set(json.loads(progress.unlocked_chapter_ids_json or "[]"))
     completed_ids = set(json.loads(progress.completed_chapter_ids_json or "[]"))
@@ -556,35 +708,38 @@ def submit_section_answers(chapter_id: int, payload: SubmitAnswerRequest, db: Se
                 next_chapter_unlocked = True
                 newly_unlocked_chapter_title = f"{next_ch.unit_title_ku} - {next_ch.section_title_ku}"
 
-    # Calculate points: 20 pts per correct answer + 50 pts bonus for passing
-    points_earned = (correct_count * 20) + (50 if passed else 0)
-    progress.total_score += points_earned
-    progress.total_correct += correct_count
-    progress.total_wrong += wrong_count
+        # Clear saved in-progress session since section is completed
+        sessions = json.loads(progress.saved_sessions_json or "{}")
+        sessions.pop(str(chapter_id), None)
+        progress.saved_sessions_json = json.dumps(sessions)
+
+    progress.total_score += new_points_awarded
     progress.unlocked_chapter_ids_json = json.dumps(list(unlocked_ids))
     progress.completed_chapter_ids_json = json.dumps(list(completed_ids))
+    progress.answered_question_ids_json = json.dumps(list(answered_ids))
     progress.last_active = datetime.utcnow()
 
-    # Check for new badges
+    # Badges
     badges = set(json.loads(progress.badges_json or "[]"))
     if passed and "قوفڵشکێن 🔓" not in badges:
         badges.add("قوفڵشکێن 🔓")
     if len(completed_ids) >= 3 and "مامۆستای بەشەکان 🏆" not in badges:
         badges.add("مامۆستای بەشەکان 🏆")
-    if progress.total_correct >= 20 and "بلیمەتی وەزاری 🌟" not in badges:
-        badges.add("بلیمەتی وەزاری 🌟")
+    if progress.total_score >= 100 and "یانەی ١٠٠ خاڵ 💯" not in badges:
+        badges.add("یانەی ١٠٠ خاڵ 💯")
     progress.badges_json = json.dumps(list(badges))
 
     db.commit()
 
     return {
         "passed": passed,
-        "score_earned": points_earned,
+        "score_earned": new_points_awarded,
         "total_score": progress.total_score,
         "correct_count": correct_count,
         "wrong_count": wrong_count,
-        "total_questions": len(questions),
-        "percentage": round((correct_count / len(questions)) * 100, 1) if questions else 0,
+        "total_questions": total_q,
+        "percentage": round(percentage, 1),
+        "required_percentage": 50.1,
         "next_chapter_unlocked": next_chapter_unlocked,
         "newly_unlocked_chapter_title": newly_unlocked_chapter_title,
         "unlocked_chapter_ids": list(unlocked_ids),
@@ -595,18 +750,21 @@ def submit_section_answers(chapter_id: int, payload: SubmitAnswerRequest, db: Se
 
 
 @router.get("/leaderboard")
-def get_quiz_leaderboard(subject_code: Optional[str] = None, db: Session = Depends(get_db)):
-    """Top 20 students by total points and completed ministerial sections."""
+def get_quiz_leaderboard(subject_code: Optional[str] = None, phone_number: Optional[str] = None, db: Session = Depends(get_db)):
+    """
+    Competitive Leaderboard for Grade 12 students.
+    Returns Top 30 students and computes the requesting student's exact national ranking and percentile.
+    """
     query = db.query(QuizProgress)
     if subject_code:
         query = query.filter(QuizProgress.subject_code == subject_code)
 
-    top_students = query.order_by(QuizProgress.total_score.desc()).limit(20).all()
+    top_students = query.order_by(QuizProgress.total_score.desc()).limit(30).all()
 
-    res = []
+    leaderboard_list = []
     for rank, st in enumerate(top_students, start=1):
         completed = json.loads(st.completed_chapter_ids_json or "[]")
-        res.append({
+        leaderboard_list.append({
             "rank": rank,
             "student_name": st.student_name,
             "phone_masked": f"{st.phone_number[:4]}***{st.phone_number[-3:]}",
@@ -615,7 +773,41 @@ def get_quiz_leaderboard(subject_code: Optional[str] = None, db: Session = Depen
             "completed_sections_count": len(completed),
             "badges": json.loads(st.badges_json or "[]")
         })
-    return res
+
+    my_stats = None
+    if phone_number:
+        clean_phone = phone_number.strip().replace(" ", "").replace("-", "")
+        my_prog_query = db.query(QuizProgress).filter(QuizProgress.phone_number == clean_phone)
+        if subject_code:
+            my_prog_query = my_prog_query.filter(QuizProgress.subject_code == subject_code)
+        my_prog = my_prog_query.first()
+
+        if my_prog:
+            total_students_count = db.query(QuizProgress)
+            if subject_code:
+                total_students_count = total_students_count.filter(QuizProgress.subject_code == subject_code)
+            total_count = total_students_count.count()
+
+            higher_rank_query = db.query(QuizProgress).filter(QuizProgress.total_score > my_prog.total_score)
+            if subject_code:
+                higher_rank_query = higher_rank_query.filter(QuizProgress.subject_code == subject_code)
+            my_rank = higher_rank_query.count() + 1
+
+            percentile = round(((total_count - my_rank + 1) / total_count) * 100.0, 1) if total_count > 0 else 100.0
+
+            my_stats = {
+                "rank": my_rank,
+                "total_participants": total_count,
+                "total_score": my_prog.total_score,
+                "student_name": my_prog.student_name,
+                "percentile": percentile,
+                "completed_count": len(json.loads(my_prog.completed_chapter_ids_json or "[]"))
+            }
+
+    return {
+        "top_students": leaderboard_list,
+        "my_stats": my_stats
+    }
 
 
 # ==========================================

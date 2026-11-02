@@ -102,6 +102,13 @@ for col_def in [("score", "REAL"), ("percentage", "REAL"), ("submitted_at", "DAT
             conn.commit()
     except Exception:
         pass
+for col in ["answered_question_ids_json", "saved_sessions_json"]:
+    try:
+        with engine.connect() as conn:
+            conn.execute(text(f"ALTER TABLE quiz_progress ADD COLUMN {col} TEXT"))
+            conn.commit()
+    except Exception:
+        pass
 
 # Ensure complete isolation of Online Exams from Paper OMR tables (Schools, Exams, Students, Results)
 try:

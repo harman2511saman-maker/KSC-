@@ -330,6 +330,8 @@ class QuizProgress(Base):
     subject_code = Column(String(32), index=True, nullable=False)
     unlocked_chapter_ids_json = Column(Text, default="[]")
     completed_chapter_ids_json = Column(Text, default="[]")
+    answered_question_ids_json = Column(Text, default="[]")
+    saved_sessions_json = Column(Text, default="{}")
     total_score = Column(Integer, default=0)
     total_correct = Column(Integer, default=0)
     total_wrong = Column(Integer, default=0)
