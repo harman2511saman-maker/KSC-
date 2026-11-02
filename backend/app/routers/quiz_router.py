@@ -73,6 +73,11 @@ class AdminChapterCreate(BaseModel):
 class AdminResetDataRequest(BaseModel):
     mode: str = "all"  # "all" | "progress" | "questions"
 
+class AdminStudentUpdate(BaseModel):
+    student_name: Optional[str] = None
+    total_score: Optional[int] = None
+    phone_number: Optional[str] = None
+
 # ==========================================
 # Initial Seeding Utility for Grade 12
 # ==========================================
@@ -257,17 +262,44 @@ def get_subjects(db: Session = Depends(get_db)):
     return res
 
 
+@router.get("/student/check-phone")
+def check_student_phone(phone_number: str, db: Session = Depends(get_db)):
+    """
+    Checks if a phone number is already registered to a student.
+    Returns locked student name if already registered, protecting their identity.
+    """
+    clean_phone = phone_number.strip().replace(" ", "").replace("-", "")
+    if len(clean_phone) < 10:
+        return {"registered": False, "student_name": None}
+
+    existing = db.query(QuizProgress).filter(QuizProgress.phone_number == clean_phone).first()
+    if existing and existing.student_name:
+        return {
+            "registered": True,
+            "student_name": existing.student_name
+        }
+    return {"registered": False, "student_name": None}
+
+
 @router.post("/student/login")
 def student_login(payload: StudentLoginRequest, db: Session = Depends(get_db)):
     """
     Log in or resume student progress using Phone Number.
-    Preserves exact unlocked, completed, answered question IDs and saved sessions across visits.
+    Enforces identity locking: a phone number belongs strictly to one student name.
     """
     auto_seed_grade12_data(db)
 
     clean_phone = payload.phone_number.strip().replace(" ", "").replace("-", "")
     if len(clean_phone) < 10:
         raise HTTPException(status_code=400, detail="تکایە ژمارەی مۆبایلی دروست بنووسە (لانیکەم ١٠ ژمارە)")
+
+    # Check if this phone number is registered anywhere in the system
+    existing_any = db.query(QuizProgress).filter(QuizProgress.phone_number == clean_phone).first()
+
+    locked_name = payload.student_name.strip() if payload.student_name else "قوتابی پۆلی ١٢"
+    if existing_any and existing_any.student_name:
+        # Enforce locked identity: phone number belongs strictly to this student!
+        locked_name = existing_any.student_name
 
     progress = db.query(QuizProgress).filter(
         QuizProgress.phone_number == clean_phone,
@@ -284,7 +316,7 @@ def student_login(payload: StudentLoginRequest, db: Session = Depends(get_db)):
     if not progress:
         progress = QuizProgress(
             phone_number=clean_phone,
-            student_name=payload.student_name.strip() or "قوتابی پۆلی ١٢",
+            student_name=locked_name,
             subject_code=payload.subject_code,
             unlocked_chapter_ids_json=json.dumps([first_ch_id]),
             completed_chapter_ids_json=json.dumps([]),
@@ -299,8 +331,8 @@ def student_login(payload: StudentLoginRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(progress)
     else:
-        if payload.student_name and payload.student_name.strip():
-            progress.student_name = payload.student_name.strip()
+        # Keep locked identity, do NOT overwrite with another person's name
+        progress.student_name = locked_name
         progress.last_active = datetime.utcnow()
         db.commit()
 
@@ -675,56 +707,106 @@ def submit_section_answers(chapter_id: int, payload: SubmitAnswerRequest, db: Se
 def get_quiz_leaderboard(subject_code: Optional[str] = None, phone_number: Optional[str] = None, db: Session = Depends(get_db)):
     """
     Competitive Leaderboard for Grade 12 students.
-    Returns Top 30 students and computes the requesting student's exact national ranking and percentile.
+    Returns Top 30 students (unified without duplicates when subject_code is not passed).
     """
-    query = db.query(QuizProgress)
-    if subject_code:
-        query = query.filter(QuizProgress.subject_code == subject_code)
-
-    top_students = query.order_by(QuizProgress.total_score.desc()).limit(30).all()
-
     leaderboard_list = []
-    for rank, st in enumerate(top_students, start=1):
-        completed = json.loads(st.completed_chapter_ids_json or "[]")
-        leaderboard_list.append({
-            "rank": rank,
-            "student_name": st.student_name,
-            "phone_masked": f"{st.phone_number[:4]}***{st.phone_number[-3:]}",
-            "subject_code": st.subject_code,
-            "total_score": st.total_score,
-            "completed_sections_count": len(completed),
-            "badges": json.loads(st.badges_json or "[]")
-        })
-
     my_stats = None
-    if phone_number:
-        clean_phone = phone_number.strip().replace(" ", "").replace("-", "")
-        my_prog_query = db.query(QuizProgress).filter(QuizProgress.phone_number == clean_phone)
-        if subject_code:
-            my_prog_query = my_prog_query.filter(QuizProgress.subject_code == subject_code)
-        my_prog = my_prog_query.first()
 
-        if my_prog:
-            total_students_count = db.query(QuizProgress)
-            if subject_code:
-                total_students_count = total_students_count.filter(QuizProgress.subject_code == subject_code)
-            total_count = total_students_count.count()
+    if subject_code:
+        top_students = db.query(QuizProgress).filter(
+            QuizProgress.subject_code == subject_code,
+            QuizProgress.total_score > 0
+        ).order_by(QuizProgress.total_score.desc()).limit(30).all()
 
-            higher_rank_query = db.query(QuizProgress).filter(QuizProgress.total_score > my_prog.total_score)
-            if subject_code:
-                higher_rank_query = higher_rank_query.filter(QuizProgress.subject_code == subject_code)
-            my_rank = higher_rank_query.count() + 1
+        for rank, st in enumerate(top_students, start=1):
+            completed = json.loads(st.completed_chapter_ids_json or "[]")
+            leaderboard_list.append({
+                "rank": rank,
+                "student_name": st.student_name,
+                "phone_masked": f"{st.phone_number[:4]}***{st.phone_number[-3:]}",
+                "subject_code": st.subject_code,
+                "total_score": st.total_score,
+                "completed_sections_count": len(completed),
+                "badges": json.loads(st.badges_json or "[]")
+            })
 
-            percentile = round(((total_count - my_rank + 1) / total_count) * 100.0, 1) if total_count > 0 else 100.0
+        if phone_number:
+            clean_phone = phone_number.strip().replace(" ", "").replace("-", "")
+            my_prog = db.query(QuizProgress).filter(
+                QuizProgress.phone_number == clean_phone,
+                QuizProgress.subject_code == subject_code
+            ).first()
 
-            my_stats = {
-                "rank": my_rank,
-                "total_participants": total_count,
-                "total_score": my_prog.total_score,
-                "student_name": my_prog.student_name,
-                "percentile": percentile,
-                "completed_count": len(json.loads(my_prog.completed_chapter_ids_json or "[]"))
-            }
+            if my_prog:
+                total_count = db.query(QuizProgress).filter(QuizProgress.subject_code == subject_code).count()
+                higher_count = db.query(QuizProgress).filter(
+                    QuizProgress.subject_code == subject_code,
+                    QuizProgress.total_score > my_prog.total_score
+                ).count()
+                my_rank = higher_count + 1
+                percentile = round(((total_count - my_rank + 1) / total_count) * 100.0, 1) if total_count > 0 else 100.0
+
+                my_stats = {
+                    "rank": my_rank,
+                    "total_participants": total_count,
+                    "total_score": my_prog.total_score,
+                    "student_name": my_prog.student_name,
+                    "percentile": percentile,
+                    "completed_count": len(json.loads(my_prog.completed_chapter_ids_json or "[]"))
+                }
+    else:
+        # Unified National Leaderboard: Aggregate by phone_number so each student appears ONCE
+        all_progs = db.query(QuizProgress).filter(QuizProgress.total_score > 0).all()
+        student_map = {}
+        for p in all_progs:
+            p_phone = p.phone_number
+            if p_phone not in student_map:
+                student_map[p_phone] = {
+                    "phone_number": p_phone,
+                    "student_name": p.student_name,
+                    "total_score": 0,
+                    "completed_sections_count": 0,
+                    "badges": set(),
+                }
+            student_map[p_phone]["total_score"] += p.total_score
+            student_map[p_phone]["completed_sections_count"] += len(json.loads(p.completed_chapter_ids_json or "[]"))
+            for b in json.loads(p.badges_json or "[]"):
+                student_map[p_phone]["badges"].add(b)
+
+        sorted_students = sorted(student_map.values(), key=lambda x: x["total_score"], reverse=True)[:30]
+        for rank, st in enumerate(sorted_students, start=1):
+            leaderboard_list.append({
+                "rank": rank,
+                "student_name": st["student_name"],
+                "phone_masked": f"{st['phone_number'][:4]}***{st['phone_number'][-3:]}",
+                "subject_code": "all",
+                "total_score": st["total_score"],
+                "completed_sections_count": st["completed_sections_count"],
+                "badges": list(st["badges"])
+            })
+
+        if phone_number:
+            clean_phone = phone_number.strip().replace(" ", "").replace("-", "")
+            my_all_progs = db.query(QuizProgress).filter(QuizProgress.phone_number == clean_phone).all()
+            if my_all_progs:
+                my_total_score = sum(p.total_score for p in my_all_progs)
+                my_completed = sum(len(json.loads(p.completed_chapter_ids_json or "[]")) for p in my_all_progs)
+                my_name = my_all_progs[0].student_name
+
+                all_scores = [st["total_score"] for st in student_map.values()]
+                higher_count = sum(1 for s in all_scores if s > my_total_score)
+                my_rank = higher_count + 1
+                total_count = max(1, len(student_map))
+                percentile = round(((total_count - my_rank + 1) / total_count) * 100.0, 1)
+
+                my_stats = {
+                    "rank": my_rank,
+                    "total_participants": total_count,
+                    "total_score": my_total_score,
+                    "student_name": my_name,
+                    "percentile": percentile,
+                    "completed_count": my_completed
+                }
 
     return {
         "top_students": leaderboard_list,
@@ -908,4 +990,102 @@ def admin_reset_data(
         "deleted_progress": deleted_progress,
         "deleted_questions": deleted_questions,
         "mode": mode
+    }
+
+
+@router.get("/admin/students")
+def admin_get_students(
+    search: Optional[str] = None,
+    subject_code: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Admin endpoint to view all registered participating students.
+    Displays FULL unmasked phone numbers, names, scores, and activity.
+    """
+    query = db.query(QuizProgress)
+    if subject_code:
+        query = query.filter(QuizProgress.subject_code == subject_code)
+
+    students = query.order_by(QuizProgress.total_score.desc()).all()
+
+    if search:
+        search_term = search.strip().lower()
+        students = [
+            s for s in students
+            if search_term in s.student_name.lower() or search_term in s.phone_number
+        ]
+
+    return [
+        {
+            "id": s.id,
+            "phone_number": s.phone_number,  # FULL phone number for admin!
+            "student_name": s.student_name,
+            "subject_code": s.subject_code,
+            "total_score": s.total_score,
+            "total_correct": s.total_correct,
+            "total_wrong": s.total_wrong,
+            "completed_sections_count": len(json.loads(s.completed_chapter_ids_json or "[]")),
+            "last_active": s.last_active.isoformat() if s.last_active else None
+        }
+        for s in students
+    ]
+
+
+@router.put("/admin/student/{progress_id}")
+def admin_update_student(
+    progress_id: int,
+    payload: AdminStudentUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Admin endpoint to edit a student's name, score, or phone number directly on the server."""
+    p = db.query(QuizProgress).filter(QuizProgress.id == progress_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="بەشداربوو نەدۆزرایەوە")
+
+    old_phone = p.phone_number
+
+    if payload.student_name is not None:
+        new_name = payload.student_name.strip()
+        if new_name:
+            p.student_name = new_name
+            # Sync across all subjects for this student's phone
+            db.query(QuizProgress).filter(QuizProgress.phone_number == old_phone).update(
+                {"student_name": new_name}
+            )
+
+    if payload.total_score is not None:
+        p.total_score = max(0, payload.total_score)
+
+    if payload.phone_number is not None:
+        new_phone = payload.phone_number.strip().replace(" ", "").replace("-", "")
+        if len(new_phone) >= 10:
+            db.query(QuizProgress).filter(QuizProgress.phone_number == old_phone).update(
+                {"phone_number": new_phone}
+            )
+
+    db.commit()
+    return {"status": "success", "message": "زانیارییەکانی قوتابی بە سەرکەوتوویی نوێکرانەوە"}
+
+
+@router.delete("/admin/student/{progress_id}")
+def admin_delete_student(
+    progress_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Admin endpoint to permanently delete a student participant and their score from the server."""
+    p = db.query(QuizProgress).filter(QuizProgress.id == progress_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="بەشداربوو نەدۆزرایەوە")
+
+    # Delete all progress rows for this student's phone number
+    deleted_count = db.query(QuizProgress).filter(QuizProgress.phone_number == p.phone_number).delete()
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": f"بەشداربوو و هەموو خاڵەکانی بە سەرکەوتوویی سڕدرانەوە ({deleted_count} تۆمار)"
     }

@@ -38,7 +38,10 @@ import {
   ZoomIn,
   ZoomOut,
   UploadCloud,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Search,
+  Users,
+  Edit2
 } from 'lucide-react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -164,6 +167,16 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
   const [zoomedImage, setZoomedImage] = useState(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadedImageInfo, setUploadedImageInfo] = useState(null);
+
+  // Student Phone Identity Check
+  const [phoneCheckStatus, setPhoneCheckStatus] = useState(null); // { registered: bool, student_name: str }
+
+  // Admin Tab & Student Management State
+  const [adminTab, setAdminTab] = useState('questions'); // 'questions' | 'students'
+  const [adminStudents, setAdminStudents] = useState([]);
+  const [adminStudentSearch, setAdminStudentSearch] = useState('');
+  const [loadingAdminStudents, setLoadingAdminStudents] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null); // { id, student_name, total_score, phone_number }
 
   // Admin Question Management State
   const [adminChapters, setAdminChapters] = useState([]);
@@ -293,10 +306,73 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
     }
   };
 
+  // Admin Methods to Manage Participating Students
+  const fetchAdminStudents = async (query = adminStudentSearch) => {
+    setLoadingAdminStudents(true);
+    try {
+      const res = await api.get('/quiz/admin/students', {
+        params: { search: query || undefined }
+      });
+      setAdminStudents(res.data || []);
+    } catch (e) {
+      setAdminStudents([]);
+    } finally {
+      setLoadingAdminStudents(false);
+    }
+  };
+
+  const handleUpdateStudent = async (studentId, updatedData) => {
+    try {
+      await api.put(`/quiz/admin/student/${studentId}`, updatedData);
+      alert('زانیارییەکانی قوتابی بە سەرکەوتوویی لە سێرڤەر نوێکرانەوە');
+      setEditingStudent(null);
+      fetchAdminStudents();
+      fetchLeaderboard();
+    } catch (e) {
+      alert(e.response?.data?.detail || 'هەڵە لە نوێکردنەوەی قوتابی');
+    }
+  };
+
+  const handleDeleteStudent = async (studentId, name) => {
+    if (!window.confirm(`ئایا دڵنیایت لە سڕینەوەی یەکجارەکیی «${name}» و گشت خاڵەکانی لە سێرڤەر؟`)) return;
+    try {
+      const res = await api.delete(`/quiz/admin/student/${studentId}`);
+      alert(res.data?.message || 'بەشداربوو بە سەرکەوتوویی لە سێرڤەر سڕدرایەوە');
+      fetchAdminStudents();
+      fetchLeaderboard();
+    } catch (e) {
+      alert(e.response?.data?.detail || 'هەڵە لە سڕینەوەی قوتابی');
+    }
+  };
+
+  // Check phone registration dynamically as student types
+  const handlePhoneInputChange = async (val) => {
+    setPhoneNumber(val);
+    const clean = val.trim().replace(/\s+/g, '').replace(/-/g, '');
+    if (clean.length >= 10) {
+      try {
+        const res = await api.get('/quiz/student/check-phone', {
+          params: { phone_number: clean }
+        });
+        if (res.data?.registered) {
+          setStudentName(res.data.student_name);
+          setPhoneCheckStatus({ registered: true, student_name: res.data.student_name });
+        } else {
+          setPhoneCheckStatus({ registered: false, student_name: null });
+        }
+      } catch (e) {
+        setPhoneCheckStatus(null);
+      }
+    } else {
+      setPhoneCheckStatus(null);
+    }
+  };
+
   useEffect(() => {
     if (view === 'admin') {
       const targetSubjId = newQuestion.subject_id || subjects[0]?.id || 1;
       fetchAdminChapters(targetSubjId);
+      fetchAdminStudents();
     }
   }, [view]);
 
@@ -873,45 +949,80 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
               </div>
 
               <div className="space-y-4 bg-slate-800/60 p-5 rounded-2xl border border-slate-700">
+                {/* 1. Phone Number Input First */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    ناوی سێیانی:
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                    <input
-                      type="text"
-                      value={studentName}
-                      onChange={(e) => setStudentName(e.target.value)}
-                      placeholder="نموونە: هۆزان ئاراس کامەران..."
-                      className="w-full pr-4 pl-10 py-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-sm outline-none font-medium"
-                    />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-300">
+                      ژمارەی مۆبایل (ناسنامەی تایبەتی قوتابی):
+                    </label>
+                    <span className="text-[10px] text-amber-400 font-mono">Iraqi Kurdistan (07xxxxxxxxx)</span>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    ژمارەی مۆبایل (بۆ هەڵگرتنی قۆناغ و خاڵەکان):
-                  </label>
                   <div className="relative">
                     <Phone className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                     <input
                       type="tel"
                       dir="ltr"
                       value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      onChange={(e) => handlePhoneInputChange(e.target.value)}
                       placeholder="0750XXXXXXX"
                       className="w-full pr-4 pl-10 py-2.5 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-sm font-mono outline-none"
                     />
                   </div>
                 </div>
 
+                {/* Identity Lock Status Badge */}
+                {phoneCheckStatus?.registered && (
+                  <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2 animate-fadeIn">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>
+                      ئەم ژمارەیە قوفڵکراوە بە ناوی <strong>«{phoneCheckStatus.student_name}»</strong>. کەسی تر ناتوانێت ناوی بگۆڕێت.
+                    </span>
+                  </div>
+                )}
+                {phoneCheckStatus && !phoneCheckStatus.registered && (
+                  <div className="p-2.5 rounded-xl bg-amber-400/10 border border-amber-400/20 text-xs text-amber-300 flex items-center gap-2 animate-fadeIn">
+                    <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>ژمارەی نوێیە! تکایە ناوی سێیانیت بنووسە بۆ تۆمارکردن.</span>
+                  </div>
+                )}
+
+                {/* 2. Student Name Input */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-300">
+                      ناوی سێیانی:
+                    </label>
+                    {phoneCheckStatus?.registered && (
+                      <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                        <Lock className="w-3 h-3" />
+                        <span>پارێزراوە</span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <User className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      value={studentName}
+                      disabled={phoneCheckStatus?.registered}
+                      onChange={(e) => setStudentName(e.target.value)}
+                      placeholder={phoneCheckStatus?.registered ? phoneCheckStatus.student_name : "نموونە: هۆزان ئاراس کامەران..."}
+                      className={`w-full pr-4 pl-10 py-2.5 rounded-xl border text-sm outline-none font-medium ${
+                        phoneCheckStatus?.registered
+                          ? 'bg-slate-800/80 border-emerald-500/30 text-emerald-300 cursor-not-allowed'
+                          : 'bg-slate-900 border-slate-700 focus:border-amber-400 text-white'
+                      }`}
+                    />
+                  </div>
+                </div>
+
                 <div className="p-3 rounded-xl bg-amber-400/10 border border-amber-400/20 text-xs text-amber-300 space-y-1">
-                  <span className="font-bold block">یاساکانی یارییەکە:</span>
+                  <span className="font-bold block">یاساکانی سیستەمی وەزاری:</span>
                   <p className="text-[11px] text-slate-300">
+                    • ژمارە مۆبایل ناسنامەی تایبەتی تۆیە و خاڵەکانت لەسەر ئەم ژمارەیە پاشەکەوت دەبێت.<br/>
                     • هەر وەڵامێکی دروست = <strong>١٠ خاڵ</strong> راستەوخۆ بۆت هەژمار دەکرێت.<br/>
                     • بۆ کردنەوەی کەرتی داهاتوو دەبێت <strong>لە ٥٠٪ زیاتر</strong> نمرە بەدەستبهێنیت.<br/>
-                    • لە کاتی تاقیکردنەوە دەتوانیت کلیک لە <strong>«دواتر تەواوی دەکەم»</strong> بکەیت و دواتر لە هەمان پرسیار دەست پێبکەیتەوە.
+                    • دەتوانیت کلیک لە <strong>«دواتر تەواوی دەکەم»</strong> بکەیت تا دواتر لە هەمان پرسیار دەست پێبکەیتەوە.
                   </p>
                 </div>
 
@@ -940,7 +1051,7 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
                   className="text-xs text-amber-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
                 >
                   <User className="w-3.5 h-3.5" />
-                  <span>گۆڕینی ژمارە ({phoneNumber.slice(-4)})</span>
+                  <span>{phoneNumber ? `ژمارە: ${phoneNumber} (گۆڕین)` : 'چوونەژوورەوە بە ژمارە'}</span>
                 </button>
               </div>
 
@@ -1467,455 +1578,737 @@ export default function EscapeRoomModal({ isOpen, onClose }) {
             </div>
           )}
 
-          {/* VIEW 7: Admin Management for Ministerial Questions */}
+          {/* VIEW 7: Admin Full Control Panel (Students, Scores & Ministerial Questions) */}
           {view === 'admin' && isAdmin && (
             <div className="space-y-4 text-right">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <button
                   onClick={() => setView('subjects')}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold cursor-pointer transition-colors"
                 >
                   گەڕانەوە بۆ یاری
                 </button>
                 <div className="text-right">
-                  <h4 className="text-base font-black text-amber-400">پنێڵی کارگێڕی پرسیارەکانی وەزاری</h4>
-                  <p className="text-xs text-slate-400">زیادکردن، بەڕێوەبردن، و سڕینەوەی داتا تاقیکارییەکان</p>
+                  <h4 className="text-base font-black text-amber-400">پنێڵی کارگێڕی و کۆنترۆڵی ئەدمین</h4>
+                  <p className="text-xs text-slate-400">بەڕێوەبردنی بەشداربووان، دەستکاری و سڕینەوەی خاڵەکان، و بانکی پرسیار</p>
                 </div>
               </div>
 
-              {/* Danger Zone: Wipe / Reset All Test Data */}
-              <div className="p-4 rounded-2xl bg-rose-950/20 border border-rose-500/40 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-rose-300 flex items-center gap-1.5">
-                    <Trash2 className="w-4 h-4 text-rose-400" />
-                    <span>سڕینەوەی داتا تاقیکارییەکان (Wipe Test Data)</span>
+              {/* Admin Tabs */}
+              <div className="flex items-center gap-2 bg-slate-950/80 p-1.5 rounded-2xl border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminTab('students');
+                    fetchAdminStudents();
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    adminTab === 'students'
+                      ? 'bg-amber-400 text-slate-950 shadow-md font-black'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  <span>کۆنترۆڵی قوتابییان و ڕیزبەندی</span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                    adminTab === 'students' ? 'bg-slate-950 text-amber-300' : 'bg-slate-800 text-slate-300'
+                  }`}>
+                    {adminStudents.length}
                   </span>
-                  <span className="text-[10px] text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 font-bold">
-                    تایبەت بە ئەدمین
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  بۆ ئەوەی سیستەمی یاری و تاقیکردنەوە بە تەواوی خاوێن بێت بۆ دەستپێکردنی فەرمی، دەتوانیت لێرەوە هەموو خاڵەکانی تاقیکاری و پرسیارە تاقیکارییەکان بسڕیتەوە تا هیچ داتایەکی کۆن نەمێنێت.
-                </p>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => handleResetQuizData('all')}
-                    className="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition-all cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>سڕینەوەی گشت داتاکان (پرسیار و خاڵەکان)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleResetQuizData('progress')}
-                    className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-400/30 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>تەنها سڕینەوەی خاڵ و ڕیزبەندیی قوتابییان</span>
-                  </button>
-                </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAdminTab('questions')}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    adminTab === 'questions'
+                      ? 'bg-amber-400 text-slate-950 shadow-md font-black'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>بەڕێوەبردنی پرسیار و کەرتەکان</span>
+                </button>
               </div>
 
-              {/* Admin Form: Add Question */}
-              <form onSubmit={handleAdminSaveQuestion} className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 space-y-4">
-                <h5 className="text-sm font-bold text-white flex items-center gap-1.5 justify-end">
-                  <span>زیادکردنی پرسیاری نوێی وەزاری</span>
-                  <Plus className="w-4 h-4 text-amber-400" />
-                </h5>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">بابەت:</label>
-                    <select
-                      value={newQuestion.subject_id}
-                      onChange={(e) => {
-                        const sId = parseInt(e.target.value);
-                        setNewQuestion({ ...newQuestion, subject_id: sId });
-                        fetchAdminChapters(sId);
-                      }}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
-                    >
-                      {subjects.map((s) => (
-                        <option key={s.id || s.code} value={s.id || 1}>
-                          {s.name_ku}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-slate-300">بەش و کەرت:</label>
-                      <button
-                        type="button"
-                        onClick={() => setShowAddChapterModal(true)}
-                        className="text-[11px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
-                        title="زیادکردنی بەش یان کەرتی نوێ بۆ ئەم بابەتە"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>+ کەرتی نوێ</span>
-                      </button>
-                    </div>
-                    <select
-                      value={newQuestion.chapter_id}
-                      onChange={(e) => {
-                        const chId = parseInt(e.target.value);
-                        setNewQuestion({ ...newQuestion, chapter_id: chId });
-                        fetchAdminQuestions(chId);
-                      }}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
-                    >
-                      {adminChapters.length === 0 ? (
-                        <option value="">(هیچ کەرتێک نییە - کلیک لە + بکە)</option>
-                      ) : (
-                        adminChapters.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.unit_title_ku} • {c.section_title_ku} ({c.question_count} پرسیار)
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">ساڵی وەزاری:</label>
-                    <input
-                      type="text"
-                      value={newQuestion.ministerial_year}
-                      onChange={(e) => setNewQuestion({ ...newQuestion, ministerial_year: e.target.value })}
-                      placeholder="نموونە: وەزاری ٢٠٢٤ خولی یەکەم"
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">دەقی پرسیارەکە:</label>
-                  <textarea
-                    rows={2}
-                    value={newQuestion.question_text}
-                    onChange={(e) => setNewQuestion({ ...newQuestion, question_text: e.target.value })}
-                    placeholder="دەقی پرسیاری وەزاری بنووسە..."
-                    required
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
-                  />
-                </div>
-
-                {/* Image Upload for Diagrams (Ultra-compressed WebP) */}
-                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-700/80 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-amber-400 font-bold flex items-center gap-1.5">
-                      <ImageIcon className="w-4 h-4" />
-                      <span>وێنەی هێڵکاری / دیاگرام (ئارەزوومەندانە):</span>
-                    </span>
-                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 font-bold">
-                      ⚡ چڕکردنەوەی خۆکار بۆ WebP (کەمتر لە ٢٥ کیلۆبایت!)
-                    </span>
-                  </div>
-
-                  {newQuestion.image_url ? (
-                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800 border border-amber-400/30">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={newQuestion.image_url}
-                          alt="پێشبینینی وێنە"
-                          className="w-16 h-16 rounded-lg object-contain bg-slate-950 border border-slate-700 cursor-zoom-in"
-                          onClick={() => setZoomedImage(newQuestion.image_url)}
-                          title="کلیک بکە بۆ بینینی بە قەبارەی تەواو"
-                        />
-                        <div className="text-right">
-                          <span className="text-xs font-bold text-white block">وێنەکە بە سەرکەوتوویی بارکرا</span>
-                          <span className="text-[11px] text-emerald-400 font-mono font-bold">
-                            قەبارە: {uploadedImageInfo?.size_kb || 'کەمتر لە ٢٥'} KB (زۆر کەم و پارێزراو بۆ داتابەیس)
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNewQuestion({ ...newQuestion, image_url: '' });
-                          setUploadedImageInfo(null);
+              {/* TAB 1: STUDENTS & SCORES MANAGEMENT */}
+              {adminTab === 'students' && (
+                <div className="space-y-4">
+                  {/* Search and Refresh Bar */}
+                  <div className="flex flex-col sm:flex-row items-center gap-2.5">
+                    <div className="relative flex-1 w-full">
+                      <Search className="w-4 h-4 absolute right-3 top-3 text-slate-400" />
+                      <input
+                        type="text"
+                        value={adminStudentSearch}
+                        onChange={(e) => {
+                          setAdminStudentSearch(e.target.value);
+                          fetchAdminStudents(e.target.value);
                         }}
-                        className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs font-bold flex items-center gap-1 border border-rose-500/30 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>سڕینەوە</span>
-                      </button>
+                        placeholder="گەڕان بەپێی ناوی قوتابی یان ژمارە مۆبایل..."
+                        className="w-full pr-9 pl-4 py-2 rounded-xl bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-xs outline-none"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => fetchAdminStudents()}
+                      className="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-400/30 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>نوێکردنەوەی لیست</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleResetQuizData('progress')}
+                      className="w-full sm:w-auto px-4 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/40 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                      title="سڕینەوەی هەموو خاڵەکانی قوتابییان"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                      <span>ڕیسێتی گشت خاڵەکان</span>
+                    </button>
+                  </div>
+
+                  {/* Quick Summary Stats */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700 text-center">
+                      <span className="text-[10px] text-slate-400 block font-bold">کۆی بەشداربووان</span>
+                      <span className="text-lg font-black text-white font-mono">{adminStudents.length}</span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700 text-center">
+                      <span className="text-[10px] text-slate-400 block font-bold">بەرزترین نمرە</span>
+                      <span className="text-lg font-black text-amber-400 font-mono">
+                        {adminStudents.length > 0 ? Math.max(...adminStudents.map(s => s.total_score || 0)) : 0} خاڵ
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700 text-center col-span-2 sm:col-span-1">
+                      <span className="text-[10px] text-slate-400 block font-bold">ئاسایشی ژمارەکان</span>
+                      <span className="text-xs font-black text-emerald-400 flex items-center justify-center gap-1 mt-1">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>ناسنامەی قوفڵکراو</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Student Table / Cards */}
+                  {loadingAdminStudents ? (
+                    <div className="p-8 text-center text-xs text-amber-400 animate-pulse">
+                      چاوەڕوانبە، لیستی بەشداربووان دەهێنرێت...
+                    </div>
+                  ) : adminStudents.length === 0 ? (
+                    <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 text-center space-y-1">
+                      <p className="text-xs text-slate-300 font-bold">هیچ قوتابییەک نەدۆزرایەوە</p>
+                      <p className="text-[11px] text-slate-500">کاتێک قوتابییان بەشداری دەکەن، لێرەدا بە تەواوی زانیارییەکانیان دیار دەبێت.</p>
                     </div>
                   ) : (
-                    <div>
-                      <label className="flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-slate-700 hover:border-amber-400/60 rounded-xl cursor-pointer bg-slate-900/50 hover:bg-slate-800/40 transition-colors">
-                        <div className="flex items-center gap-2 text-slate-300 text-xs font-bold">
-                          {isUploadingImage ? (
-                            <div className="flex items-center gap-2 text-amber-400 animate-pulse">
-                              <Sparkles className="w-4 h-4 animate-spin" />
-                              <span>چڕکردنەوە و پاشەکەوتکردنی وێنە...</span>
+                    <div className="space-y-2.5 max-h-[55vh] overflow-y-auto pr-1">
+                      {adminStudents.map((st) => (
+                        <div
+                          key={st.id}
+                          className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 hover:border-amber-400/40 transition-colors space-y-2.5"
+                        >
+                          {/* Student Header */}
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <span className="w-7 h-7 rounded-lg bg-amber-400/20 text-amber-300 flex items-center justify-center text-xs font-black shrink-0">
+                                <User className="w-4 h-4" />
+                              </span>
+                              <div>
+                                <h5 className="font-bold text-white text-sm">{st.student_name}</h5>
+                                <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                                  <ShieldCheck className="w-3 h-3" />
+                                  <span>ژمارە تایبەتکراوە بەم قوتابییە</span>
+                                </span>
+                              </div>
                             </div>
-                          ) : (
-                            <>
-                              <UploadCloud className="w-5 h-5 text-amber-400" />
-                              <span>هەڵبژاردنی وێنەی دیاگرام لە ئامێرەکەت</span>
-                            </>
-                          )}
+
+                            {/* Actions: Edit & Delete */}
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setEditingStudent({ ...st })}
+                                className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                title="دەستکاریکردنی ناو یان نمرە"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                                <span>دەستکاری</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteStudent(st.id, st.student_name)}
+                                className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                title="سڕینەوەی ئەم قوتابییە و گشت خاڵەکانی لە سێرڤەر"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>سڕینەوە لە سێرڤەر</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Student Info Details */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-700/60 text-xs">
+                            <div className="p-2 rounded-xl bg-slate-900 border border-slate-800">
+                              <span className="text-[10px] text-slate-400 block mb-0.5">ژمارەی مۆبایل (تەواو بۆ ئەدمین)</span>
+                              <span className="font-mono text-xs font-bold text-amber-300 block tracking-wider" dir="ltr">
+                                📱 {st.phone_number}
+                              </span>
+                            </div>
+
+                            <div className="p-2 rounded-xl bg-slate-900 border border-slate-800">
+                              <span className="text-[10px] text-slate-400 block mb-0.5">کۆی خاڵەکان</span>
+                              <span className="font-mono text-sm font-black text-emerald-400 block">
+                                {st.total_score} خاڵ
+                              </span>
+                            </div>
+
+                            <div className="p-2 rounded-xl bg-slate-900 border border-slate-800">
+                              <span className="text-[10px] text-slate-400 block mb-0.5">بابەت / کەرتەکان</span>
+                              <span className="font-bold text-white block truncate">
+                                {st.subject_code} • {st.completed_sections_count} کەرت
+                              </span>
+                            </div>
+
+                            <div className="p-2 rounded-xl bg-slate-900 border border-slate-800">
+                              <span className="text-[10px] text-slate-400 block mb-0.5">دواین بەشداری</span>
+                              <span className="text-[10px] text-slate-300 block font-mono">
+                                {st.last_active ? new Date(st.last_active).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'نادیار'}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <span className="text-[10px] text-slate-500 mt-1">
-                          PNG, JPG, WEBP — بە شێوەیەکی خۆکار قەبارەکەی زۆر کەم دەکرێتەوە تا داتابەیس قورس نەکات
-                        </span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          disabled={isUploadingImage}
-                          onChange={handleUploadQuestionImage}
-                          className="hidden"
-                        />
-                      </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Edit Student Modal */}
+                  {editingStudent && (
+                    <div
+                      onClick={() => setEditingStudent(null)}
+                      className="fixed inset-0 z-[70] bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
+                    >
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full max-w-md bg-slate-900 border border-amber-400/40 rounded-3xl p-5 shadow-2xl text-right space-y-4"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                          <button
+                            type="button"
+                            onClick={() => setEditingStudent(null)}
+                            className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                          <h5 className="text-sm font-black text-amber-400 flex items-center gap-1.5">
+                            <Edit2 className="w-4 h-4" />
+                            <span>دەستکاریکردنی زانیارییەکانی قوتابی لە سێرڤەر</span>
+                          </h5>
+                        </div>
+
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleUpdateStudent(editingStudent.id, {
+                              student_name: editingStudent.student_name,
+                              total_score: parseInt(editingStudent.total_score) || 0,
+                              phone_number: editingStudent.phone_number
+                            });
+                          }}
+                          className="space-y-3"
+                        >
+                          <div>
+                            <label className="block text-xs font-bold text-slate-300 mb-1">ناوی قوتابی:</label>
+                            <input
+                              type="text"
+                              value={editingStudent.student_name}
+                              onChange={(e) => setEditingStudent({ ...editingStudent, student_name: e.target.value })}
+                              required
+                              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-300 mb-1">ژمارەی مۆبایل:</label>
+                            <input
+                              type="text"
+                              dir="ltr"
+                              value={editingStudent.phone_number}
+                              onChange={(e) => setEditingStudent({ ...editingStudent, phone_number: e.target.value })}
+                              required
+                              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-amber-300 font-mono text-xs outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-300 mb-1">کۆی خاڵەکان (Total Score):</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={editingStudent.total_score}
+                              onChange={(e) => setEditingStudent({ ...editingStudent, total_score: e.target.value })}
+                              required
+                              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-emerald-400 font-mono text-xs outline-none"
+                            />
+                          </div>
+
+                          <div className="flex gap-2 pt-2">
+                            <button
+                              type="submit"
+                              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-xs shadow-md cursor-pointer"
+                            >
+                              پاشەکەوتکردن لە سێرڤەر
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingStudent(null)}
+                              className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700 cursor-pointer"
+                            >
+                              داخستن
+                            </button>
+                          </div>
+                        </form>
+                      </div>
                     </div>
                   )}
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">هەڵبژاردنی A:</label>
-                    <input
-                      type="text"
-                      value={newQuestion.option_a}
-                      onChange={(e) => setNewQuestion({ ...newQuestion, option_a: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">هەڵبژاردنی B:</label>
-                    <input
-                      type="text"
-                      value={newQuestion.option_b}
-                      onChange={(e) => setNewQuestion({ ...newQuestion, option_b: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">هەڵبژاردنی C:</label>
-                    <input
-                      type="text"
-                      value={newQuestion.option_c}
-                      onChange={(e) => setNewQuestion({ ...newQuestion, option_c: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">هەڵبژاردنی D:</label>
-                    <input
-                      type="text"
-                      value={newQuestion.option_d}
-                      onChange={(e) => setNewQuestion({ ...newQuestion, option_d: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-amber-400 mb-1">وەڵامی دروست:</label>
-                    <select
-                      value={newQuestion.correct_option}
-                      onChange={(e) => setNewQuestion({ ...newQuestion, correct_option: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-400/50 text-white font-bold text-xs outline-none"
-                    >
-                      <option value="A">بژاردەی A</option>
-                      <option value="B">بژاردەی B</option>
-                      <option value="C">بژاردەی C</option>
-                      <option value="D">بژاردەی D</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">ڕوونکردنەوەی وەزاری (Explanation):</label>
-                    <input
-                      type="text"
-                      value={newQuestion.explanation_ku}
-                      onChange={(e) => setNewQuestion({ ...newQuestion, explanation_ku: e.target.value })}
-                      placeholder="هۆکاری دروستیی وەڵامەکە..."
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-xs shadow-md cursor-pointer"
-                >
-                  تۆمارکردنی پرسیاری وەزاری لە داتابەیس
-                </button>
-              </form>
-
-              {/* Add Chapter / Section Modal */}
-              {showAddChapterModal && (
-                <div 
-                  onClick={() => setShowAddChapterModal(false)}
-                  className="fixed inset-0 z-[70] bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
-                >
-                  <div 
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-full max-w-md bg-slate-900 border border-amber-400/40 rounded-3xl p-5 shadow-2xl text-right space-y-4"
-                  >
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                      <button
-                        type="button"
-                        onClick={() => setShowAddChapterModal(false)}
-                        className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                      <h5 className="text-sm font-black text-amber-400 flex items-center gap-1.5">
-                        <Plus className="w-4 h-4" />
-                        <span>دروستکردنی بەش یان کەرتی نوێ</span>
-                      </h5>
-                    </div>
-
-                    <form onSubmit={handleAdminSaveChapter} className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1">ناونیشانی بەش (Unit):</label>
-                        <input
-                          type="text"
-                          value={newChapterData.unit_title_ku}
-                          onChange={(e) => setNewChapterData({ ...newChapterData, unit_title_ku: e.target.value })}
-                          placeholder="نموونە: بەشی ٢: تەوژمی کارەبایی و موگناتیسی"
-                          required
-                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1">ناونیشانی کەرت (Section):</label>
-                        <input
-                          type="text"
-                          value={newChapterData.section_title_ku}
-                          onChange={(e) => setNewChapterData({ ...newChapterData, section_title_ku: e.target.value })}
-                          placeholder="نموونە: کەرتی ١: هێزی موگناتیسی لەسەر تەزوو"
-                          required
-                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1">ڕیزبەندی کەرتەکە (Order):</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={newChapterData.order}
-                          onChange={(e) => setNewChapterData({ ...newChapterData, order: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none"
-                        />
-                      </div>
-
-                      <div className="flex gap-2 pt-2">
-                        <button
-                          type="submit"
-                          className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-xs shadow-md cursor-pointer"
-                        >
-                          تۆمارکردن لە داتابەیس
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowAddChapterModal(false)}
-                          className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700 cursor-pointer"
-                        >
-                          پەشیمانبوونەوە
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
               )}
 
-              {/* Questions Already in This Chapter / Section */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <span className="text-xs text-slate-400 font-mono">
-                    کۆی پرسیارەکان: {adminQuestions.length}
-                  </span>
-                  <h5 className="text-xs font-black text-amber-400 flex items-center gap-1.5">
-                    <BookOpen className="w-4 h-4" />
-                    <span>پرسیارە تۆمارکراوەکانی ئەم کەرتە</span>
-                  </h5>
-                </div>
-
-                {loadingAdminQuestions ? (
-                  <div className="p-6 text-center text-xs text-amber-400 animate-pulse">
-                    چاوەڕوانبە، پرسیارەکان دەهێنرێن...
-                  </div>
-                ) : adminQuestions.length === 0 ? (
-                  <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 text-center space-y-1">
-                    <p className="text-xs text-slate-300 font-bold">هیچ پرسیارێک لەم کەرتەدا تۆمار نەکراوە</p>
-                    <p className="text-[11px] text-slate-500">فۆڕمەکەی سەرەوە پڕبکەرەوە بۆ زیادکردنی یەکەم پرسیار بۆ ئەم کەرتە.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
-                    {adminQuestions.map((q, qIdx) => (
-                      <div
-                        key={q.id}
-                        className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-700/80 hover:border-slate-600 transition-colors space-y-2 text-right"
+              {/* TAB 2: QUESTIONS & SECTIONS MANAGEMENT */}
+              {adminTab === 'questions' && (
+                <div className="space-y-4">
+                  {/* Danger Zone: Wipe / Reset All Test Data */}
+                  <div className="p-4 rounded-2xl bg-rose-950/20 border border-rose-500/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-rose-300 flex items-center gap-1.5">
+                        <Trash2 className="w-4 h-4 text-rose-400" />
+                        <span>سڕینەوەی داتا تاقیکارییەکان (Wipe Test Data)</span>
+                      </span>
+                      <span className="text-[10px] text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 font-bold">
+                        تایبەت بە ئەدمین
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      بۆ ئەوەی سیستەمی یاری و تاقیکردنەوە بە تەواوی خاوێن بێت بۆ دەستپێکردنی فەرمی، دەتوانیت لێرەوە هەموو خاڵەکانی تاقیکاری و پرسیارە تاقیکارییەکان بسڕیتەوە تا هیچ داتایەکی کۆن نەمێنێت.
+                    </p>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleResetQuizData('all')}
+                        className="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition-all cursor-pointer"
                       >
-                        <div className="flex items-center justify-between">
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>سڕینەوەی گشت داتاکان (پرسیار و خاڵەکان)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleResetQuizData('progress')}
+                        className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-400/30 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>تەنها سڕینەوەی خاڵ و ڕیزبەندیی قوتابییان</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Admin Form: Add Question */}
+                  <form onSubmit={handleAdminSaveQuestion} className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 space-y-4">
+                    <h5 className="text-sm font-bold text-white flex items-center gap-1.5 justify-end">
+                      <span>زیادکردنی پرسیاری نوێی وەزاری</span>
+                      <Plus className="w-4 h-4 text-amber-400" />
+                    </h5>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 mb-1">بابەت:</label>
+                        <select
+                          value={newQuestion.subject_id}
+                          onChange={(e) => {
+                            const sId = parseInt(e.target.value);
+                            setNewQuestion({ ...newQuestion, subject_id: sId });
+                            fetchAdminChapters(sId);
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
+                        >
+                          {subjects.map((s) => (
+                            <option key={s.id || s.code} value={s.id || 1}>
+                              {s.name_ku}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-bold text-slate-300">بەش و کەرت:</label>
                           <button
                             type="button"
-                            onClick={() => handleAdminDeleteQuestion(q.id)}
-                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                            title="سڕینەوەی ئەم پرسیارە"
+                            onClick={() => setShowAddChapterModal(true)}
+                            className="text-[11px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
+                            title="زیادکردنی بەش یان کەرتی نوێ بۆ ئەم بابەتە"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>+ کەرتی نوێ</span>
+                          </button>
+                        </div>
+                        <select
+                          value={newQuestion.chapter_id}
+                          onChange={(e) => {
+                            const chId = parseInt(e.target.value);
+                            setNewQuestion({ ...newQuestion, chapter_id: chId });
+                            fetchAdminQuestions(chId);
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
+                        >
+                          {adminChapters.length === 0 ? (
+                            <option value="">(هیچ کەرتێک نییە - کلیک لە + بکە)</option>
+                          ) : (
+                            adminChapters.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.unit_title_ku} • {c.section_title_ku} ({c.question_count} پرسیار)
+                              </option>
+                            ))
+                          )}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 mb-1">ساڵی وەزاری:</label>
+                        <input
+                          type="text"
+                          value={newQuestion.ministerial_year}
+                          onChange={(e) => setNewQuestion({ ...newQuestion, ministerial_year: e.target.value })}
+                          placeholder="نموونە: وەزاری ٢٠٢٤ خولی یەکەم"
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">دەقی پرسیارەکە:</label>
+                      <textarea
+                        rows={2}
+                        value={newQuestion.question_text}
+                        onChange={(e) => setNewQuestion({ ...newQuestion, question_text: e.target.value })}
+                        placeholder="دەقی پرسیاری وەزاری بنووسە..."
+                        required
+                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
+                      />
+                    </div>
+
+                    {/* Image Upload for Diagrams (Ultra-compressed WebP) */}
+                    <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-700/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-amber-400 font-bold flex items-center gap-1.5">
+                          <ImageIcon className="w-4 h-4" />
+                          <span>وێنەی هێڵکاری / دیاگرام (ئارەزوومەندانە):</span>
+                        </span>
+                        <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 font-bold">
+                          ⚡ چڕکردنەوەی خۆکار بۆ WebP (کەمتر لە ٢٥ کیلۆبایت!)
+                        </span>
+                      </div>
+
+                      {newQuestion.image_url ? (
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800 border border-amber-400/30">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={newQuestion.image_url}
+                              alt="پێشبینینی وێنە"
+                              className="w-16 h-16 rounded-lg object-contain bg-slate-950 border border-slate-700 cursor-zoom-in"
+                              onClick={() => setZoomedImage(newQuestion.image_url)}
+                              title="کلیک بکە بۆ بینینی بە قەبارەی تەواو"
+                            />
+                            <div className="text-right">
+                              <span className="text-xs font-bold text-white block">وێنەکە بە سەرکەوتوویی بارکرا</span>
+                              <span className="text-[11px] text-emerald-400 font-mono font-bold">
+                                قەبارە: {uploadedImageInfo?.size_kb || 'کەمتر لە ٢٥'} KB (زۆر کەم و پارێزراو بۆ داتابەیس)
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewQuestion({ ...newQuestion, image_url: '' });
+                              setUploadedImageInfo(null);
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs font-bold flex items-center gap-1 border border-rose-500/30 cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             <span>سڕینەوە</span>
                           </button>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-slate-400 font-mono">#{qIdx + 1}</span>
-                            <span className="px-2 py-0.5 rounded-md bg-amber-400/10 text-amber-300 border border-amber-400/20 text-[10px] font-bold">
-                              {q.ministerial_year || 'وەزاری'}
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-slate-700 hover:border-amber-400/60 rounded-xl cursor-pointer bg-slate-900/50 hover:bg-slate-800/40 transition-colors">
+                            <div className="flex items-center gap-2 text-slate-300 text-xs font-bold">
+                              {isUploadingImage ? (
+                                <div className="flex items-center gap-2 text-amber-400 animate-pulse">
+                                  <Sparkles className="w-4 h-4 animate-spin" />
+                                  <span>چڕکردنەوە و پاشەکەوتکردنی وێنە...</span>
+                                </div>
+                              ) : (
+                                <>
+                                  <UploadCloud className="w-5 h-5 text-amber-400" />
+                                  <span>هەڵبژاردنی وێنەی دیاگرام لە ئامێرەکەت</span>
+                                </>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-500 mt-1">
+                              PNG, JPG, WEBP — بە شێوەیەکی خۆکار قەبارەکەی زۆر کەم دەکرێتەوە تا داتابەیس قورس نەکات
                             </span>
-                          </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              disabled={isUploadingImage}
+                              onChange={handleUploadQuestionImage}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 mb-1">هەڵبژاردنی A:</label>
+                        <input
+                          type="text"
+                          value={newQuestion.option_a}
+                          onChange={(e) => setNewQuestion({ ...newQuestion, option_a: e.target.value })}
+                          required
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 mb-1">هەڵبژاردنی B:</label>
+                        <input
+                          type="text"
+                          value={newQuestion.option_b}
+                          onChange={(e) => setNewQuestion({ ...newQuestion, option_b: e.target.value })}
+                          required
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 mb-1">هەڵبژاردنی C:</label>
+                        <input
+                          type="text"
+                          value={newQuestion.option_c}
+                          onChange={(e) => setNewQuestion({ ...newQuestion, option_c: e.target.value })}
+                          required
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 mb-1">هەڵبژاردنی D:</label>
+                        <input
+                          type="text"
+                          value={newQuestion.option_d}
+                          onChange={(e) => setNewQuestion({ ...newQuestion, option_d: e.target.value })}
+                          required
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-amber-400 mb-1">وەڵامی دروست:</label>
+                        <select
+                          value={newQuestion.correct_option}
+                          onChange={(e) => setNewQuestion({ ...newQuestion, correct_option: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-amber-400/50 text-white font-bold text-xs outline-none"
+                        >
+                          <option value="A">بژاردەی A</option>
+                          <option value="B">بژاردەی B</option>
+                          <option value="C">بژاردەی C</option>
+                          <option value="D">بژاردەی D</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 mb-1">ڕوونکردنەوەی وەزاری (Explanation):</label>
+                        <input
+                          type="text"
+                          value={newQuestion.explanation_ku}
+                          onChange={(e) => setNewQuestion({ ...newQuestion, explanation_ku: e.target.value })}
+                          placeholder="هۆکاری دروستیی وەڵامەکە..."
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-xs shadow-md cursor-pointer"
+                    >
+                      تۆمارکردنی پرسیاری وەزاری لە داتابەیس
+                    </button>
+                  </form>
+
+                  {/* Add Chapter / Section Modal */}
+                  {showAddChapterModal && (
+                    <div 
+                      onClick={() => setShowAddChapterModal(false)}
+                      className="fixed inset-0 z-[70] bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
+                    >
+                      <div 
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full max-w-md bg-slate-900 border border-amber-400/40 rounded-3xl p-5 shadow-2xl text-right space-y-4"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                          <button
+                            type="button"
+                            onClick={() => setShowAddChapterModal(false)}
+                            className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                          <h5 className="text-sm font-black text-amber-400 flex items-center gap-1.5">
+                            <Plus className="w-4 h-4" />
+                            <span>دروستکردنی بەش یان کەرتی نوێ</span>
+                          </h5>
                         </div>
 
-                        <p className="text-xs font-bold text-white leading-relaxed">{q.question_text}</p>
-
-                        {q.image_url && (
-                          <div className="my-1.5">
-                            <img
-                              src={q.image_url}
-                              alt="هێڵکاری"
-                              onClick={() => setZoomedImage(q.image_url)}
-                              className="h-20 rounded-lg object-contain bg-slate-950 border border-slate-700 p-1 cursor-zoom-in"
+                        <form onSubmit={handleAdminSaveChapter} className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-300 mb-1">ناونیشانی بەش (Unit):</label>
+                            <input
+                              type="text"
+                              value={newChapterData.unit_title_ku}
+                              onChange={(e) => setNewChapterData({ ...newChapterData, unit_title_ku: e.target.value })}
+                              placeholder="نموونە: بەشی ٢: تەوژمی کارەبایی و موگناتیسی"
+                              required
+                              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none"
                             />
                           </div>
-                        )}
 
-                        <div className="grid grid-cols-2 gap-1.5 text-[11px] pt-1 border-t border-slate-800">
-                          <span className={`p-1.5 rounded-lg border ${q.correct_option === 'A' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'}`}>
-                            A: {q.option_a}
-                          </span>
-                          <span className={`p-1.5 rounded-lg border ${q.correct_option === 'B' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'}`}>
-                            B: {q.option_b}
-                          </span>
-                          <span className={`p-1.5 rounded-lg border ${q.correct_option === 'C' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'}`}>
-                            C: {q.option_c}
-                          </span>
-                          <span className={`p-1.5 rounded-lg border ${q.correct_option === 'D' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'}`}>
-                            D: {q.option_d}
-                          </span>
-                        </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-300 mb-1">ناونیشانی کەرت (Section):</label>
+                            <input
+                              type="text"
+                              value={newChapterData.section_title_ku}
+                              onChange={(e) => setNewChapterData({ ...newChapterData, section_title_ku: e.target.value })}
+                              placeholder="نموونە: کەرتی ١: هێزی موگناتیسی لەسەر تەزوو"
+                              required
+                              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none"
+                            />
+                          </div>
 
-                        {q.explanation_ku && (
-                          <p className="text-[10px] text-slate-400 bg-slate-950/60 p-1.5 rounded-lg border border-slate-800/80">
-                            💡 {q.explanation_ku}
-                          </p>
-                        )}
+                          <div>
+                            <label className="block text-xs font-bold text-slate-300 mb-1">ڕیزبەندی کەرتەکە (Order):</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={newChapterData.order}
+                              onChange={(e) => setNewChapterData({ ...newChapterData, order: e.target.value })}
+                              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs outline-none"
+                            />
+                          </div>
+
+                          <div className="flex gap-2 pt-2">
+                            <button
+                              type="submit"
+                              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-xs shadow-md cursor-pointer"
+                            >
+                              تۆمارکردن لە داتابەیس
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowAddChapterModal(false)}
+                              className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700 cursor-pointer"
+                            >
+                              پەشیمانبوونەوە
+                            </button>
+                          </div>
+                        </form>
                       </div>
-                    ))}
+                    </div>
+                  )}
+
+                  {/* Questions Already in This Chapter / Section */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <span className="text-xs text-slate-400 font-mono">
+                        کۆی پرسیارەکان: {adminQuestions.length}
+                      </span>
+                      <h5 className="text-xs font-black text-amber-400 flex items-center gap-1.5">
+                        <BookOpen className="w-4 h-4" />
+                        <span>پرسیارە تۆمارکراوەکانی ئەم کەرتە</span>
+                      </h5>
+                    </div>
+
+                    {loadingAdminQuestions ? (
+                      <div className="p-6 text-center text-xs text-amber-400 animate-pulse">
+                        چاوەڕوانبە، پرسیارەکان دەهێنرێن...
+                      </div>
+                    ) : adminQuestions.length === 0 ? (
+                      <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 text-center space-y-1">
+                        <p className="text-xs text-slate-300 font-bold">هیچ پرسیارێک لەم کەرتەدا تۆمار نەکراوە</p>
+                        <p className="text-[11px] text-slate-500">فۆڕمەکەی سەرەوە پڕبکەرەوە بۆ زیادکردنی یەکەم پرسیار بۆ ئەم کەرتە.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+                        {adminQuestions.map((q, qIdx) => (
+                          <div
+                            key={q.id}
+                            className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-700/80 hover:border-slate-600 transition-colors space-y-2 text-right"
+                          >
+                            <div className="flex items-center justify-between">
+                              <button
+                                type="button"
+                                onClick={() => handleAdminDeleteQuestion(q.id)}
+                                className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                title="سڕینەوەی ئەم پرسیارە"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>سڕینەوە</span>
+                              </button>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-slate-400 font-mono">#{qIdx + 1}</span>
+                                <span className="px-2 py-0.5 rounded-md bg-amber-400/10 text-amber-300 border border-amber-400/20 text-[10px] font-bold">
+                                  {q.ministerial_year || 'وەزاری'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <p className="text-xs font-bold text-white leading-relaxed">{q.question_text}</p>
+
+                            {q.image_url && (
+                              <div className="my-1.5">
+                                <img
+                                  src={q.image_url}
+                                  alt="هێڵکاری"
+                                  onClick={() => setZoomedImage(q.image_url)}
+                                  className="h-20 rounded-lg object-contain bg-slate-950 border border-slate-700 p-1 cursor-zoom-in"
+                                />
+                              </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-1.5 text-[11px] pt-1 border-t border-slate-800">
+                              <span className={`p-1.5 rounded-lg border ${q.correct_option === 'A' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'}`}>
+                                A: {q.option_a}
+                              </span>
+                              <span className={`p-1.5 rounded-lg border ${q.correct_option === 'B' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'}`}>
+                                B: {q.option_b}
+                              </span>
+                              <span className={`p-1.5 rounded-lg border ${q.correct_option === 'C' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'}`}>
+                                C: {q.option_c}
+                              </span>
+                              <span className={`p-1.5 rounded-lg border ${q.correct_option === 'D' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' : 'bg-slate-950 text-slate-400 border-slate-800'}`}>
+                                D: {q.option_d}
+                              </span>
+                            </div>
+
+                            {q.explanation_ku && (
+                              <p className="text-[10px] text-slate-400 bg-slate-950/60 p-1.5 rounded-lg border border-slate-800/80">
+                                💡 {q.explanation_ku}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
