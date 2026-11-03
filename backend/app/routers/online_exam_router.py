@@ -80,6 +80,7 @@ class ExamCreateOrUpdateSchema(BaseModel):
     description: Optional[str] = ""
     sponsors_and_prizes: Optional[str] = ""
     start_time: datetime
+    registration_deadline: Optional[datetime] = None
     question_duration_seconds: int = 60
     telegram_group_url: Optional[str] = "https://t.me/KurdishOMR"
     telegram_submission_minutes: int = 5
@@ -88,6 +89,11 @@ class ExamCreateOrUpdateSchema(BaseModel):
     is_coming_soon: bool = False
     allow_screen_selection: bool = False
     exam_mode: Optional[str] = "ONLINE"
+
+class StudentSelfRegisterRequest(BaseModel):
+    exam_id: int
+    student_name: str
+    student_phone: str
 
 class SubmitOnlineExamRequest(BaseModel):
     exam_id: int
@@ -188,12 +194,18 @@ def get_active_online_exams(db: Session = Depends(get_db)):
         all_codes_finished = (passcodes_count > 0 and (passcodes_count - used_passcodes_count) == 0)
         is_ended = (time_ended or all_codes_finished) and not is_coming_soon and exam.is_active and questions_count > 0
 
+        reg_deadline_dt = to_utc_naive(getattr(exam, 'registration_deadline', None))
+        deadline_to_check = reg_deadline_dt if reg_deadline_dt else exam_start
+        is_registration_open = (now < deadline_to_check) and not is_ended and exam.is_active
+
         formatted_exams.append({
             "id": exam.id,
             "title": exam.title,
             "description": exam.description,
             "sponsors_and_prizes": exam.sponsors_and_prizes,
             "start_time": format_datetime_iso(exam.start_time),
+            "registration_deadline": format_datetime_iso(exam.registration_deadline) if getattr(exam, 'registration_deadline', None) else None,
+            "is_registration_open": is_registration_open,
             "question_duration_seconds": exam.question_duration_seconds,
             "telegram_group_url": exam.telegram_group_url,
             "telegram_submission_minutes": exam.telegram_submission_minutes,
@@ -333,6 +345,133 @@ def get_online_exam_public_leaderboard(
         "leaderboard": leaderboard,
         "disqualified_count": len(disqualified),
         "disqualified": disqualified
+    }
+
+@router.post("/register")
+def register_student_for_online_exam(
+    payload: StudentSelfRegisterRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Candidate self-registration endpoint:
+    - Enforces registration deadline
+    - Requires 1 passcode per student phone number per exam
+    - Returns existing assigned passcode if phone is already registered (no duplicate code creation)
+    - Automatically generates high-security unique passcode for new candidate
+    """
+    exam = db.query(OnlineExam).filter(OnlineExam.id == payload.exam_id).first()
+    if not exam or not exam.is_active:
+        raise HTTPException(status_code=404, detail="تاقیکردنەوە نەدۆزرایەوە یان ناچالاکە")
+
+    now = datetime.utcnow()
+    exam_start = to_utc_naive(exam.start_time)
+
+    # Check registration deadline
+    reg_deadline = to_utc_naive(getattr(exam, 'registration_deadline', None))
+    deadline_to_check = reg_deadline if reg_deadline else exam_start
+
+    # Allow 60s buffer for network latency
+    if (now - deadline_to_check).total_seconds() > 60:
+        raise HTTPException(
+            status_code=400,
+            detail="دوا وادەی خۆتۆمارکردن بۆ ئەم تاقیکردنەوەیە بەسەرچووە! ناتوانیت لەم تاقیکردنەوەیەدا کۆد وەربگریت."
+        )
+
+    clean_phone = payload.student_phone.strip().replace(" ", "").replace("-", "")
+    if len(clean_phone) < 10:
+        raise HTTPException(
+            status_code=400,
+            detail="تکایە ژمارەی مۆبایلی دروست بنووسە (لانیکەم ١٠ ژمارە)"
+        )
+
+    clean_name = payload.student_name.strip()
+    words = clean_name.split()
+    if len(words) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="تکایە ناوی سیانی خۆت بە تەواوی بنووسە (لانیکەم ناو و باوک یان ناوی سیانی)."
+        )
+
+    # Check if this phone number already registered for this exam
+    existing = db.query(OnlineExamPasscode).filter(
+        OnlineExamPasscode.exam_id == exam.id,
+        OnlineExamPasscode.student_phone == clean_phone
+    ).first()
+
+    if existing:
+        return {
+            "success": True,
+            "already_registered": True,
+            "message": "ئەم ژمارەیە پێشتر تۆمارکراوە و ئەم کۆدەت وەرگرتووە.",
+            "code": existing.code,
+            "student_name": existing.student_name or clean_name,
+            "student_phone": existing.student_phone,
+            "exam_title": exam.title,
+            "start_time": format_datetime_iso(exam.start_time),
+            "registration_deadline": format_datetime_iso(exam.registration_deadline) if getattr(exam, 'registration_deadline', None) else None,
+            "is_used": existing.is_used
+        }
+
+    # Generate unique passcode
+    for _ in range(15):
+        code = generate_passcode_string()
+        if not db.query(OnlineExamPasscode).filter(OnlineExamPasscode.code == code).first():
+            break
+    else:
+        code = f"KSC-{uuid.uuid4().hex[:6].upper()}"
+
+    passcode = OnlineExamPasscode(
+        exam_id=exam.id,
+        code=code,
+        student_name=clean_name,
+        student_phone=clean_phone,
+        is_used=False
+    )
+    db.add(passcode)
+    db.commit()
+    db.refresh(passcode)
+
+    return {
+        "success": True,
+        "already_registered": False,
+        "message": "بە سەرکەوتوویی تۆمارکرایت! ئەم کۆدە تایبەتەی تاقیکردنەوە لای خۆت بپارێزە.",
+        "code": passcode.code,
+        "student_name": passcode.student_name,
+        "student_phone": passcode.student_phone,
+        "exam_title": exam.title,
+        "start_time": format_datetime_iso(exam.start_time),
+        "registration_deadline": format_datetime_iso(exam.registration_deadline) if getattr(exam, 'registration_deadline', None) else None,
+        "is_used": False
+    }
+
+@router.get("/lookup-passcode")
+def lookup_student_passcode(
+    exam_id: int,
+    phone: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Allows a candidate who lost or forgot their passcode to retrieve it using their phone number.
+    """
+    clean_phone = phone.strip().replace(" ", "").replace("-", "")
+    if len(clean_phone) < 10:
+        return {"found": False, "message": "ژمارەی مۆبایل ناتەواوە"}
+
+    p = db.query(OnlineExamPasscode).filter(
+        OnlineExamPasscode.exam_id == exam_id,
+        OnlineExamPasscode.student_phone == clean_phone
+    ).first()
+
+    if not p:
+        return {"found": False, "message": "هیچ کۆدێک بەم ژمارەیە تۆمار نەکراوە"}
+
+    return {
+        "found": True,
+        "code": p.code,
+        "student_name": p.student_name,
+        "student_phone": p.student_phone,
+        "is_used": p.is_used,
+        "disqualified": p.disqualified
     }
 
 @router.get("/check-passcode")
@@ -663,6 +802,7 @@ def admin_get_exams(
             "description": exam.description,
             "sponsors_and_prizes": exam.sponsors_and_prizes,
             "start_time": format_datetime_iso(exam.start_time),
+            "registration_deadline": format_datetime_iso(exam.registration_deadline) if getattr(exam, 'registration_deadline', None) else None,
             "question_duration_seconds": exam.question_duration_seconds,
             "telegram_group_url": exam.telegram_group_url,
             "telegram_submission_minutes": exam.telegram_submission_minutes,
@@ -691,6 +831,7 @@ def admin_create_exam(
         description=payload.description,
         sponsors_and_prizes=payload.sponsors_and_prizes,
         start_time=to_utc_naive(payload.start_time),
+        registration_deadline=to_utc_naive(payload.registration_deadline) if payload.registration_deadline else None,
         question_duration_seconds=payload.question_duration_seconds,
         telegram_group_url=payload.telegram_group_url,
         telegram_submission_minutes=payload.telegram_submission_minutes,
@@ -722,6 +863,7 @@ def admin_update_exam(
     exam.description = payload.description
     exam.sponsors_and_prizes = payload.sponsors_and_prizes
     exam.start_time = to_utc_naive(payload.start_time)
+    exam.registration_deadline = to_utc_naive(payload.registration_deadline) if payload.registration_deadline else None
     exam.question_duration_seconds = payload.question_duration_seconds
     exam.telegram_group_url = payload.telegram_group_url
     exam.telegram_submission_minutes = payload.telegram_submission_minutes
@@ -883,6 +1025,9 @@ def admin_get_passcodes(
             "student_phone": p.student_phone,
             "disqualified": p.disqualified,
             "disqualification_reason": p.disqualification_reason,
+            "score": p.score,
+            "percentage": p.percentage,
+            "submitted_at": p.submitted_at.isoformat() if p.submitted_at else None,
             "created_at": p.created_at.isoformat()
         }
         for p in passcodes

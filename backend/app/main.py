@@ -66,6 +66,12 @@ except Exception:
     pass
 try:
     with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE online_exams ADD COLUMN registration_deadline DATETIME"))
+        conn.commit()
+except Exception:
+    pass
+try:
+    with engine.connect() as conn:
         conn.execute(text("ALTER TABLE online_exams ADD COLUMN is_coming_soon BOOLEAN DEFAULT 0"))
         conn.commit()
 except Exception:

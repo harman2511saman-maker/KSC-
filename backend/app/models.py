@@ -213,6 +213,7 @@ class OnlineExam(Base):
     description = Column(Text, nullable=True)
     sponsors_and_prizes = Column(Text, nullable=True)
     start_time = Column(DateTime, nullable=False, default=datetime.utcnow)
+    registration_deadline = Column(DateTime, nullable=True)
     question_duration_seconds = Column(Integer, default=60)
     telegram_group_url = Column(String(512), nullable=True)
     telegram_submission_minutes = Column(Integer, default=5)

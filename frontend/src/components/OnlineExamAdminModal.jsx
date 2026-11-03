@@ -26,7 +26,9 @@ import {
   Sparkles,
   Users,
   ArrowLeft,
-  ArrowRight
+  ArrowRight,
+  Search,
+  Phone
 } from 'lucide-react';
 import api, { getUploadUrl } from '../api';
 
@@ -83,6 +85,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
   const [prizesEn, setPrizesEn] = useState('');
   const [prizesAr, setPrizesAr] = useState('');
   const [startTime, setStartTime] = useState('');
+  const [registrationDeadline, setRegistrationDeadline] = useState('');
   const [questionDuration, setQuestionDuration] = useState(60);
   const [telegramUrl, setTelegramUrl] = useState('');
   const [telegramMins, setTelegramMins] = useState(5);
@@ -98,6 +101,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
 
   // Passcodes state
   const [passcodes, setPasscodes] = useState([]);
+  const [passcodeSearchQuery, setPasscodeSearchQuery] = useState('');
   const [generateCount, setGenerateCount] = useState(20);
   const [generating, setGenerating] = useState(false);
   const [savingNames, setSavingNames] = useState(false);
@@ -187,6 +191,21 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
           setStartTime('');
         }
 
+        if (current.registration_deadline) {
+          const timeStr = current.registration_deadline.endsWith('Z') || current.registration_deadline.includes('+')
+            ? current.registration_deadline
+            : current.registration_deadline + 'Z';
+          const d = new Date(timeStr);
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const hours = String(d.getHours()).padStart(2, '0');
+          const minutes = String(d.getMinutes()).padStart(2, '0');
+          setRegistrationDeadline(`${year}-${month}-${day}T${hours}:${minutes}`);
+        } else {
+          setRegistrationDeadline('');
+        }
+
         setQuestionDuration(current.question_duration_seconds || 60);
         setTelegramUrl(current.telegram_group_url || 'https://t.me/KurdishOMR');
         setTelegramMins(current.telegram_submission_minutes || 5);
@@ -233,6 +252,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     setStartTime(`${year}-${month}-${day}T${hours}:${minutes}`);
+    setRegistrationDeadline('');
     setQuestionDuration(60);
     setTelegramUrl('https://t.me/KurdishOMR');
     setTelegramMins(5);
@@ -266,6 +286,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         description: finalDesc,
         sponsors_and_prizes: finalPrizes,
         start_time: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
+        registration_deadline: registrationDeadline ? new Date(registrationDeadline).toISOString() : null,
         question_duration_seconds: Number(questionDuration) || 60,
         telegram_group_url: telegramUrl.trim(),
         telegram_submission_minutes: Number(telegramMins) || 5,
@@ -341,6 +362,7 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         description: finalDesc,
         sponsors_and_prizes: finalPrizes,
         start_time: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
+        registration_deadline: registrationDeadline ? new Date(registrationDeadline).toISOString() : null,
         question_duration_seconds: Number(questionDuration) || 60,
         telegram_group_url: telegramUrl.trim(),
         telegram_submission_minutes: Number(telegramMins) || 5,
@@ -660,15 +682,21 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         const student = p.student_name && p.student_name.trim()
           ? p.student_name.trim()
           : '<span style="color:#94a3b8; font-style:italic;">دیاری نەکراوە</span>';
+        const phone = p.student_phone && p.student_phone.trim()
+          ? `<span style="font-family: monospace; font-size: 13px; direction: ltr; display: inline-block;">${p.student_phone}</span>`
+          : '<span style="color:#94a3b8;">—</span>';
         const status = p.disqualified
           ? '<span style="color:#e11d48; font-weight:bold;">دەرکراوە (غەش)</span>'
+          : (p.score !== null && p.score !== undefined)
+          ? `<span style="color:#2563eb; font-weight:bold;">نمرە: ${p.score} (${p.percentage}%)</span>`
           : p.is_used
           ? '<span style="color:#64748b; font-weight:bold;">بەکارهاتووە</span>'
           : '<span style="color:#059669; font-weight:bold;">بەردەستە (نوێ)</span>';
         return `
           <tr style="border-bottom: 1px solid #e2e8f0; background: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-            <td style="padding: 10px 14px; text-align: center; font-weight: bold; color: #475569; width: 50px;">${index + 1}</td>
+            <td style="padding: 10px 14px; text-align: center; font-weight: bold; color: #475569; width: 45px;">${index + 1}</td>
             <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: #0f172a; font-size: 14px;">${student}</td>
+            <td style="padding: 10px 14px; text-align: center; font-size: 13px; color: #334155;">${phone}</td>
             <td style="padding: 10px 14px; text-align: center; font-family: monospace; font-size: 15px; font-weight: 800; color: #0f172a; letter-spacing: 1px; direction: ltr;">
               <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px; border: 1px solid #cbd5e1; display: inline-block;">${p.code}</span>
             </td>
@@ -810,10 +838,11 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
         <table>
           <thead>
             <tr>
-              <th style="width: 50px; text-align: center;">#</th>
+              <th style="width: 45px; text-align: center;">#</th>
               <th>ناوی سیانیی قوتابی</th>
+              <th style="text-align: center; width: 140px;">ژمارەی مۆبایل</th>
               <th style="text-align: center;">کۆدی پاسوۆرد (Passcode)</th>
-              <th style="text-align: center; width: 120px;">دۆخ</th>
+              <th style="text-align: center; width: 140px;">دۆخ / نمرە</th>
             </tr>
           </thead>
           <tbody>
@@ -1151,6 +1180,30 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                       className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-mono font-bold text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>دوا وادەی خۆتۆمارکردن:</span>
+                      </span>
+                      <span className="text-[10px] text-emerald-400 font-medium">
+                        کۆتایی وەرگرتنی کۆد
+                      </span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={registrationDeadline}
+                      onChange={(e) => setRegistrationDeadline(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-mono font-bold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    />
+                    <span className="block text-[10px] text-slate-400 mt-1">
+                      دوای ئەم وادەیە فۆڕمی خۆتۆمارکردن دادەخرێت (ئەگەر بەتاڵ بێت، تا دەستپێک کراوەیە).
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
@@ -1744,14 +1797,46 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                   </div>
 
                   {/* Badges */}
-                  <div className="flex items-center gap-2 text-xs">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="px-3 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 font-bold">
+                      کۆی بەشداربووان: {passcodes.length}
+                    </span>
+                    <span className="px-3 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-bold">
+                      تۆمارکراو بە مۆبایل: {passcodes.filter((p) => p.student_phone).length}
+                    </span>
                     <span className="px-3 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold">
                       بەردەست: {availableCount}
                     </span>
                     <span className="px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 font-bold">
                       بەکارهاتوو: {usedCount}
                     </span>
+                    {passcodes.some((p) => p.score !== null && p.score !== undefined) && (
+                      <span className="px-3 py-1 rounded-lg bg-teal-500/15 border border-teal-500/30 text-teal-300 font-bold">
+                        نمرەی تۆمارکراو: {passcodes.filter((p) => p.score !== null && p.score !== undefined).length}
+                      </span>
+                    )}
                   </div>
+                </div>
+
+                {/* Live Search Bar for Passcodes / Registered Students */}
+                <div className="relative w-full pt-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none mt-0.5" />
+                  <input
+                    type="text"
+                    value={passcodeSearchQuery}
+                    onChange={(e) => setPasscodeSearchQuery(e.target.value)}
+                    placeholder="گەڕانی خێرا بەپێی ژمارەی مۆبایل، ناوی سیانیی قوتابی، یان کۆدی پاسوۆرد..."
+                    className="w-full pr-10 pl-20 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 shadow-inner"
+                  />
+                  {passcodeSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setPasscodeSearchQuery('')}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-400 hover:text-amber-300 bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-700 mt-0.5"
+                    >
+                      پاککردنەوە
+                    </button>
+                  )}
                 </div>
 
                 {/* Generator Bar & Primary Actions */}
@@ -1846,41 +1931,45 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
 
               {/* Passcodes Table */}
               <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-950/60">
-                <div className="max-h-[420px] overflow-y-auto">
+                <div className="max-h-[440px] overflow-y-auto">
                   <table className="w-full text-right text-xs">
                     <thead className="bg-slate-900/90 text-slate-400 font-bold sticky top-0 border-b border-slate-800">
                       <tr>
                         <th className="p-3">#</th>
                         <th className="p-3">کۆدی پاسوۆرد</th>
-                        <th className="p-3">دۆخ</th>
+                        <th className="p-3">ژمارەی مۆبایل</th>
                         <th className="p-3">ناوی قوتابی (دەستکاری دەکرێت)</th>
-                        <th className="p-3">کردار</th>
+                        <th className="p-3">دۆخ / نمرە</th>
+                        <th className="p-3 text-center">کردار</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
-                      {passcodes.map((p, idx) => (
-                        <tr key={p.id} className="hover:bg-slate-900/40 transition-colors">
-                          <td className="p-3 text-slate-500 font-mono">{idx + 1}</td>
-                          <td className="p-3 font-mono font-black text-amber-300 text-xs" dir="ltr">
-                            {p.code}
-                          </td>
-                          <td className="p-3">
-                            {p.disqualified ? (
-                              <span className="px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 font-bold text-[11px] border border-rose-500/30">
-                                دەرکراوە (غەش)
-                              </span>
-                            ) : p.is_used ? (
-                              <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-bold text-[11px] border border-slate-700">
-                                بەکارهاتووە
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-bold text-[11px] border border-emerald-500/30">
-                                بەردەستە (نوێ)
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-3 text-slate-300">
-                            <div className="flex items-center gap-2">
+                      {passcodes
+                        .filter((p) => {
+                          if (!passcodeSearchQuery.trim()) return true;
+                          const q = passcodeSearchQuery.trim().toLowerCase();
+                          const codeMatch = (p.code || '').toLowerCase().includes(q);
+                          const nameMatch = (p.student_name || '').toLowerCase().includes(q);
+                          const phoneMatch = (p.student_phone || '').toLowerCase().includes(q);
+                          return codeMatch || nameMatch || phoneMatch;
+                        })
+                        .map((p, idx) => (
+                          <tr key={p.id} className="hover:bg-slate-900/40 transition-colors">
+                            <td className="p-3 text-slate-500 font-mono">{idx + 1}</td>
+                            <td className="p-3 font-mono font-black text-amber-300 text-xs" dir="ltr">
+                              {p.code}
+                            </td>
+                            <td className="p-3 font-mono text-xs font-bold text-amber-200" dir="ltr">
+                              {p.student_phone ? (
+                                <span className="flex items-center gap-1 text-slate-200">
+                                  <Phone className="w-3 h-3 text-amber-400 shrink-0" />
+                                  <span>{p.student_phone}</span>
+                                </span>
+                              ) : (
+                                <span className="text-slate-600 text-[11px]">—</span>
+                              )}
+                            </td>
+                            <td className="p-3 text-slate-300">
                               <input
                                 type="text"
                                 placeholder="ناوی سیانیی قوتابی لێرە بنووسە..."
@@ -1888,29 +1977,42 @@ export default function OnlineExamAdminModal({ onClose, onShowToast, onExamUpdat
                                 onChange={(e) => handleStudentNameChange(p.id, e.target.value)}
                                 className="w-full min-w-[200px] max-w-sm px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700/80 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"
                               />
-                              {p.student_phone && (
-                                <span className="text-[10px] text-slate-500 font-mono shrink-0">
-                                  {p.student_phone}
+                            </td>
+                            <td className="p-3">
+                              {p.disqualified ? (
+                                <span className="px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 font-bold text-[11px] border border-rose-500/30">
+                                  دەرکراوە (غەش)
+                                </span>
+                              ) : p.score !== null && p.score !== undefined ? (
+                                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-[11px] border border-indigo-500/40">
+                                  نمرە: {p.score} ({p.percentage}%)
+                                </span>
+                              ) : p.is_used ? (
+                                <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-bold text-[11px] border border-slate-700">
+                                  بەکارهاتووە (لە تاقیکردنەوە)
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-bold text-[11px] border border-emerald-500/30">
+                                  بەردەستە (نوێ)
                                 </span>
                               )}
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <button
-                              type="button"
-                              onClick={() => handleDeletePasscode(p.id)}
-                              className="p-1 rounded-lg hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 transition-colors"
-                              title="سڕینەوە"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="p-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleDeletePasscode(p.id)}
+                                className="p-1 rounded-lg hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 transition-colors"
+                                title="سڕینەوە"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
 
                       {passcodes.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="py-8 text-center text-slate-500 text-xs">
+                          <td colSpan={6} className="py-8 text-center text-slate-500 text-xs">
                             هیچ پاسوۆردێک دروست نەکراوە. دوگمەی "خۆکارانە پاسوۆرد دروست بکە" دابگرە.
                           </td>
                         </tr>

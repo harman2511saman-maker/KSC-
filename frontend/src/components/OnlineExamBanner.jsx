@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   ShieldCheck,
   Trophy,
-  BookOpen
+  BookOpen,
+  Ticket
 } from 'lucide-react';
 import api from '../api';
 import { useTheme } from '../context/ThemeContext';
@@ -85,6 +86,12 @@ export default function OnlineExamBanner({
   };
 
   const currentExam = exams[currentIndex] || exams[0];
+
+  const hasLocalVoucher = Boolean(
+    currentExam?.id &&
+    typeof window !== 'undefined' &&
+    localStorage.getItem(`ksc_online_reg_${currentExam.id}`)
+  );
 
   // Auto rotate slides every 7 seconds when not paused and multiple exams exist
   useEffect(() => {
@@ -442,18 +449,9 @@ export default function OnlineExamBanner({
     }
 
     if (!timeRemaining.started) {
-      const formattedDate = new Date(currentExam.start_time).toLocaleString('ckb', {
-        timeZone: 'Asia/Baghdad',
-        dateStyle: 'medium',
-        timeStyle: 'short'
-      });
-      if (onShowToast) {
-        onShowToast({
-          type: 'info',
-          message: `وادەی دەستپێکردنی تاقیکردنەوە ماوە!\nکاتی دەستپێکردن: ${formattedDate} (بە کاتی کوردستان)`
-        });
-      } else {
-        alert(`وادەی دەستپێکردنی ئەم تاقیکردنەوەیە ماوە!\nکاتی دەستپێکردن: ${formattedDate} (بە کاتی کوردستان)`);
+      // Allow candidates to self-register and get passcode before start time
+      if (onStartExam) {
+        onStartExam(currentExam);
       }
       return;
     }
@@ -620,6 +618,12 @@ export default function OnlineExamBanner({
                 <Clock className="w-3.5 h-3.5 text-amber-500" />
                 <span>{t('entryCutoffLabel')} {currentExam.entry_cutoff_minutes || 3} {t('minutesUnit')}</span>
               </span>
+              {currentExam.registration_deadline && (
+                <span className={`px-2.5 sm:px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 shrink-0 ${isDark ? 'bg-indigo-950/70 border-indigo-500/40 text-indigo-300' : 'bg-indigo-50 border-indigo-200 text-indigo-800'}`}>
+                  <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>{t('registrationDeadlineLabel')} {new Date(currentExam.registration_deadline).toLocaleTimeString(lang === 'en' ? 'en-US' : lang === 'ar' ? 'ar-IQ' : 'ckb', { timeZone: 'Asia/Baghdad', hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                </span>
+              )}
             </div>
           </div>
 
@@ -728,7 +732,9 @@ export default function OnlineExamBanner({
                     currentExam.is_coming_soon
                       ? 'bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 hover:from-amber-500/30 hover:to-purple-500/30 text-amber-200 border border-amber-400/40 shadow-lg shadow-amber-950/30 cursor-pointer'
                       : !timeRemaining.started
-                      ? 'bg-slate-800/90 hover:bg-slate-800 text-amber-300 border border-amber-500/30'
+                      ? hasLocalVoucher || currentExam.is_registration_open !== false
+                        ? 'bg-gradient-to-r from-amber-500/25 via-indigo-600/35 to-amber-500/25 hover:from-amber-500/35 hover:to-indigo-600/45 text-amber-300 border-2 border-amber-400/50 shadow-lg shadow-amber-500/20 cursor-pointer animate-pulse'
+                        : 'bg-slate-800/90 hover:bg-slate-800 text-amber-300 border border-amber-500/30'
                       : timeRemaining.entryClosed
                       ? 'bg-rose-950/70 hover:bg-rose-900/80 text-rose-300 border border-rose-500/40 shadow-rose-950/40'
                       : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25 ring-2 ring-emerald-400/50 animate-pulse'
@@ -740,10 +746,22 @@ export default function OnlineExamBanner({
                       <span>{t('comingSoonBtn')}</span>
                     </>
                   ) : !timeRemaining.started ? (
-                    <>
-                      <Lock className="w-4 h-4 text-amber-400" />
-                      <span>{t('waitingForStart')}</span>
-                    </>
+                    hasLocalVoucher ? (
+                      <>
+                        <Ticket className="w-4 h-4 text-amber-300" />
+                        <span>{t('myCodeReadyBtn')}</span>
+                      </>
+                    ) : currentExam.is_registration_open !== false ? (
+                      <>
+                        <Ticket className="w-4 h-4 text-amber-300 animate-bounce" />
+                        <span>{t('registerAndGetCodeBtn')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4 text-amber-400" />
+                        <span>{t('waitingForStart')}</span>
+                      </>
+                    )
                   ) : timeRemaining.entryClosed ? (
                     <>
                       <Lock className="w-4 h-4 text-rose-400" />
