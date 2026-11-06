@@ -215,10 +215,11 @@ def detect_registration_markers(
             best_score = -1e9
 
             # Sort candidates by contrast and size plausibility
-            tl_cands = sorted(quad_tl, key=lambda c: c["contrast"], reverse=True)[:6]
-            tr_cands = sorted(quad_tr, key=lambda c: c["contrast"], reverse=True)[:6]
-            br_cands = sorted(quad_br, key=lambda c: c["contrast"], reverse=True)[:6]
-            bl_cands = sorted(quad_bl, key=lambda c: c["contrast"], reverse=True)[:6]
+            diag = float(np.hypot(w, h))
+            tl_cands = sorted(quad_tl, key=lambda c: (c["contrast"] / 255.0) - (np.hypot(c["cx"] - 0, c["cy"] - 0) / diag), reverse=True)[:8]
+            tr_cands = sorted(quad_tr, key=lambda c: (c["contrast"] / 255.0) - (np.hypot(c["cx"] - w, c["cy"] - 0) / diag), reverse=True)[:8]
+            br_cands = sorted(quad_br, key=lambda c: (c["contrast"] / 255.0) - (np.hypot(c["cx"] - w, c["cy"] - h) / diag), reverse=True)[:8]
+            bl_cands = sorted(quad_bl, key=lambda c: (c["contrast"] / 255.0) - (np.hypot(c["cx"] - 0, c["cy"] - h) / diag), reverse=True)[:8]
 
             for c_tl in tl_cands:
                 for c_tr in tr_cands:
@@ -256,11 +257,14 @@ def detect_registration_markers(
                             size_ratio = min(areas) / max(max(areas), 1.0)
 
                             # Perfect A4 aspect is 1.414, symmetry near 1.0, marker sizes matched
+                            quad_area = cv2.contourArea(ordered.astype(np.float32))
+                            area_ratio = quad_area / max(img_area, 1.0)
                             combo_score = (
                                 (sym_w * 3.0) +
                                 (sym_h * 3.0) +
                                 (size_ratio * 2.0) -
                                 (abs(aspect - 1.414) * 4.0) +
+                                (area_ratio * 8.0) +
                                 (min(c_tl["contrast"], c_tr["contrast"], c_br["contrast"], c_bl["contrast"]) / 50.0)
                             )
 

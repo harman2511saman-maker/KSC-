@@ -1,5 +1,6 @@
 import os
 import json
+import copy
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
@@ -7,18 +8,79 @@ from typing import Dict, Any, Optional
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
+# ---------------------------------------------------------------------------
+# High-Fidelity Kurdish Sorani & Arabic Reshaping for NRT-Bd TrueType Font
+# ---------------------------------------------------------------------------
+try:
+    from arabic_reshaper.arabic_reshaper import ArabicReshaper, LETTERS_KURDISH
+    from bidi.algorithm import get_display
+
+    _kurdish_letters = copy.deepcopy(LETTERS_KURDISH)
+    # Map Kurdish letters to NRT-Bd TrueType glyphs:
+    # ێ (0x06CE): isolated 0x06CE, initial 0xE005, medial 0xE006, final 0xE004
+    _kurdish_letters[chr(0x06CE)] = [chr(0x06CE), chr(0xE005), chr(0xE006), chr(0xE004)]
+    # ە (0x06D5): isolated 0x06D5, final 0xE000
+    _kurdish_letters[chr(0x06D5)] = [chr(0x06D5), '', '', chr(0xE000)]
+    # ڕ (0x0695): isolated 0x0695, final 0xE001
+    _kurdish_letters[chr(0x0695)] = [chr(0x0695), '', '', chr(0xE001)]
+    # ڵ (0x06B5): isolated 0x06B5, initial 0xE008, medial 0xE009, final 0xE007
+    _kurdish_letters[chr(0x06B5)] = [chr(0x06B5), chr(0xE008), chr(0xE009), chr(0xE007)]
+    # ۆ (0x06C6): isolated 0x06C6, final 0xFBDA
+    _kurdish_letters[chr(0x06C6)] = [chr(0x06C6), '', '', chr(0xFBDA)]
+
+    _kurdish_reshaper = ArabicReshaper(configuration={'language': 'Kurdish'})
+    _kurdish_reshaper.letters = _kurdish_letters
+except Exception:
+    _kurdish_reshaper = None
+    get_display = lambda t: t
+
+
+def shape_kurdish_text(text: str) -> str:
+    """Properly shapes and bi-directionally orders Kurdish Sorani and Arabic text for NRT-Bd font."""
+    if not text:
+        return ""
+    text_str = str(text).strip()
+    if not text_str:
+        return ""
+    has_rtl = any(
+        '\u0600' <= ch <= '\u06ff' or
+        '\ufb50' <= ch <= '\ufdff' or
+        '\ufe70' <= ch <= '\ufeff' or
+        '\ue000' <= ch <= '\ue009'
+        for ch in text_str
+    )
+    if not has_rtl:
+        return text_str
+
+    if _kurdish_reshaper is not None:
+        try:
+            reshaped = _kurdish_reshaper.reshape(text_str)
+            return get_display(reshaped)
+        except Exception:
+            return text_str
+    return text_str
+
+
 from app.omr.template_definitions import (
     CANONICAL_WIDTH,
     CANONICAL_HEIGHT,
     generate_template_spec
 )
 
+
 def get_font(size: int = 20, bold: bool = True) -> ImageFont.ImageFont:
-    """Loads crisp TrueType font (Times / Arial / Tahoma) for international standard exam sheet."""
+    """Loads crisp TrueType font (NRT-Bd / NRT-Reg as priority) for standard OMR exam sheet."""
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     fonts_dir = os.path.join(base_dir, "assets", "fonts")
+    root_dir = os.path.dirname(os.path.dirname(base_dir))
 
     bundled_candidates = [
+        # 1. Primary choice: NRT Bold font specified by user
+        os.path.join(fonts_dir, "NRT-Bd.ttf"),
+        os.path.join(root_dir, "NRT-Bd.ttf"),
+        os.path.join(fonts_dir, "NRT-Reg.ttf"),
+        os.path.join(fonts_dir, "Vazirmatn-Bold.ttf"),
+        os.path.join(fonts_dir, "Cairo-Bold.ttf"),
         os.path.join(fonts_dir, "timesbd.ttf" if bold else "times.ttf"),
         os.path.join(fonts_dir, "Tahoma-Bold.ttf" if bold else "Tahoma.ttf"),
         os.path.join(fonts_dir, "Arial-Bold.ttf"),
@@ -36,23 +98,48 @@ def get_font(size: int = 20, bold: bool = True) -> ImageFont.ImageFont:
     except Exception:
         return ImageFont.load_default()
 
+
 def draw_text_left(draw: ImageDraw.Draw, x_left: int, y: int, text: str, font: ImageFont.ImageFont, fill: Any):
-    """Draws left-aligned text."""
-    draw.text((x_left, y), str(text), fill=fill, font=font)
+    """Draws left-aligned text (auto-shaped for Kurdish/Arabic)."""
+    s = shape_kurdish_text(str(text))
+    draw.text((x_left, y), s, fill=fill, font=font)
+
 
 def draw_text_right(draw: ImageDraw.Draw, x_right: int, y: int, text: str, font: ImageFont.ImageFont, fill: Any):
-    """Draws right-aligned text."""
-    s = str(text)
+    """Draws right-aligned text (auto-shaped for Kurdish/Arabic)."""
+    s = shape_kurdish_text(str(text))
     bbox = draw.textbbox((0, 0), s, font=font)
     w = bbox[2] - bbox[0]
     draw.text((x_right - w, y), s, fill=fill, font=font)
 
+
 def draw_text_center(draw: ImageDraw.Draw, x_center: int, y: int, text: str, font: ImageFont.ImageFont, fill: Any):
-    """Draws centered text."""
-    s = str(text)
+    """Draws centered text (auto-shaped for Kurdish/Arabic)."""
+    s = shape_kurdish_text(str(text))
     bbox = draw.textbbox((0, 0), s, font=font)
     w = bbox[2] - bbox[0]
     draw.text((x_center - (w / 2), y), s, fill=fill, font=font)
+
+
+def draw_label_and_val_left(draw: ImageDraw.Draw, x: int, y: int, label: str, val: str, font: ImageFont.ImageFont, fill: Any):
+    """Draws left-aligned label followed by auto-shaped Kurdish/English value."""
+    draw.text((x, y), label, font=font, fill=fill)
+    bbox = draw.textbbox((0, 0), label, font=font)
+    lw = bbox[2] - bbox[0]
+    s_val = shape_kurdish_text(val)
+    draw.text((x + lw + 6, y), s_val, font=font, fill=fill)
+
+
+def draw_label_and_val_right(draw: ImageDraw.Draw, x_right: int, y: int, label: str, val: str, font: ImageFont.ImageFont, fill: Any):
+    """Draws right-aligned field with label preceding value, right-aligned to x_right."""
+    s_val = shape_kurdish_text(val)
+    bbox_val = draw.textbbox((0, 0), s_val, font=font)
+    val_w = bbox_val[2] - bbox_val[0]
+    bbox_lbl = draw.textbbox((0, 0), label, font=font)
+    lbl_w = bbox_lbl[2] - bbox_lbl[0]
+    draw.text((x_right - val_w - lbl_w - 6, y), label, font=font, fill=fill)
+    draw.text((x_right - val_w, y), s_val, font=font, fill=fill)
+
 
 def generate_qr_image(payload_dict: Dict[str, Any], size: int = 150) -> Image.Image:
     """Generates high-contrast black and white QR code image."""
@@ -67,6 +154,7 @@ def generate_qr_image(payload_dict: Dict[str, Any], size: int = 150) -> Image.Im
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
     return img.resize((size, size), Image.Resampling.NEAREST)
+
 
 def generate_omr_sheet_image(
     exam_data: Dict[str, Any],
@@ -142,7 +230,7 @@ def generate_omr_sheet_image(
 
     draw = ImageDraw.Draw(img)
 
-    # Typography
+    # Typography - Loaded with NRT-Bd Kurdish Font
     f_brand = get_font(size=25, bold=True)
     f_exam_title = get_font(size=23, bold=True)
     f_label_bold = get_font(size=19, bold=True)
@@ -152,7 +240,7 @@ def generate_omr_sheet_image(
     f_inst_tag = get_font(size=14, bold=True)
     f_col_hdr = get_font(size=18, bold=True)
     f_q_num = get_font(size=21, bold=True)
-    f_choice = get_font(size=17, bold=True)
+    f_choice = get_font(size=14, bold=False)
     f_footer = get_font(size=14, bold=True)
 
     # 1. Registration Markers (Solid Black Squares in 4 Corners)
@@ -197,12 +285,12 @@ def generate_omr_sheet_image(
         school_name = "____________________"
 
     draw_text_left(draw, brand_text_x, header_y1 + 14, "KSC OMR EXAMINATION", f_brand, (0, 0, 0))
-    draw_text_right(draw, header_x2 - 20, header_y1 + 14, str(exam_title).upper(), f_exam_title, (0, 0, 0))
+    draw_text_right(draw, header_x2 - 20, header_y1 + 14, str(exam_title), f_exam_title, (0, 0, 0))
 
-    # Metadata Row: Subject on Left, School on Right (Black text)
+    # Metadata Row: Subject on Left, School on Right (Black text, Kurdish auto-shaped)
     meta_y = header_y1 + 72
-    draw_text_left(draw, header_x1 + 20, meta_y, f"Subject: {subject}", f_label_bold, (0, 0, 0))
-    draw_text_right(draw, header_x2 - 20, meta_y, f"Center / School: {school_name}", f_label_bold, (0, 0, 0))
+    draw_label_and_val_left(draw, header_x1 + 20, meta_y, "Subject: ", str(subject), f_label_bold, (0, 0, 0))
+    draw_label_and_val_right(draw, header_x2 - 20, meta_y, "Center / School: ", str(school_name), f_label_bold, (0, 0, 0))
 
     # Divider between metadata and student details
     draw.line([(header_x1, header_y1 + 118), (header_x2, header_y1 + 118)], fill=(200, 200, 200), width=1)
@@ -216,15 +304,14 @@ def generate_omr_sheet_image(
         student_code = student_data.get("student_id_number") or student_data.get("student_id") or ""
 
     if student_name:
-        draw_text_left(draw, header_x1 + 20, std_y, f"Student Name: {student_name}", f_label_bold, (0, 0, 0))
+        draw_label_and_val_left(draw, header_x1 + 20, std_y, "Student Name: ", str(student_name), f_label_bold, (0, 0, 0))
     else:
         draw_text_left(draw, header_x1 + 20, std_y, "Student Name: ____________________________", f_label_bold, (0, 0, 0))
 
     if student_code:
-        std_right_text = f"Student ID: {student_code}"
+        draw_label_and_val_right(draw, header_x2 - 20, std_y, "Student ID: ", str(student_code), f_label_bold, (0, 0, 0))
     else:
-        std_right_text = "Student ID: ________________"
-    draw_text_right(draw, header_x2 - 20, std_y, std_right_text, f_label_bold, (0, 0, 0))
+        draw_text_right(draw, header_x2 - 20, std_y, "Student ID: ________________", f_label_bold, (0, 0, 0))
 
     # 3. QR Code Card (Black & White)
     qr_payload = {
@@ -311,7 +398,7 @@ def generate_omr_sheet_image(
             # Crisp circular outline with clean white background
             draw.ellipse([bcx - r, bcy - r, bcx + r, bcy + r], fill=(255, 255, 255), outline=(0, 0, 0), width=2)
             # Watermark choice letter centered inside the bubble (light gray)
-            draw_text_center(draw, bcx, bcy - 10, choice_key, f_choice, (200, 200, 200))
+            draw_text_center(draw, bcx, bcy - 9, choice_key, f_choice, (224, 224, 224))
 
     # 7. Clean Monochrome Footer Bar
     footer_y = 1555
@@ -320,6 +407,7 @@ def generate_omr_sheet_image(
     draw_text_right(draw, 1080, footer_y, "KSC OMR Examination Platform", f_footer, (80, 80, 80))
 
     return img
+
 
 def generate_omr_sheet_pdf(
     exam_data: Dict[str, Any],
